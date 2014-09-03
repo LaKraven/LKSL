@@ -1,0 +1,215 @@
+object frmMain: TfrmMain
+  Left = 0
+  Top = 0
+  Caption = 
+    'High Precision Thread Demo - LaKraven Studios Standard Library [' +
+    'LKSL]'
+  ClientHeight = 276
+  ClientWidth = 580
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Orientations = [Landscape, InvertedLandscape]
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object ScaledLayout1: TScaledLayout
+    Align = Client
+    OriginalWidth = 580.000000000000000000
+    OriginalHeight = 276.000000000000000000
+    Size.Width = 580.000000000000000000
+    Size.Height = 276.000000000000000000
+    Size.PlatformDefault = False
+    object GroupBox1: TGroupBox
+      Align = Top
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 576.000000000000000000
+      Size.Height = 79.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'Test Thread Settings:'
+      TabOrder = 0
+      object Label1: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 24.000000000000000000
+        Size.Width = 153.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.HorzAlign = Trailing
+        Text = 'Tick Rate Limit:'
+        object nbTickRateLimit: TNumberBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 0
+          Cursor = crIBeam
+          Max = 10000.000000000000000000
+          Value = 10.000000000000000000
+          ValueType = Float
+          Position.X = 164.000000000000000000
+          Position.Y = -3.000000000000000000
+          OnChange = nbTickRateLimitChange
+          object Label2: TLabel
+            Position.X = 109.000000000000000000
+            Position.Y = 5.000000000000000000
+            Size.Width = 289.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = '(0 = No Limit) - The number of "Ticks Per Second"'
+          end
+        end
+      end
+      object Label3: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 48.000000000000000000
+        Size.Width = 153.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.HorzAlign = Trailing
+        Text = 'Calculate Average Over:'
+        object nbAverageOver: TNumberBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 0
+          Cursor = crIBeam
+          Min = 0.009999999776482582
+          Max = 120.000000000000000000
+          Value = 2.000000000000000000
+          ValueType = Float
+          Position.X = 164.000000000000000000
+          Position.Y = -3.000000000000000000
+          OnChange = nbAverageOverChange
+          object Label4: TLabel
+            Position.X = 109.000000000000000000
+            Position.Y = 5.000000000000000000
+            Size.Width = 289.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = 'seconds'
+          end
+        end
+      end
+    end
+    object GroupBox2: TGroupBox
+      Align = Top
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 2.000000000000000000
+      Position.Y = 85.000000000000000000
+      Size.Width = 576.000000000000000000
+      Size.Height = 124.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'Test Thread Tick Data:'
+      TabOrder = 1
+      object Label5: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 24.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Tick Count:'
+        object lblTickCount: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
+      object Label6: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 40.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Tick Delta:'
+        object lblDelta: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
+      object Label7: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 56.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Tick Start Time:'
+        object lblStartTime: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
+      object Label8: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 72.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Instant Tick Rate:'
+        object lblTickRateInstant: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
+      object Label9: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 88.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Average Tick Rate:'
+        object lblAverageTickRate: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
+      object lblAverageBig: TLabel
+        Anchors = [akRight, akBottom]
+        StyledSettings = [Family]
+        Position.X = 478.000000000000000000
+        Position.Y = 88.000000000000000000
+        Size.Width = 88.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.Font.Size = 18.000000000000000000
+        TextSettings.Font.Style = [fsBold]
+        TextSettings.HorzAlign = Trailing
+        TextSettings.WordWrap = False
+        Text = '0'
+      end
+    end
+    object Label10: TLabel
+      Align = Client
+      StyledSettings = [Family, FontColor]
+      Margins.Left = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Size.Width = 576.000000000000000000
+      Size.Height = 65.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Font.Size = 14.000000000000000000
+      TextSettings.Font.Style = [fsBold, fsItalic]
+      TextSettings.HorzAlign = Center
+      Text = 
+        'NOTE: Performance in this test is restricted by the Rendering Pe' +
+        'rformance of the Form. Remember that the Test Thread is performi' +
+        'ng a "Synchronized" call to update the stats on this Form. Backg' +
+        'round processing speeds are MUCH greater!'
+    end
+  end
+end
