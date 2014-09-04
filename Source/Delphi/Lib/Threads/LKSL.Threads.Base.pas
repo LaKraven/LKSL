@@ -43,11 +43,21 @@ unit LKSL.Threads.Base;
     - This unit also provides the Abstract Base Implementation for the same.
 
   Included Usage Demos:
-    - "LKSL_DEMO_HPT" in the "\Demos\Delphi\<version>\High Precision Threading (HPT)" folder
+    - "LKSL_Demo_HighPrecisionThreads" in the "\Demos\Delphi\<version>\High Precision Threading (HPT)"
+      folder
 
   Changelog (latest changes first):
+    4th September 2014:
+      - Added new Method "GetDefaultYieldAccumulatedTime" to define whether all accumulated (excess) time
+        should be yielded in a single block by default.
+      - Added new Property "YieldAccumulatedTime" to control ad-hoc whether all accumulated (excess) time
+        should be yielded in a single block.
+      - Add new Property "NextTickTime", which is the Reference Time at (or after) which the next Tick
+        will occur.
+      - Added new Method "Bump", which (if "YieldAccumulatedTime" = False) forces the next Tick to occur
+        immediately.
     3rd September 2014:
-      - Prepared for Release
+      - Prepared for Release.
 }
 
 interface
@@ -77,36 +87,43 @@ type
   TLKThread = class abstract(TThread)
   private
     FLock: TCriticalSection;
+    FNextTickTime: Double;
     FStopwatch: TStopwatch;
     FThreadState: TLKThreadState;
     FTickRate: Double; // The INSTANT Tick Rate (in "Ticks per Second")
     FTickRateAverage: Double; // The AVERAGE Tick Rate (in "Ticks per Second")
     FTickRateAverageOver: Double; // How much time (in seconds) the Average is calculated over
     FTickRateLimit: Double; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
+    FYieldAccumulatedTime: Boolean;
 
+    function GetNextTickTime: Double;
     function GetThreadState: TLKThreadState;
     function GetTickRate: Double;
     function GetTickRateAverage: Double;
     function GetTickRateAverageOver: Double;
     function GetTickRateLimit: Double;
+    function GetYieldAccumulatedTime: Boolean;
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
     procedure SetTickRate(const ATickRate: Double); // Used internally!
     procedure SetTickRateAverage(const ATickRateAverage: Double); // Used internally!
     procedure SetTickRateAverageOver(const AAverageOver: Double);
     procedure SetTickRateLimit(const ATickRateLimit: Double);
+    procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
   protected
     // Override "GetDefaultTickRateLimit" if you want to set a default limit (the default is 0 [no limit])
     function GetDefaultTickRateLimit: Double; virtual;
     // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
     function GetDefaultTickRateAverageOver: Double; virtual;
+    // Override "GetDefaultYieldAccumulatedTime" if you DON'T want accumulated (excess) time to be yielded in a single block (Default = True)
+    function GetDefaultYieldAccumulatedTime: Boolean; virtual;
     // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
     function GetInitialThreadState: TLKThreadState; virtual;
     // "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
     function GetReferenceTime: Double;
 
-    // YOU MUST NOT override the TThread.Execute method in descendants of TLKThread!!!!!!!!
-    procedure Execute; override; final;
+    // YOU MUST NOT override the TThread.Execute method in your descendants of TLKThread!!!!!!!!
+    procedure Execute; override;
 
     // Override the "Tick" procedure to implement your Thread's operational code.
     // ADelta = the time differential ("Delta") between the current Tick and the previous Tick
@@ -119,6 +136,11 @@ type
     // Override "Destroy" to finalize any custom Members (DON'T FORGET "INHERITED;" LAST!)
     destructor Destroy; override;
 
+    // "Bump" forces the "Next Tick Time" to be "bumped up" to RIGHT NOW, forcing a rate-limited Thread waiting
+    // between Ticks to perform a Tick immediately.
+    // NOTE: This method ONLY works if "YieldAccumulatedTime" is set to FALSE!
+    procedure Bump;
+
     // "Kill" Terminates the Thread, waits for the thread to be Terminated, then Frees it.
     // It's basically just a way of performing three actions in a single call (sugar-coating, if you like)
     procedure Kill;
@@ -130,16 +152,25 @@ type
     // (Public just in case you need to call it externally for some reason)
     procedure Unlock;
 
+    property NextTickTime: Double read GetNextTickTime;
     property ThreadState: TLKThreadState read GetThreadState write SetThreadState;
     property TickRate: Double read GetTickRate;
     property TickRateAverage: Double read GetTickRateAverage;
     property TickRateAverageOver: Double read GetTickRateAverageOver write SetTickRateAverageOver;
     property TickRateLimit: Double read GetTickRateLimit write SetTickRateLimit;
+    property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
 
 implementation
 
 { TLKThread }
+
+procedure TLKThread.Bump;
+begin
+  Lock;
+  FNextTickTime := GetReferenceTime;
+  Unlock;
+end;
 
 constructor TLKThread.Create;
 begin
@@ -150,6 +181,7 @@ begin
   FThreadState := GetInitialThreadState;
   FTickRateLimit := GetDefaultTickRateLimit;
   FTickRateAverageOver := GetDefaultTickRateAverageOver;
+  FYieldAccumulatedTime := GetDefaultYieldAccumulatedTime;
 end;
 
 destructor TLKThread.Destroy;
@@ -161,35 +193,37 @@ end;
 procedure TLKThread.Execute;
 var
   {$IFNDEF POSIX}LSleepTime: Integer;{$ENDIF}
-  LDelta, LCurrentTime, LNextTime: Double;
+  LDelta, LCurrentTime: Double;
   LTickRateLimit: Double;
   LLastAverageCheckpoint, LNextAverageCheckpoint: Double;
   LAverageTicks: Integer;
 begin
   LCurrentTime := GetReferenceTime;
-  LNextTime := LCurrentTime;
+  Lock;
+  FNextTickTime := LCurrentTime;
+  Unlock;
   LLastAverageCheckpoint := 0.00;
   LNextAverageCheckpoint := 0.00;
   LAverageTicks := 0;
   while (not Terminated) do
   begin
+    LTickRateLimit := TickRateLimit; // Read once so we don't have to keep Acquiring the Lock!
+    LCurrentTime := GetReferenceTime;
+    LDelta := (LCurrentTime - FNextTickTime);
+
+    // Rate Limiter
+    if (LTickRateLimit > 0) then
+      if (LDelta < ( 1 / LTickRateLimit)) then
+        LDelta := (1 / LTickRateLimit);
+
+    // Calculate INSTANT Tick Rate
+    if LDelta > 0 then
+      SetTickRate((1 / LDelta)); // Calculate the current Tick Rate
+
     if ThreadState = tsRunning then
     begin
-      LTickRateLimit := TickRateLimit; // Read once so we don't have to keep Acquiring the Lock!
-      LCurrentTime := GetReferenceTime;
-      LDelta := (LCurrentTime - LNextTime);
-
-      // Rate Limiter
-      if (LTickRateLimit > 0) then
-        if (LDelta < ( 1 / LTickRateLimit)) then
-          LDelta := (1 / LTickRateLimit);
-
-      // Calculate INSTANT Tick Rate
-      if LDelta > 0 then
-        SetTickRate((1 / LDelta)); // Calculate the current Tick Rate
-
       // Tick or Wait...
-      if ((LCurrentTime >= LNextTime) and (LTickRateLimit > 0)) or (LTickRateLimit  = 0) then
+      if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0)) or (LTickRateLimit  = 0) then
       begin
 
         // Calculate AVEARAGE Tick Rate
@@ -204,20 +238,26 @@ begin
           SetTickRateAverage(LAverageTicks / (LCurrentTime - LLastAverageCheckpoint))
         else
           SetTickRateAverage(GetTickRate);
-
-        LNextTime := LNextTime + LDelta;
+        Lock;
+        FNextTickTime := FNextTickTime + LDelta;
+        Unlock;
         Tick(LDelta, LCurrentTime);
       end else
       begin
-        {$IFNDEF POSIX}
-          // Windows does not support a "Sleep" resolution above 1ms (which sucks)
-          LSleepTime := Floor(1000 * (LNextTime - LCurrentTime));
-          if LSleepTime > 0 then
-            TThread.Sleep(LSleepTime);
-        {$ELSE}
-          // POSIX platforms support higher-resolution Sleep times (yay)
-          usleep(Floor((LNextTime - LCurrentTime)));
-        {$ENDIF}
+        if (not YieldAccumulatedTime) then
+          {$IFDEF POSIX}usleep(1){$ELSE}Sleep(1){$ENDIF}
+        else
+        begin
+          {$IFNDEF POSIX}
+             // Windows does not support a "Sleep" resolution above 1ms (which sucks)
+            LSleepTime := Floor(1000 * (FNextTickTime - LCurrentTime));
+            if LSleepTime > 0 then
+              TThread.Sleep(LSleepTime);
+          {$ELSE}
+            // POSIX platforms support higher-resolution Sleep times (yay)
+            usleep(Floor((LNextTime - LCurrentTime)));
+          {$ENDIF}
+        end;
       end;
     end else
       TThread.Sleep(1);
@@ -229,6 +269,11 @@ begin
   Result := 0.00;
 end;
 
+function TLKThread.GetDefaultYieldAccumulatedTime: Boolean;
+begin
+  Result := True;
+end;
+
 function TLKThread.GetDefaultTickRateAverageOver: Double;
 begin
   Result := 2.00;
@@ -237,6 +282,13 @@ end;
 function TLKThread.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsRunning;
+end;
+
+function TLKThread.GetNextTickTime: Double;
+begin
+  Lock;
+  Result := FNextTickTime;
+  Unlock;
 end;
 
 function TLKThread.GetReferenceTime: Double;
@@ -276,6 +328,13 @@ function TLKThread.GetTickRateLimit: Double;
 begin
   Lock;
   Result := FTickRateLimit;
+  Unlock;
+end;
+
+function TLKThread.GetYieldAccumulatedTime: Boolean;
+begin
+  Lock;
+  Result := FYieldAccumulatedTime;
   Unlock;
 end;
 
@@ -323,6 +382,13 @@ procedure TLKThread.SetTickRateLimit(const ATickRateLimit: Double);
 begin
   Lock;
   FTickRateLimit := ATickRateLimit;
+  Unlock;
+end;
+
+procedure TLKThread.SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
+begin
+  Lock;
+  FYieldAccumulatedTime := AYieldAccumulatedTime;
   Unlock;
 end;
 

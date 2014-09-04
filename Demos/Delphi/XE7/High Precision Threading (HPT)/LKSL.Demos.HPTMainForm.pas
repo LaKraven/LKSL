@@ -30,13 +30,17 @@ type
     lblAverageBig: TLabel;
     ScaledLayout1: TScaledLayout;
     Label10: TLabel;
+    cbYield: TCheckBox;
+    Label11: TLabel;
+    lblNextTickTime: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure nbTickRateLimitChange(Sender: TObject);
     procedure nbAverageOverChange(Sender: TObject);
+    procedure cbYieldChange(Sender: TObject);
   private
     FTicks: Int64;
-    procedure TestTick(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit: Double);
+    procedure TestTick(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit, ANextTick: Double);
   public
     { Public declarations }
   end;
@@ -47,6 +51,11 @@ var
 implementation
 
 {$R *.fmx}
+
+procedure TfrmMain.cbYieldChange(Sender: TObject);
+begin
+  TestThread.YieldAccumulatedTime := cbYield.IsChecked;
+end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
@@ -69,7 +78,7 @@ begin
   FTicks := 0;
 end;
 
-procedure TfrmMain.TestTick(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit: Double);
+procedure TfrmMain.TestTick(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit, ANextTick: Double);
 var
   LTickRatePercent: Double;
 begin
@@ -79,6 +88,7 @@ begin
   lblStartTime.Text := FormatFloat('0.00000000', AStartTime);
   lblTickRateInstant.Text := FormatFloat('0.00000000', ATickRate);
   lblAverageTickRate.Text := FormatFloat('0.00000000', ATickRateAverage);
+  lblNextTickTime.Text := FormatFloat('0.00000000', ANextTick);
 
   lblAverageBig.Text := FormatFloat('0.00', ATickRateAverage);
   if nbTickRateLimit.Value = 0.00 then

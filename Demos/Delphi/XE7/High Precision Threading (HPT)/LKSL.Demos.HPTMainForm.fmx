@@ -4,7 +4,7 @@ object frmMain: TfrmMain
   Caption = 
     'High Precision Thread Demo - LaKraven Studios Standard Library [' +
     'LKSL]'
-  ClientHeight = 276
+  ClientHeight = 332
   ClientWidth = 580
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -16,9 +16,9 @@ object frmMain: TfrmMain
   object ScaledLayout1: TScaledLayout
     Align = Client
     OriginalWidth = 580.000000000000000000
-    OriginalHeight = 276.000000000000000000
+    OriginalHeight = 332.000000000000000000
     Size.Width = 580.000000000000000000
-    Size.Height = 276.000000000000000000
+    Size.Height = 332.000000000000000000
     Size.PlatformDefault = False
     object GroupBox1: TGroupBox
       Align = Top
@@ -29,7 +29,7 @@ object frmMain: TfrmMain
       Position.X = 2.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 576.000000000000000000
-      Size.Height = 79.000000000000000000
+      Size.Height = 103.000000000000000000
       Size.PlatformDefault = False
       Text = 'Test Thread Settings:'
       TabOrder = 0
@@ -90,6 +90,17 @@ object frmMain: TfrmMain
           end
         end
       end
+      object cbYield: TCheckBox
+        IsChecked = True
+        Position.X = 184.000000000000000000
+        Position.Y = 72.000000000000000000
+        Size.Width = 153.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = 'Yield Accumulated Time'
+        OnChange = cbYieldChange
+      end
     end
     object GroupBox2: TGroupBox
       Align = Top
@@ -98,9 +109,9 @@ object frmMain: TfrmMain
       Margins.Right = 2.000000000000000000
       Margins.Bottom = 2.000000000000000000
       Position.X = 2.000000000000000000
-      Position.Y = 85.000000000000000000
+      Position.Y = 109.000000000000000000
       Size.Width = 576.000000000000000000
-      Size.Height = 124.000000000000000000
+      Size.Height = 140.000000000000000000
       Size.PlatformDefault = False
       Text = 'Test Thread Tick Data:'
       TabOrder = 1
@@ -151,7 +162,7 @@ object frmMain: TfrmMain
       end
       object Label8: TLabel
         Position.X = 16.000000000000000000
-        Position.Y = 72.000000000000000000
+        Position.Y = 88.000000000000000000
         TextSettings.HorzAlign = Trailing
         Text = 'Instant Tick Rate:'
         object lblTickRateInstant: TLabel
@@ -166,7 +177,7 @@ object frmMain: TfrmMain
       end
       object Label9: TLabel
         Position.X = 16.000000000000000000
-        Position.Y = 88.000000000000000000
+        Position.Y = 104.000000000000000000
         TextSettings.HorzAlign = Trailing
         Text = 'Average Tick Rate:'
         object lblAverageTickRate: TLabel
@@ -183,7 +194,7 @@ object frmMain: TfrmMain
         Anchors = [akRight, akBottom]
         StyledSettings = [Family]
         Position.X = 478.000000000000000000
-        Position.Y = 88.000000000000000000
+        Position.Y = 104.000000000000000000
         Size.Width = 88.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
@@ -193,6 +204,21 @@ object frmMain: TfrmMain
         TextSettings.WordWrap = False
         Text = '0'
       end
+      object Label11: TLabel
+        Position.X = 16.000000000000000000
+        Position.Y = 72.000000000000000000
+        TextSettings.HorzAlign = Trailing
+        Text = 'Next Tick Time:'
+        object lblNextTickTime: TLabel
+          AutoSize = True
+          Position.X = 136.000000000000000000
+          Size.Width = 10.000000000000000000
+          Size.Height = 16.000000000000000000
+          Size.PlatformDefault = False
+          TextSettings.WordWrap = False
+          Text = '0'
+        end
+      end
     end
     object Label10: TLabel
       Align = Client
@@ -200,7 +226,7 @@ object frmMain: TfrmMain
       Margins.Left = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Size.Width = 576.000000000000000000
-      Size.Height = 65.000000000000000000
+      Size.Height = 81.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Font.Size = 14.000000000000000000
       TextSettings.Font.Style = [fsBold, fsItalic]
