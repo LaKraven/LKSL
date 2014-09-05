@@ -84,10 +84,10 @@ var
 begin
   Inc(FTicks);
   lblTickCount.Text := Format('%d', [FTicks]);
-  lblDelta.Text := FormatFloat('0.00000000', ADelta);
+  lblDelta.Text := FormatFloat('0.00000000', ADelta) + ' seconds';
   lblStartTime.Text := FormatFloat('0.00000000', AStartTime);
-  lblTickRateInstant.Text := FormatFloat('0.00000000', ATickRate);
-  lblAverageTickRate.Text := FormatFloat('0.00000000', ATickRateAverage);
+  lblTickRateInstant.Text := FormatFloat('0.00000000', ATickRate) + ' per second';
+  lblAverageTickRate.Text := FormatFloat('0.00000000', ATickRateAverage) + ' per second';
   lblNextTickTime.Text := FormatFloat('0.00000000', ANextTick);
 
   lblAverageBig.Text := FormatFloat('0.00', ATickRateAverage);

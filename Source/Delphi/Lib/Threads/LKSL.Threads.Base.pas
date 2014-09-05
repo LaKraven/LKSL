@@ -47,7 +47,12 @@ unit LKSL.Threads.Base;
       folder
 
   Changelog (latest changes first):
-    4th September 2014:
+    4th September 2014 (Second Commit):
+      - Decenteralized "GetReferenceTime" so that all Threads share a common Reference Timer.
+        This is good for synchronizing process timing between separate Threads.
+      - Added new Method "PreTick", which is executed on EVERY cycle, ignoring the Tick Rate Limit.
+        This is required for the "TLKEventThread" type defined in "LKSL.Events.Base.pas"
+    4th September 2014 (First Commit):
       - Added new Method "GetDefaultYieldAccumulatedTime" to define whether all accumulated (excess) time
         should be yielded in a single block by default.
       - Added new Property "YieldAccumulatedTime" to control ad-hoc whether all accumulated (excess) time
@@ -88,7 +93,6 @@ type
   private
     FLock: TCriticalSection;
     FNextTickTime: Double;
-    FStopwatch: TStopwatch;
     FThreadState: TLKThreadState;
     FTickRate: Double; // The INSTANT Tick Rate (in "Ticks per Second")
     FTickRateAverage: Double; // The AVERAGE Tick Rate (in "Ticks per Second")
@@ -119,11 +123,14 @@ type
     function GetDefaultYieldAccumulatedTime: Boolean; virtual;
     // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
     function GetInitialThreadState: TLKThreadState; virtual;
-    // "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
-    function GetReferenceTime: Double;
 
     // YOU MUST NOT override the TThread.Execute method in your descendants of TLKThread!!!!!!!!
-    procedure Execute; override;
+    procedure Execute; override; final;
+
+    // Override the "PreTick" procedure if your Thread needs to do something on EVERY cycle
+    // NOTE: THIS METHOD IGNORES THE TICK RATE LIMIT!
+    // "PreTick" is implemented by the Event Handler system (because the Event Queue needs to be processed regardless of the Tick Rate Limit)
+    procedure PreTick(const ADelta, AStartTime: Double); virtual;
 
     // Override the "Tick" procedure to implement your Thread's operational code.
     // ADelta = the time differential ("Delta") between the current Tick and the previous Tick
@@ -161,7 +168,18 @@ type
     property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
 
+// "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
+function GetReferenceTime: Double;
+
 implementation
+
+var
+  ReferenceWatch: TStopwatch;
+
+function GetReferenceTime: Double;
+begin
+  Result := TStopwatch.GetTimeStamp / TStopwatch.Frequency;
+end;
 
 { TLKThread }
 
@@ -176,7 +194,6 @@ constructor TLKThread.Create;
 begin
   inherited Create(False);
   FLock := TCriticalSection.Create;
-  FStopwatch := TStopwatch.Create;
   FreeOnTerminate := False;
   FThreadState := GetInitialThreadState;
   FTickRateLimit := GetDefaultTickRateLimit;
@@ -219,6 +236,9 @@ begin
     // Calculate INSTANT Tick Rate
     if LDelta > 0 then
       SetTickRate((1 / LDelta)); // Calculate the current Tick Rate
+
+    // Call "PreTick"
+    PreTick(LDelta, LCurrentTime);
 
     if ThreadState = tsRunning then
     begin
@@ -291,11 +311,6 @@ begin
   Unlock;
 end;
 
-function TLKThread.GetReferenceTime: Double;
-begin
-  Result := TStopwatch.GetTimeStamp / TStopwatch.Frequency;
-end;
-
 function TLKThread.GetThreadState: TLKThreadState;
 begin
   Lock;
@@ -350,6 +365,11 @@ begin
   FLock.Acquire;
 end;
 
+procedure TLKThread.PreTick(const ADelta, AStartTime: Double);
+begin
+  // Do nothing by default
+end;
+
 procedure TLKThread.SetThreadState(const AThreadState: TLKThreadState);
 begin
   Lock;
@@ -396,5 +416,8 @@ procedure TLKThread.Unlock;
 begin
   FLock.Release;
 end;
+
+initialization
+  ReferenceWatch := TStopwatch.Create;
 
 end.
