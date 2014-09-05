@@ -48,7 +48,7 @@ type
   protected
     procedure Clone(const AFromEvent: TLKEvent); override;
   public
-    class function GetEventTypeGUID: String; override;
+    class function GetTypeGUID: String; override;
     constructor Create(const APosition: TPointF; const ARadius: Double; const ASegments: Integer); reintroduce;
     property Position: TPointF read FPosition;
     property Radius: Double read FRadius;
@@ -68,7 +68,7 @@ type
   protected
     procedure Clone(const AFromEvent: TLKEvent); override;
   public
-    class function GetEventTypeGUID: String; override;
+    class function GetTypeGUID: String; override;
     constructor Create(const AEdges: TEdges; const AGenerationTime: Double); reintroduce;
     property GenerationTime: Double read FGenerationTime;
     property Edges: TEdges read FEdges;
@@ -140,7 +140,7 @@ begin
   FSegments := ASegments;
 end;
 
-class function TEventGenerateCircle.GetEventTypeGUID: String;
+class function TEventGenerateCircle.GetTypeGUID: String;
 begin
   // This GUID String uniquely identifies THIS Event Type.
   // Technically, you COULD use ANY String value, but GUID Strings are recommended to ensure they are
@@ -163,7 +163,7 @@ begin
   FGenerationTime := AGenerationTime;
 end;
 
-class function TEventCircleGenerated.GetEventTypeGUID: String;
+class function TEventCircleGenerated.GetTypeGUID: String;
 begin
   Result := '{5AF9C38C-4308-47AE-90D8-502B7710BD3D}';
 end;

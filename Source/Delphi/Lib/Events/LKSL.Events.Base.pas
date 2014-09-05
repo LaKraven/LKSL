@@ -48,6 +48,10 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
 
   Changelog (latest changes first):
+    5th September 2014 (small change commit):
+      - Changed "GetEventTypeGUID" to "GetTypeGUID" in TLKEvent. This is because its Parent Type
+        needs to be changed to "TLKStreamable" once the new and improved Streamables Engine is
+        released publicly.
     5th September 2014:
       - Prepared for Release
 }
@@ -114,7 +118,7 @@ type
     procedure Clone(const AFromEvent: TLKEvent); virtual;
   public
     // You MUST provide a UNIQUE GUID for every Event Type
-    class function GetEventTypeGUID: String; virtual; abstract;
+    class function GetTypeGUID: String; virtual; abstract;
 
     constructor Create; override;
 
@@ -574,7 +578,7 @@ begin
   Lock;
   for I := Low(FListeners) to High(FListeners) do
   begin
-    if AEvent.GetEventTypeGUID = FListeners[I].GetEventType.GetEventTypeGUID then
+    if AEvent.GetTypeGUID = FListeners[I].GetEventType.GetTypeGUID then
     begin
       if (((FListeners[I].NewestEventOnly) and (AEvent.DispatchTime > FListeners[I].LastEventTime)) or
          (not FListeners[I].NewestEventOnly)) and (FListeners[I].GetConditionsMatch(AEvent)) and
@@ -656,15 +660,15 @@ procedure TLKEventThreadBase.AddEventListenerGroup(const AEventListenerGroup: TL
       while (LHigh - LLow > 1) do
       begin
         LIndex := (LHigh + LLow) div 2;
-        if AEventListenerGroup.EventType.GetEventTypeGUID <= FEventListenerGroups[LIndex].EventType.GetEventTypeGUID then
+        if AEventListenerGroup.EventType.GetTypeGUID <= FEventListenerGroups[LIndex].EventType.GetTypeGUID then
           LHigh := LIndex
         else
           LLow := LIndex;
       end;
     end;
-    if (FEventListenerGroups[LHigh].EventType.GetEventTypeGUID < AEventListenerGroup.EventType.GetEventTypeGUID) then
+    if (FEventListenerGroups[LHigh].EventType.GetTypeGUID < AEventListenerGroup.EventType.GetTypeGUID) then
       Result := LHigh + 1
-    else if (FEventListenerGroups[LLow].EventType.GetEventTypeGUID < AEventListenerGroup.EventType.GetEventTypeGUID) then
+    else if (FEventListenerGroups[LLow].EventType.GetTypeGUID < AEventListenerGroup.EventType.GetTypeGUID) then
       Result := LLow + 1
     else
       Result := LLow;
@@ -761,15 +765,15 @@ begin
       while (LHigh - LLow > 1) do
       begin
         LIndex := (LHigh + LLow) div 2;
-        if AEventType.GetEventTypeGUID <= FEventListenerGroups[LIndex].EventType.GetEventTypeGUID then
+        if AEventType.GetTypeGUID <= FEventListenerGroups[LIndex].EventType.GetTypeGUID then
           LHigh := LIndex
         else
           LLow := LIndex;
       end;
     end;
-    if (FEventListenerGroups[LHigh].EventType.GetEventTypeGUID = AEventType.GetEventTypeGUID) then
+    if (FEventListenerGroups[LHigh].EventType.GetTypeGUID = AEventType.GetTypeGUID) then
       Result := LHigh
-    else if (FEventListenerGroups[LLow].EventType.GetEventTypeGUID = AEventType.GetEventTypeGUID) then
+    else if (FEventListenerGroups[LLow].EventType.GetTypeGUID = AEventType.GetTypeGUID) then
       Result := LLow;
   end;
   UnlockEventListenerGroups;
