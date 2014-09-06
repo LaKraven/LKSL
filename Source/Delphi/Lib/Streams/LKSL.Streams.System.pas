@@ -45,6 +45,8 @@ interface
     - The Types covered are those defined in "System.pas"
 
   Changelog (latest changes first):
+    6th September 2014 (bug fix commit):
+      - Fixed a silly bug in every "Insert" method
     6th September 2014:
       - Prepared for Release
 }
@@ -586,7 +588,7 @@ end;
 {$IFDEF MSWINDOWS}
 procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar);
 begin
-  StreamInsertAnsiChar(AStream, AValue, AStream.Size);
+  StreamInsertAnsiChar(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64);
@@ -597,7 +599,7 @@ end;
 
 procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString);
 begin
-  StreamInsertAnsiString(AStream, AValue, AStream.Size);
+  StreamInsertAnsiString(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64);
@@ -612,7 +614,7 @@ end;
 {$ENDIF}
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertBoolean(AStream, AValue, AStream.Size);
+  StreamInsertBoolean(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -623,7 +625,7 @@ end;
 
 procedure StreamInsertByte(const AStream: TStream; const AValue: Byte);
 begin
-  StreamInsertByte(AStream, AValue, AStream.Size);
+  StreamInsertByte(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertByte(const AStream: TStream; const AValue: Byte; const APosition: Int64);
@@ -634,7 +636,7 @@ end;
 
 procedure StreamInsertChar(const AStream: TStream; const AValue: Char);
 begin
-  StreamInsertChar(AStream, AValue, AStream.Size);
+  StreamInsertChar(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertChar(const AStream: TStream; const AValue: Char; const APosition: Int64);
@@ -645,7 +647,7 @@ end;
 
 procedure StreamInsertCurrency(const AStream: TStream; const AValue: Currency);
 begin
-  StreamInsertCurrency(AStream, AValue, AStream.Size);
+  StreamInsertCurrency(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertCurrency(const AStream: TStream; const AValue: Currency; const APosition: Int64);
@@ -656,7 +658,7 @@ end;
 
 procedure StreamInsertDate(const AStream: TStream; const AValue: TDate);
 begin
-  StreamInsertDate(AStream, AValue, AStream.Size);
+  StreamInsertDate(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertDate(const AStream: TStream; const AValue: TDate; const APosition: Int64);
@@ -667,7 +669,7 @@ end;
 
 procedure StreamInsertDateTime(const AStream: TStream; const AValue: TDateTime);
 begin
-  StreamInsertDateTime(AStream, AValue, AStream.Size);
+  StreamInsertDateTime(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertDateTime(const AStream: TStream; const AValue: TDateTime; const APosition: Int64);
@@ -678,7 +680,7 @@ end;
 
 procedure StreamInsertDouble(const AStream: TStream; const AValue: Double);
 begin
-  StreamInsertDouble(AStream, AValue, AStream.Size);
+  StreamInsertDouble(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertDouble(const AStream: TStream; const AValue: Double; const APosition: Int64);
@@ -689,7 +691,7 @@ end;
 
 procedure StreamInsertExtended(const AStream: TStream; const AValue: Extended);
 begin
-  StreamInsertExtended(AStream, AValue, AStream.Size);
+  StreamInsertExtended(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertExtended(const AStream: TStream; const AValue: Extended; const APosition: Int64);
@@ -700,7 +702,7 @@ end;
 
 procedure StreamInsertGUID(const AStream: TStream; const AValue: TGUID);
 begin
-  StreamInsertGUID(AStream, AValue, AStream.Size);
+  StreamInsertGUID(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertGUID(const AStream: TStream; const AValue: TGUID; const APosition: Int64);
@@ -711,7 +713,7 @@ end;
 
 procedure StreamInsertInteger(const AStream: TStream; const AValue: Integer);
 begin
-  StreamInsertInteger(AStream, AValue, AStream.Size);
+  StreamInsertInteger(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertInteger(const AStream: TStream; const AValue: Integer; const APosition: Int64);
@@ -722,7 +724,7 @@ end;
 
 procedure StreamInsertInt64(const AStream: TStream; const AValue: Int64);
 begin
-  StreamInsertInt64(AStream, AValue, AStream.Size);
+  StreamInsertInt64(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertInt64(const AStream: TStream; const AValue, APosition: Int64);
@@ -733,7 +735,7 @@ end;
 
 procedure StreamInsertLongInt(const AStream: TStream; const AValue: Integer);
 begin
-  StreamInsertLongInt(AStream, AValue, AStream.Size);
+  StreamInsertLongInt(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertLongInt(const AStream: TStream; const AValue: Integer; const APosition: Int64);
@@ -744,7 +746,7 @@ end;
 
 procedure StreamInsertSingle(const AStream: TStream; const AValue: Single);
 begin
-  StreamInsertSingle(AStream, AValue, AStream.Size);
+  StreamInsertSingle(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertSingle(const AStream: TStream; const AValue: Single; const APosition: Int64);
@@ -755,7 +757,7 @@ end;
 
 procedure StreamInsertShortInt(const AStream: TStream; const AValue: ShortInt);
 begin
-  StreamInsertShortInt(AStream, AValue, AStream.Size);
+  StreamInsertShortInt(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertShortInt(const AStream: TStream; const AValue: ShortInt; const APosition: Int64);
@@ -767,7 +769,7 @@ end;
 {$IFDEF MSWINDOWS}
 procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString);
 begin
-  StreamInsertShortString(AStream, AValue, AStream.Size);
+  StreamInsertShortString(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64);
@@ -783,7 +785,7 @@ end;
 
 procedure StreamInsertSmallInt(const AStream: TStream; const AValue: SmallInt);
 begin
-  StreamInsertSmallInt(AStream, AValue, AStream.Size);
+  StreamInsertSmallInt(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertSmallInt(const AStream: TStream; const AValue: SmallInt; const APosition: Int64);
@@ -794,7 +796,7 @@ end;
 
 procedure StreamInsertString(const AStream: TStream; const AValue: String);
 begin
-  StreamInsertString(AStream, AValue, AStream.Size);
+  StreamInsertString(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertString(const AStream: TStream; const AValue: String; const APosition: Int64);
@@ -821,7 +823,7 @@ end;
 
 procedure StreamInsertTime(const AStream: TStream; const AValue: TTime);
 begin
-  StreamInsertTime(AStream, AValue, AStream.Size);
+  StreamInsertTime(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTime(const AStream: TStream; const AValue: TTime; const APosition: Int64);
@@ -833,7 +835,7 @@ end;
 {$IFDEF MSWINDOWS}
 procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString);
 begin
-  StreamInsertWideString(AStream, AValue, AStream.Size);
+  StreamInsertWideString(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64);
@@ -849,7 +851,7 @@ end;
 
 procedure StreamInsertWord(const AStream: TStream; const AValue: Word);
 begin
-  StreamInsertWord(AStream, AValue, AStream.Size);
+  StreamInsertWord(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertWord(const AStream: TStream; const AValue: Word; const APosition: Int64);

@@ -46,6 +46,8 @@ interface
 
 
   Changelog (latest changes first):
+    6th September 2014 (bug fix commit):
+      - Fixed a silly bug in every "Insert" method
     6th September 2014:
       - Prepared for Release
 }
@@ -195,7 +197,7 @@ end;
 
 procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTPoint(AStream, AValue, AStream.Size);
+  StreamInsertTPoint(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -206,7 +208,7 @@ end;
 
 procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTPointF(AStream, AValue, AStream.Size);
+  StreamInsertTPointF(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -217,7 +219,7 @@ end;
 
 procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTRect(AStream, AValue, AStream.Size);
+  StreamInsertTRect(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -228,7 +230,7 @@ end;
 
 procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTRectF(AStream, AValue, AStream.Size);
+  StreamInsertTRectF(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -239,7 +241,7 @@ end;
 
 procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTSize(AStream, AValue, AStream.Size);
+  StreamInsertTSize(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -250,7 +252,7 @@ end;
 
 procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTSizeF(AStream, AValue, AStream.Size);
+  StreamInsertTSizeF(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
@@ -261,7 +263,7 @@ end;
 
 procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean);
 begin
-  StreamInsertTSmallPoint(AStream, AValue, AStream.Size);
+  StreamInsertTSmallPoint(AStream, AValue, AStream.Position);
 end;
 
 procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
