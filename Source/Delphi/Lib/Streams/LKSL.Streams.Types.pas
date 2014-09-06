@@ -71,20 +71,20 @@ procedure StreamDeleteTSizeF(const AStream: TStream; const APosition: Int64); ov
 procedure StreamDeleteTSmallPoint(const AStream: TStream); overload;
 procedure StreamDeleteTSmallPoint(const AStream: TStream; const APosition: Int64); overload;
 // Insert Methods
-procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
-procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean); overload;
-procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
+procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint); overload;
+procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint; const APosition: Int64); overload;
+procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF); overload;
+procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64); overload;
+procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect); overload;
+procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect; const APosition: Int64); overload;
+procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF); overload;
+procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64); overload;
+procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize); overload;
+procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize; const APosition: Int64); overload;
+procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF); overload;
+procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64); overload;
+procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint); overload;
+procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64); overload;
 // Read Methods
 function StreamReadTPoint(const AStream: TStream): TPoint; overload;
 function StreamReadTPoint(const AStream: TStream; const APosition: Int64): TPoint; overload;
@@ -195,78 +195,78 @@ end;
 
 // Insert Methods
 
-procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint);
 begin
   StreamInsertTPoint(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF);
 begin
   StreamInsertTPointF(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTPointF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect);
 begin
   StreamInsertTRect(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTRect(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF);
 begin
   StreamInsertTRectF(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTRectF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize);
 begin
   StreamInsertTSize(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTSize(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF);
 begin
   StreamInsertTSizeF(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTSizeF(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean);
+procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint);
 begin
   StreamInsertTSmallPoint(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: Boolean; const APosition: Int64);
+procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
