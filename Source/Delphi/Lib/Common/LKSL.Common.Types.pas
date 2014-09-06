@@ -55,6 +55,9 @@ type
   { Forward Declarations }
   TLKPersistent = class;
 
+  { Exception Types }
+  ELKException = class(Exception);
+
   {
     TLKPersistent
       - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
