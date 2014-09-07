@@ -48,6 +48,8 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
 
   Changelog (latest changes first):
+    8th September 2014:
+      - Fixed a bug in "TLKEvent.Clone" method (Missing instruction to Lock the Original Event)
     6th September 2014:
       - Changed "TLKEvent" ancestor for "TLKPersistent" to "TLKStreamable"
       - Added interface Uses reference to "LKSL.Streamables.Base"
@@ -370,6 +372,7 @@ end;
 
 procedure TLKEvent.Clone(const AFromEvent: TLKEvent);
 begin
+  AFromEvent.Lock;
   FDelta := AFromEvent.FDelta;
   FDispatchTime := AFromEvent.FDispatchTime;
   FExpiresAfter := AFromEvent.FExpiresAfter;
