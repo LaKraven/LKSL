@@ -194,13 +194,21 @@ begin
 end;
 
 class procedure TStreamableDummyRecord.DeleteFromStream(const AStream: TStream);
+var
+  LPosition: Integer;
+  LHasImage: Boolean;
 begin
   inherited;
   StreamDeleteString(AStream); // Delete FField1
   StreamDeleteInteger(AStream); // Delete FField2
   StreamDeleteDouble(AStream); // Delete FField3
   StreamDeleteBoolean(AStream); // Delete FField4
-  StreamDeleteStream(AStream); // Delete FField5
+  LPosition := AStream.Position; // Store the Position
+  LHasImage := StreamReadBoolean(AStream); // Read whether there's an Image
+  AStream.Position := LPosition; // Reset the Position
+  StreamDeleteBoolean(AStream); // Delete whether there's an Image
+  if LHasImage then
+    StreamDeleteStream(AStream); // Delete FField5
 end;
 
 destructor TStreamableDummyRecord.Destroy;
@@ -267,12 +275,16 @@ begin
   StreamInsertInteger(AStream, FField2); // Insert FField2
   StreamInsertDouble(AStream, FField3); // Insert FField3
   StreamInsertBoolean(AStream, FField4); // Insert FField4
-  LStream := TMemoryStream.Create;
-  try
-    FField5.SaveToStream(LStream);
-    StreamInsertStream(AStream, LStream); // Insert FField5
-  finally
-    LStream.Free;
+  StreamInsertBoolean(AStream, FField5.HandleAllocated); // Insert whether there is actually an image
+  if FField5.HandleAllocated then
+  begin
+    LStream := TMemoryStream.Create;
+    try
+      FField5.SaveToStream(LStream);
+      StreamInsertStream(AStream, LStream); // Insert FField5
+    finally
+      LStream.Free;
+    end;
   end;
   Unlock;
 end;
@@ -280,6 +292,7 @@ end;
 procedure TStreamableDummyRecord.ReadFromStream(const AStream: TStream);
 var
   LStream: TStream;
+  LHasImage: Boolean;
 begin
   Lock;
   inherited;
@@ -287,13 +300,17 @@ begin
   FField2 := StreamReadInteger(AStream); // Read FField2
   FField3 := StreamReadDouble(AStream); // Read FField3
   FField4 := StreamReadBoolean(AStream); // Read FField4
-  LStream := TMemoryStream.Create;
-  try
-    StreamReadStream(AStream, LStream); // Read FField5
-    if LStream.Size > 12 then // If there is no actual Image, the Stream will be 12 bytes in size
-      FField5.LoadFromStream(LStream);
-  finally
-    LStream.Free;
+  LHasImage := StreamReadBoolean(AStream); // Read whether there is an actual Image
+  if LHasImage then
+  begin
+    LStream := TMemoryStream.Create;
+    try
+      StreamReadStream(AStream, LStream); // Read FField5
+      if LStream.Size > 12 then // If there is no actual Image, the Stream will be 12 bytes in size
+        FField5.LoadFromStream(LStream);
+    finally
+      LStream.Free;
+    end;
   end;
   Unlock;
 end;
@@ -336,12 +353,16 @@ begin
   StreamWriteInteger(AStream, FField2); // Write FField2
   StreamWriteDouble(AStream, FField3); // Write FField3
   StreamWriteBoolean(AStream, FField4); // Write FField4
-  LStream := TMemoryStream.Create;
-  try
-    FField5.SaveToStream(LStream);
-    StreamWriteStream(AStream, LStream); // Write FField5
-  finally
-    LStream.Free;
+  StreamWriteBoolean(AStream, FField5.HandleAllocated); // Insert whether there is actually an image
+  if FField5.HandleAllocated then
+  begin
+    LStream := TMemoryStream.Create;
+    try
+      FField5.SaveToStream(LStream);
+      StreamWriteStream(AStream, LStream); // Write FField5
+    finally
+      LStream.Free;
+    end;
   end;
   Unlock;
 end;
