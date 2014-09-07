@@ -62,7 +62,7 @@ type
   { Forward Declarations }
   TLKStreamable = class;
   TLKStreamableNamed = class;
-  TLKStreamableTypes = class;
+  TLKStreamables = class;
 
   { Exceptions }
   // "ELKStreamableException" is the Base Exception Type for ALL Streamables Exceptions
@@ -83,6 +83,7 @@ type
   TLKStreamableType = class of TLKStreamable;
 
   { Array Types }
+  TLKStreamableArray = Array of TLKStreamable;
   TLKStreamableTypeArray = Array of TLKStreamableType;
 
   {
@@ -110,7 +111,10 @@ type
     // "DeleteFromStream" removes an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // DON'T FORGET TO CALL "INHERITED;" FIRST
-    procedure DeleteFromStream(const AStream: TStream); virtual;
+    // NOTE: "DeleteFromStream" MUST be a CLASS method!
+    //       Remember that a Stream knows how large each data block is, and the Stream Handlers know how
+    //       much memory to clear automagically.
+    class procedure DeleteFromStream(const AStream: TStream); virtual;
     // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // DON'T FORGET TO CALL "INHERITED;" FIRST
@@ -152,7 +156,7 @@ type
     function GetName: String;
     procedure SetName(const AName: String);
   public
-    procedure DeleteFromStream(const AStream: TStream); override;
+    class procedure DeleteFromStream(const AStream: TStream); override;
     procedure ReadFromStream(const AStream: TStream); override;
     procedure InsertIntoStream(const AStream: TStream); override;
     procedure WriteToStream(const AStream: TStream); override;
@@ -160,7 +164,7 @@ type
   end;
 
   {
-    TLKStreamableTypes
+    TLKStreamables
       - The "Streamable Types Manager"
       - All Streamable Types should be Registered against the "Streamables" Manager so that they can be
         requested when reading a serialization of a Streamable Instance from a Stream.
@@ -171,7 +175,7 @@ type
 
       THIS STREAMABLES MANAGER IS 100% THREAD-SAFE!
   }
-  TLKStreamableTypes =  class(TLKPersistent)
+  TLKStreamables =  class(TLKPersistent)
   private
     FStreamableTypes: TLKStreamableTypeArray;
 
@@ -189,7 +193,12 @@ type
     procedure Unregister(const AStreamableType: TLKStreamableType); overload;
     procedure Unregister(const AStreamableTypes: Array of TLKStreamableType); overload;
 
-    function GetTypeFromStream(const AStream: TStream): TLKStreamableType;
+    function StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
+    function GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
+
+    procedure DeleteArrayOfStreamables(const AStream: TStream);
+    procedure InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+    procedure WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
 
     property Count: Integer read GetCount;
     property StreamableType[const AIndex: Integer]: TLKStreamableType read GetStreamableTypeByIndex; default;
@@ -197,7 +206,7 @@ type
   end;
 
 var
-  Streamables: TLKStreamableTypes;
+  Streamables: TLKStreamables;
 
 implementation
 
@@ -209,7 +218,7 @@ begin
   FVersion := GetTypeVersion;
 end;
 
-procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
+class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
 begin
   StreamDeleteString(AStream); // Remove the GUID
   StreamDeleteDouble(AStream); // Remove the Version
@@ -282,12 +291,10 @@ end;
 
 { TLKStreamableNamed }
 
-procedure TLKStreamableNamed.DeleteFromStream(const AStream: TStream);
+class procedure TLKStreamableNamed.DeleteFromStream(const AStream: TStream);
 begin
-  Lock;
   inherited;
   StreamDeleteString(AStream); // Delete Name
-  Unlock;
 end;
 
 function TLKStreamableNamed.GetName: String;
@@ -328,34 +335,46 @@ begin
   Unlock;
 end;
 
-{ TLKStreamableTypes }
+{ TLKStreamables }
 
-procedure TLKStreamableTypes.Clear;
+procedure TLKStreamables.Clear;
 begin
   Lock;
   SetLength(FStreamableTypes, 0);
   Unlock;
 end;
 
-constructor TLKStreamableTypes.Create;
+constructor TLKStreamables.Create;
 begin
   inherited
 end;
 
-destructor TLKStreamableTypes.Destroy;
+procedure TLKStreamables.DeleteArrayOfStreamables(const AStream: TStream);
+var
+  I, LCount: Integer;
+begin
+  I := AStream.Position; // Store the initial Position locally
+  LCount := StreamReadInteger(AStream); // Read the Array Count from the Stream
+  AStream.Position := I; // Reposition the Stream back before the Array Count
+  StreamDeleteInteger(AStream); // Delete the Array Count from the Stream
+  for I := 0 to LCount - 1 do // Iterate the Array
+    GetStreamableTypeFromStream(AStream).DeleteFromStream(AStream); // Delete Array Item from the Stream
+end;
+
+destructor TLKStreamables.Destroy;
 begin
   Clear;
   inherited;
 end;
 
-function TLKStreamableTypes.GetCount: Integer;
+function TLKStreamables.GetCount: Integer;
 begin
   Lock;
   Result := Length(FStreamableTypes);
   Unlock;
 end;
 
-function TLKStreamableTypes.GetStreamableTypeByGUID(const AGUID: String): TLKStreamableType;
+function TLKStreamables.GetStreamableTypeByGUID(const AGUID: String): TLKStreamableType;
 var
   LIndex: Integer;
 begin
@@ -368,14 +387,14 @@ begin
   Unlock;
 end;
 
-function TLKStreamableTypes.GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
+function TLKStreamables.GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
 begin
   Lock;
   Result := FStreamableTypes[AIndex];
   Unlock;
 end;
 
-function TLKStreamableTypes.GetStreamableTypeIndexByGUID(const AGUID: String): Integer;
+function TLKStreamables.GetStreamableTypeIndexByGUID(const AGUID: String): Integer;
 var
   LIndex, LLow, LHigh: Integer;
 begin
@@ -404,7 +423,7 @@ begin
   Unlock;
 end;
 
-function TLKStreamableTypes.GetTypeFromStream(const AStream: TStream): TLKStreamableType;
+function TLKStreamables.GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
 var
   LPosition: Int64;
   LSignature: String;
@@ -415,7 +434,16 @@ begin
   AStream.Position := LPosition;
 end;
 
-procedure TLKStreamableTypes.Register(const AStreamableTypes: array of TLKStreamableType);
+procedure TLKStreamables.InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+var
+  I: Integer;
+begin
+  StreamInsertInteger(AStream, Length(AStreamables)); // Insert the Array Count into the Stream
+  for I := Low(AStreamables) to High(AStreamables) do // Iterate the Array
+    AStreamables[I].InsertInToStream(AStream); // Insert the Item into the Stream
+end;
+
+procedure TLKStreamables.Register(const AStreamableTypes: array of TLKStreamableType);
 var
   I: Integer;
 begin
@@ -423,7 +451,15 @@ begin
     Register(AStreamableTypes[I]);
 end;
 
-procedure TLKStreamableTypes.Register(const AStreamableType: TLKStreamableType);
+function TLKStreamables.StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
+var
+  LStreamableType: TLKStreamableType;
+begin
+  LStreamableType := GetStreamableTypeFromStream(AStream);
+  Result := (((LStreamableType <> nil)) and (LStreamableType = AStreamableType));
+end;
+
+procedure TLKStreamables.Register(const AStreamableType: TLKStreamableType);
   function GetSortedPosition(const AGUID: String): Integer;
   var
     LIndex, LLow, LHigh: Integer;
@@ -475,7 +511,7 @@ begin
   Unlock;
 end;
 
-procedure TLKStreamableTypes.Unregister(const AStreamableTypes: array of TLKStreamableType);
+procedure TLKStreamables.Unregister(const AStreamableTypes: array of TLKStreamableType);
 var
   I: Integer;
 begin
@@ -483,7 +519,16 @@ begin
     Unregister(AStreamableTypes[I]);
 end;
 
-procedure TLKStreamableTypes.Unregister(const AStreamableType: TLKStreamableType);
+procedure TLKStreamables.WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+var
+  I: Integer;
+begin
+  StreamWriteInteger(AStream, Length(AStreamables)); // Write the Array Count into the Stream
+  for I := Low(AStreamables) to High(AStreamables) do // Iterate the Array
+    AStreamables[I].WriteToStream(AStream); // Write the Item into the Stream
+end;
+
+procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);
 var
  LIndex: Integer;
  LCount, I: Integer;
@@ -509,7 +554,7 @@ begin
 end;
 
 initialization
-  Streamables := TLKStreamableTypes.Create;
+  Streamables := TLKStreamables.Create;
 finalization
   Streamables.Free;
 

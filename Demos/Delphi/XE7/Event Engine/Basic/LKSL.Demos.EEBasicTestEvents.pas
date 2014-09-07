@@ -50,6 +50,14 @@ type
   public
     class function GetTypeGUID: String; override;
     constructor Create(const APosition: TPointF; const ARadius: Double; const ASegments: Integer); reintroduce;
+
+    { TLKStreamable Overrides Begin }
+    class procedure DeleteFromStream(const AStream: TStream); override;
+    procedure ReadFromStream(const AStream: TStream); override;
+    procedure InsertIntoStream(const AStream: TStream); override;
+    procedure WriteToStream(const AStream: TStream); override;
+    { TLKStreamable Overrides End }
+
     property Position: TPointF read FPosition;
     property Radius: Double read FRadius;
     property Segments: Integer read FSegments;
@@ -70,6 +78,14 @@ type
   public
     class function GetTypeGUID: String; override;
     constructor Create(const AEdges: TEdges; const AGenerationTime: Double); reintroduce;
+
+   { TLKStreamable Overrides Begin }
+    class procedure DeleteFromStream(const AStream: TStream); override;
+    procedure ReadFromStream(const AStream: TStream); override;
+    procedure InsertIntoStream(const AStream: TStream); override;
+    procedure WriteToStream(const AStream: TStream); override;
+    { TLKStreamable Overrides End }
+
     property GenerationTime: Double read FGenerationTime;
     property Edges: TEdges read FEdges;
   end;
@@ -118,6 +134,58 @@ type
 
 implementation
 
+uses
+  LKSL.Streams.System, LKSL.Streams.Types;
+
+// Internal Stream Delete Methods
+procedure StreamDeleteTEdges(const AStream: TStream);
+var
+  LCount, I: Integer;
+begin
+  I := AStream.Position; // Keep a reference to the current Position
+  LCount := StreamReadInteger(AStream); // Get the Edge Count from the Stream
+  AStream.Position := I; // Reset our Position back to the beginning of the block
+  StreamDeleteInteger(AStream); // Delete the Edge Count from the Stream
+  for I := 0 to LCount - 1 do // Iterate the number of Edges in the Array
+    StreamClearSpace(AStream, SizeOf(TEdge)); // Delete the Edge from the Stream
+end;
+
+// Internal Stream Insert Methods
+procedure StreamInsertTEdges(const AStream: TStream; const AEdges: TEdges);
+var
+  I: Integer;
+begin
+  StreamInsertInteger(AStream, Length(AEdges)); // Insert the Edge Count into the Stream
+  for I := Low(AEdges) to High(AEdges) do // Iterate the Edges
+  begin
+    StreamMakeSpace(AStream, SizeOf(TEdge)); // Make room in the Stream for an Edge
+    AStream.Write(AEdges[I], SizeOf(TEdge)); // Insert the Edge into the Array
+  end;
+end;
+
+// Internal Stream Read Methods
+function StreamReadTEdges(const AStream: TStream): TEdges;
+var
+  LCount, I: Integer;
+begin
+  LCount := StreamReadInteger(AStream); // Read the Edge Count from the Stream
+  SetLength(Result, LCount); // Ensure the Array is large enough to hold all the Edges
+  for I := 0 to LCount - 1 do // Iterate the number of Edges
+  begin
+    AStream.Read(Result[I], SizeOf(TEdge)); // Read this Edge into the Array
+  end;
+end;
+
+// Internal Stream Write Methods
+procedure StreamWriteTEdges(const AStream: TStream; const AEdges: TEdges);
+var
+  I: Integer;
+begin
+  StreamWriteInteger(AStream, Length(AEdges)); // Write the Edge Count into the Stream
+  for I := Low(AEdges) to High(AEdges) do // Iterate the Edges
+    AStream.Write(AEdges[I], SizeOf(TEdge)); // Write the Edge into the Array
+end;
+
 { TEventGenerateCircle }
 
 procedure TEventGenerateCircle.Clone(const AFromEvent: TLKEvent);
@@ -140,12 +208,50 @@ begin
   FSegments := ASegments;
 end;
 
+class procedure TEventGenerateCircle.DeleteFromStream(const AStream: TStream);
+begin
+  inherited;
+  StreamDeleteTPointF(AStream); // Delete FPosition
+  StreamDeleteDouble(AStream); // Delete FRadius
+  StreamDeleteInteger(AStream); // Delete FSegments
+end;
+
 class function TEventGenerateCircle.GetTypeGUID: String;
 begin
   // This GUID String uniquely identifies THIS Event Type.
   // Technically, you COULD use ANY String value, but GUID Strings are recommended to ensure they are
   // ALWAYS unique!
   Result := '{16C435CF-22D2-44C3-B401-7BCACB4B4430}';
+end;
+
+procedure TEventGenerateCircle.InsertIntoStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamInsertTPointF(AStream, FPosition); // Insert FPosition
+  StreamInsertDouble(AStream, FRadius); // Insert FRadius
+  StreamInsertInteger(AStream, FSegments); // Insert FSegments
+  Unlock;
+end;
+
+procedure TEventGenerateCircle.ReadFromStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamReadTPointF(AStream); // Read FPosition
+  StreamReadDouble(AStream); // Read FRadius
+  StreamReadInteger(AStream); // Read FSegments
+  Unlock;
+end;
+
+procedure TEventGenerateCircle.WriteToStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamWriteTPointF(AStream, FPosition); // Write FPosition
+  StreamWriteDouble(AStream, FRadius); // Write FRadius
+  StreamWriteInteger(AStream, FSegments); // Write FSegments
+  Unlock;
 end;
 
 { TEventCircleGenerated }
@@ -163,9 +269,43 @@ begin
   FGenerationTime := AGenerationTime;
 end;
 
+class procedure TEventCircleGenerated.DeleteFromStream(const AStream: TStream);
+begin
+  inherited;
+  StreamDeleteDouble(AStream); // Delete FGenerationTime
+  StreamDeleteTEdges(AStream); // Delete FEdges
+end;
+
 class function TEventCircleGenerated.GetTypeGUID: String;
 begin
   Result := '{5AF9C38C-4308-47AE-90D8-502B7710BD3D}';
+end;
+
+procedure TEventCircleGenerated.InsertIntoStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamInsertDouble(AStream, FGenerationTime); // Insert FGenerationTime
+  StreamInsertTEdges(AStream, FEdges); // Insert FEdges
+  Unlock;
+end;
+
+procedure TEventCircleGenerated.ReadFromStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  FGenerationTime := StreamReadDouble(AStream); // Read FGenerationTime
+  FEdges := StreamReadTEdges(AStream); // Read FEdges;
+  Unlock;
+end;
+
+procedure TEventCircleGenerated.WriteToStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamWriteDouble(AStream, FGenerationTime); // Write FGenerationTime
+  StreamWriteTEdges(AStream, FEdges); // Write FEdges
+  Unlock;
 end;
 
 { TEventListenerGenerateCircle }

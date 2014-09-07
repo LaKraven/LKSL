@@ -1,0 +1,122 @@
+object frmMain: TfrmMain
+  Left = 0
+  Top = 0
+  Caption = 
+    'Streamables Engine Demo - LaKraven Studios Standard Library [LKS' +
+    'L]'
+  ClientHeight = 661
+  ClientWidth = 820
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object Layout1: TLayout
+    Align = Top
+    Size.Width = 820.000000000000000000
+    Size.Height = 41.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object btnNew: TButton
+      Position.X = 8.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 121.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = 'New Virtual Table'
+      OnClick = btnNewClick
+    end
+    object btnSave: TButton
+      Position.X = 264.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 121.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = 'Save Virtual Table'
+      OnClick = btnSaveClick
+    end
+    object btnLoad: TButton
+      Position.X = 136.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 121.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'Open Virtual Table'
+      OnClick = btnLoadClick
+    end
+  end
+  object Layout2: TLayout
+    Align = Client
+    Size.Width = 820.000000000000000000
+    Size.Height = 620.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object Label1: TLabel
+      Align = Top
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 816.000000000000000000
+      Size.Height = 17.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'Table Name:'
+    end
+    object edTableName: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      Align = Top
+      TabOrder = 1
+      Position.X = 8.000000000000000000
+      Position.Y = 21.000000000000000000
+      Margins.Left = 8.000000000000000000
+      Margins.Right = 4.000000000000000000
+      Margins.Bottom = 4.000000000000000000
+      Size.Width = 808.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      OnChange = edTableNameChange
+    end
+    object VertScrollBox1: TVertScrollBox
+      Align = Client
+      Size.Width = 820.000000000000000000
+      Size.Height = 532.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+    end
+    object Layout3: TLayout
+      Align = Top
+      Position.Y = 47.000000000000000000
+      Size.Width = 820.000000000000000000
+      Size.Height = 41.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      object btnAddRecord: TButton
+        Position.X = 8.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 89.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = 'Add Record'
+        OnClick = btnAddRecordClick
+      end
+    end
+  end
+  object odOpenTable: TOpenDialog
+    DefaultExt = '.vtable'
+    Filter = 'Virtual Table|*.vtable'
+    Left = 504
+    Top = 8
+  end
+  object sdSaveTable: TSaveDialog
+    Filter = 'Virtual Table|*.vtable'
+    Left = 640
+    Top = 8
+  end
+end

@@ -48,6 +48,10 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
 
   Changelog (latest changes first):
+    6th September 2014:
+      - Changed "TLKEvent" ancestor for "TLKPersistent" to "TLKStreamable"
+      - Added interface Uses reference to "LKSL.Streamables.Base"
+      - Added implementation Uses reference to "LKSL.Streams.System.pas"
     5th September 2014 (small change commit):
       - Changed "GetEventTypeGUID" to "GetTypeGUID" in TLKEvent. This is because its Parent Type
         needs to be changed to "TLKStreamable" once the new and improved Streamables Engine is
@@ -59,7 +63,8 @@ interface
 uses
   System.Classes, System.SysUtils, System.SyncObjs,
   LKSL.Common.Types,
-  LKSL.Threads.Base;
+  LKSL.Threads.Base,
+  LKSL.Streamables.Base;
 
 type
   { Forward Declarations }
@@ -96,7 +101,7 @@ type
         if it is not processed after a certain amount of time. This is useful if Event Data
         is only valid for a limited time before being replaced by more up-to-date data.
   }
-  TLKEvent = class {abstract}(TLKPersistent) { TODO -oSJS -cEvents : Replace with "TLKStreamable" }
+  TLKEvent = class abstract(TLKStreamable)
   private
     FDelta: Double;
     FDispatchTime: Double;
@@ -117,13 +122,19 @@ type
     // populate your Event Type's properties.
     procedure Clone(const AFromEvent: TLKEvent); virtual;
   public
-    // You MUST provide a UNIQUE GUID for every Event Type
-    class function GetTypeGUID: String; virtual; abstract;
-
     constructor Create; override;
 
     procedure Queue;
     procedure Stack;
+
+    { TLKStreamable Overrides Begin }
+    // DON'T FORGET TO OVERRIDE THESE AND PERFORM THE APPROPRIATE ACTIONS TO DELETE/READ/INSERT/WRITE
+    // THE VALUES PROVIDED BY >>YOUR<< EVENT TYPES!
+    class procedure DeleteFromStream(const AStream: TStream); override;
+    procedure ReadFromStream(const AStream: TStream); override;
+    procedure InsertIntoStream(const AStream: TStream); override;
+    procedure WriteToStream(const AStream: TStream); override;
+    { TLKStreamable Overrides End }
 
     property Delta: Double read GetDelta;
     property DispatchTime: Double read GetDispatchTime;
@@ -314,6 +325,10 @@ procedure StackEvent(const AEvent: TLKEvent);
 
 implementation
 
+uses
+  LKSL.Streams.System,
+  LKSL.Events.Streams;
+
 type
   {
     TLKEventQueue
@@ -373,6 +388,16 @@ begin
   FProcessedTime := 0.00;
 end;
 
+class procedure TLKEvent.DeleteFromStream(const AStream: TStream);
+begin
+  inherited;
+  StreamDeleteDouble(AStream); // Delete FDelta
+  StreamDeleteDouble(AStream); // Delete FDispatchTime
+  StreamDeleteDouble(AStream); // Delete FExpiresAfter
+  StreamDeleteTLKEventPriority(AStream);// Delete FPriority
+  StreamDeleteDouble(AStream); // Delete FProcessedTime
+end;
+
 function TLKEvent.GetDelta: Double;
 begin
   Lock;
@@ -408,9 +433,33 @@ begin
   Unlock;
 end;
 
+procedure TLKEvent.InsertIntoStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamInsertDouble(AStream, FDelta); // Insert FDelta
+  StreamInsertDouble(AStream, FDispatchTime); // Insert FDispatchTime
+  StreamInsertDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
+  StreamInsertTLKEventPriority(AStream, FPriority);// Delete FPriority
+  StreamInsertDouble(AStream, FProcessedTime); // Insert FProcessedTime
+  Unlock;
+end;
+
 procedure TLKEvent.Queue;
 begin
   QueueEvent(Self);
+end;
+
+procedure TLKEvent.ReadFromStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  FDelta := StreamReadDouble(AStream); // Read FDelta
+  FDispatchTime := StreamReadDouble(AStream); // Read FDispatchTime
+  FExpiresAfter := StreamReadDouble(AStream); // Read FExpiresAfter
+  FPriority := StreamReadTLKEventPriority(AStream);// Read FPriority
+  FProcessedTime := StreamReadDouble(AStream); // Read FProcessedTime
+  Unlock;
 end;
 
 procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: Double);
@@ -423,6 +472,18 @@ end;
 procedure TLKEvent.Stack;
 begin
   StackEvent(Self);
+end;
+
+procedure TLKEvent.WriteToStream(const AStream: TStream);
+begin
+  Lock;
+  inherited;
+  StreamWriteDouble(AStream, FDelta); // Insert FDelta
+  StreamWriteDouble(AStream, FDispatchTime); // Insert FDispatchTime
+  StreamWriteDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
+  StreamInsertTLKEventPriority(AStream, FPriority);// Delete FPriority
+  StreamWriteDouble(AStream, FProcessedTime); // Insert FProcessedTime
+  Unlock;
 end;
 
 { TLKEventListener }

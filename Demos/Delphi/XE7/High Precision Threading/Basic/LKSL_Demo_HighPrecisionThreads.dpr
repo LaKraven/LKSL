@@ -4,8 +4,8 @@ uses
   System.StartUpCopy,
   FMX.Forms,
   LKSL.Demos.HPTMainForm in 'LKSL.Demos.HPTMainForm.pas' {frmMain},
-  LKSL.Threads.Base in '..\..\..\..\Source\Delphi\Lib\Threads\LKSL.Threads.Base.pas',
-  LKSL.Demos.HPTTestThread in 'LKSL.Demos.HPTTestThread.pas';
+  LKSL.Demos.HPTTestThread in 'LKSL.Demos.HPTTestThread.pas',
+  LKSL.Threads.Base in '..\..\..\..\..\Source\Delphi\Lib\Threads\LKSL.Threads.Base.pas';
 
 {$R *.res}
 
