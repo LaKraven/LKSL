@@ -47,6 +47,8 @@ unit LKSL.Threads.Base;
       folder
 
   Changelog (latest changes first):
+    8th September 2014:
+      - Fixed a bug related to non-Windows platforms
     4th September 2014 (Second Commit):
       - Decenteralized "GetReferenceTime" so that all Threads share a common Reference Timer.
         This is good for synchronizing process timing between separate Threads.
@@ -275,7 +277,7 @@ begin
               TThread.Sleep(LSleepTime);
           {$ELSE}
             // POSIX platforms support higher-resolution Sleep times (yay)
-            usleep(Floor((LNextTime - LCurrentTime)));
+            usleep(Floor((FNextTickTime - LCurrentTime)));
           {$ENDIF}
         end;
       end;
