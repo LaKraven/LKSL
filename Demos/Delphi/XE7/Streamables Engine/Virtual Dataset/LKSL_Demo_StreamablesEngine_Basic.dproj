@@ -262,13 +262,13 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
-                <DeployFile LocalName="Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_StreamablesEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_StreamablesEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -288,7 +288,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_StreamablesEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>

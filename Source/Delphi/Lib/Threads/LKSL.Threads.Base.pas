@@ -122,6 +122,8 @@ type
     // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
     function GetDefaultTickRateAverageOver: Double; virtual;
     // Override "GetDefaultYieldAccumulatedTime" if you DON'T want accumulated (excess) time to be yielded in a single block (Default = True)
+    // False = Yield time in small chunks
+    // True = Yield all accumulated time in a single block
     function GetDefaultYieldAccumulatedTime: Boolean; virtual;
     // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
     function GetInitialThreadState: TLKThreadState; virtual;
