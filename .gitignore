@@ -77,3 +77,17 @@ __history/
 /Demos/Delphi/DCU/Android/Debug/LKSL.Demos.HPTTestThread.o
 /Demos/Delphi/DCU/Android/Debug/LKSL.Threads.Base.o
 /Demos/Delphi/DCU/Android/Debug/LKSL_DEMO_HPT.o
+
+*.png
+
+*.xml
+
+*.o
+
+*.deployproj
+
+*.dex
+
+*.vsr
+
+gdbserver

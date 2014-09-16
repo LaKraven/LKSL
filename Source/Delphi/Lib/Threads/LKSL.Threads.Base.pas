@@ -47,6 +47,18 @@ unit LKSL.Threads.Base;
       folder
 
   Changelog (latest changes first):
+    16th September 2014:
+      - Added Property "TickRateDesired" which is used to define the rate you want the Thread to run at.
+        This is NOT the same as "TickRateLimit"... it is used to calculate how much EXTRA time is
+        available over the "desired rate" (or how far BELOW the "Desired Rate", in the event of negative
+        values). The value should represent Ticks Per Second!
+      - Added Property "TickRateExtraTicks" which (if "TickRateDesired > 0.00") returns the INSTANT number of
+        Ticks Per Second in EXCESS of the Desired Rate.
+      - Added Property "TickRateExtraTicksAverage" which (if "TickRateDesired > 0.00") returns the AVERAGE
+        number of Ticks Per Second in EXCESS of the Desired Rate.
+      - Added Property "TickRateExtraTime" which returns the number of SECONDS between the INSTANT Tick
+        Rate and the DESIRED Tick Rate
+      - Added Property "TickRateExtraTimeAverage" which is the same as "TickRateExtraTime" but Averaged
     8th September 2014:
       - Fixed a bug related to non-Windows platforms
     4th September 2014 (Second Commit):
@@ -99,6 +111,11 @@ type
     FTickRate: Double; // The INSTANT Tick Rate (in "Ticks per Second")
     FTickRateAverage: Double; // The AVERAGE Tick Rate (in "Ticks per Second")
     FTickRateAverageOver: Double; // How much time (in seconds) the Average is calculated over
+    FTickRateDesired: Double; // The DESIRED rate at which you want the Thread to Tick (minimum)
+    FTickRateExtra: Double; // The number of extra ticks per second in excess of the DESIRED Tick Rate.
+    FTickRateExtraTime: Double; // The number of extra SECONDS available over the DESIRED Tick Rate.
+    FTickRateExtraAverage: Double; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
+    FTickRateExtraAverageTime: Double; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateLimit: Double; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FYieldAccumulatedTime: Boolean;
 
@@ -107,6 +124,11 @@ type
     function GetTickRate: Double;
     function GetTickRateAverage: Double;
     function GetTickRateAverageOver: Double;
+    function GetTickRateDesired: Double;
+    function GetTickRateExtraTicks: Double;
+    function GetTickRateExtraTime: Double;
+    function GetTickRateExtraTicksAverage: Double;
+    function GetTickRateExtraTimeAverage: Double;
     function GetTickRateLimit: Double;
     function GetYieldAccumulatedTime: Boolean;
 
@@ -114,6 +136,9 @@ type
     procedure SetTickRate(const ATickRate: Double); // Used internally!
     procedure SetTickRateAverage(const ATickRateAverage: Double); // Used internally!
     procedure SetTickRateAverageOver(const AAverageOver: Double);
+    procedure SetTickRateDesired(const ADesiredRate: Double);
+    procedure SetTickRateExtraTicks(const AExtraTime: Double); // Used internally!
+    procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: Double); // Used internally!
     procedure SetTickRateLimit(const ATickRateLimit: Double);
     procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
   protected
@@ -121,6 +146,12 @@ type
     function GetDefaultTickRateLimit: Double; virtual;
     // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
     function GetDefaultTickRateAverageOver: Double; virtual;
+    // Override "GetDefaultTickRateDesired" if you want to compute EXTRA Time between Ticks.
+    // This Extra Time can be used during a Tick to selectively perform additional processing during a Tick.
+    // One example in which this is useful is for graphics rendering, where Exta Time can be used for
+    // post-processing computations.
+    // Default = 0.00, which disables Extra Time Calculation
+    function GetDefaultTickRateDesired: Double; virtual;
     // Override "GetDefaultYieldAccumulatedTime" if you DON'T want accumulated (excess) time to be yielded in a single block (Default = True)
     // False = Yield time in small chunks
     // True = Yield all accumulated time in a single block
@@ -168,6 +199,11 @@ type
     property TickRate: Double read GetTickRate;
     property TickRateAverage: Double read GetTickRateAverage;
     property TickRateAverageOver: Double read GetTickRateAverageOver write SetTickRateAverageOver;
+    property TickRateDesired: Double read GetTickRateDesired write SetTickRateDesired;
+    property TickRateExtraTicks: Double read GetTickRateExtraTicks;
+    property TickRateExtraTime: Double read GetTickRateExtraTime;
+    property TickRateExtraTicksAverage: Double read GetTickRateExtraTicksAverage;
+    property TickRateExtraTimeAverage: Double read GetTickRateExtraTimeAverage;
     property TickRateLimit: Double read GetTickRateLimit write SetTickRateLimit;
     property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
@@ -203,6 +239,7 @@ begin
   FTickRateLimit := GetDefaultTickRateLimit;
   FTickRateAverageOver := GetDefaultTickRateAverageOver;
   FYieldAccumulatedTime := GetDefaultYieldAccumulatedTime;
+  FTickRateDesired := GetDefaultTickRateDesired;
 end;
 
 destructor TLKThread.Destroy;
@@ -215,7 +252,7 @@ procedure TLKThread.Execute;
 var
   {$IFNDEF POSIX}LSleepTime: Integer;{$ENDIF}
   LDelta, LCurrentTime: Double;
-  LTickRateLimit: Double;
+  LTickRate, LTickRateLimit, LTickRateDesired, LTickRateAverage: Double;
   LLastAverageCheckpoint, LNextAverageCheckpoint: Double;
   LAverageTicks: Integer;
 begin
@@ -225,21 +262,36 @@ begin
   Unlock;
   LLastAverageCheckpoint := 0.00;
   LNextAverageCheckpoint := 0.00;
+  LTickRate := 0.00;
   LAverageTicks := 0;
   while (not Terminated) do
   begin
-    LTickRateLimit := TickRateLimit; // Read once so we don't have to keep Acquiring the Lock!
+    // Read once so we don't have to keep Acquiring the Lock!
+    Lock;
+    LTickRateLimit := FTickRateLimit;
+    LTickRateDesired := FTickRateDesired;
+    Unlock;
     LCurrentTime := GetReferenceTime;
     LDelta := (LCurrentTime - FNextTickTime);
 
     // Rate Limiter
-    if (LTickRateLimit > 0) then
+    if (LTickRateLimit > 0.00) then
       if (LDelta < ( 1 / LTickRateLimit)) then
         LDelta := (1 / LTickRateLimit);
 
     // Calculate INSTANT Tick Rate
     if LDelta > 0 then
-      SetTickRate((1 / LDelta)); // Calculate the current Tick Rate
+    begin
+      LTickRate := 1 / LDelta; // Calculate the current Tick Rate
+
+      SetTickRate(LTickRate);
+
+      // Calculate EXTRA time
+      if LTickRateDesired > 0.00 then
+        SetTickRateExtraTicks(LTickRate - LTickRateDesired)
+      else
+        SetTickRateExtraTicks(0.00);
+    end;
 
     // Call "PreTick"
     PreTick(LDelta, LCurrentTime);
@@ -247,7 +299,7 @@ begin
     if ThreadState = tsRunning then
     begin
       // Tick or Wait...
-      if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0)) or (LTickRateLimit  = 0) then
+      if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0.00)) or (LTickRateLimit = 0.00) then
       begin
 
         // Calculate AVEARAGE Tick Rate
@@ -258,10 +310,18 @@ begin
           LAverageTicks := -1;
         end;
         Inc(LAverageTicks);
-        if (LCurrentTime - LLastAverageCheckpoint > 0) then
-          SetTickRateAverage(LAverageTicks / (LCurrentTime - LLastAverageCheckpoint))
-        else
-          SetTickRateAverage(GetTickRate);
+        if (LCurrentTime - LLastAverageCheckpoint > 0.00) then
+        begin
+          LTickRateAverage := LAverageTicks / (LCurrentTime - LLastAverageCheckpoint);
+          SetTickRateAverage(LTickRateAverage);
+          if LTickRateDesired > 0.00 then
+            SetTickRateExtraTicksAverage(LTickRateAverage - LTickRateDesired)
+          else
+            SetTickRateExtraTicksAverage(0.00);
+        end else
+        begin
+          SetTickRateAverage(LTickRate);
+        end;
         Lock;
         FNextTickTime := FNextTickTime + LDelta;
         Unlock;
@@ -303,6 +363,11 @@ begin
   Result := 2.00;
 end;
 
+function TLKThread.GetDefaultTickRateDesired: Double;
+begin
+  Result := 0.00;
+end;
+
 function TLKThread.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsRunning;
@@ -340,6 +405,41 @@ function TLKThread.GetTickRateAverageOver: Double;
 begin
   Lock;
   Result := FTickRateAverageOver;
+  Unlock;
+end;
+
+function TLKThread.GetTickRateDesired: Double;
+begin
+  Lock;
+  Result := FTickRateDesired;
+  Unlock;
+end;
+
+function TLKThread.GetTickRateExtraTicks: Double;
+begin
+  Lock;
+  Result := FTickRateExtra;
+  Unlock;
+end;
+
+function TLKThread.GetTickRateExtraTicksAverage: Double;
+begin
+  Lock;
+  Result := FTickRateExtraAverage;
+  Unlock;
+end;
+
+function TLKThread.GetTickRateExtraTime: Double;
+begin
+  Lock;
+  Result := FTickRateExtraTime;
+  Unlock;
+end;
+
+function TLKThread.GetTickRateExtraTimeAverage: Double;
+begin
+  Lock;
+  Result := FTickRateExtraAverageTime;
   Unlock;
 end;
 
@@ -402,10 +502,47 @@ begin
   Unlock;
 end;
 
+procedure TLKThread.SetTickRateDesired(const ADesiredRate: Double);
+begin
+  Lock;
+  FTickRateDesired := ADesiredRate;
+  Unlock;
+end;
+
+procedure TLKThread.SetTickRateExtraTicks(const AExtraTime: Double);
+begin
+  Lock;
+  FTickRateExtra := AExtraTime;
+  if FTickRateExtra > 0.00 then
+    FTickRateExtraTime := (1 / FTickRate) * FTickRateExtra
+  else if FTickRateExtra < 0.00 then
+    FTickRateExtraTime := -((1 / -FTickRate) * FTickRateExtra)
+  else
+    FTickRateExtraTime := 0.00;
+  Unlock;
+end;
+
+procedure TLKThread.SetTickRateExtraTicksAverage(const AExtraTimeAverage: Double);
+begin
+  Lock;
+  FTickRateExtraAverage := AExtraTimeAverage;
+  if FTickRateExtraAverage > 0.00 then
+    FTickRateExtraAverageTime := (1 / FTickRateAverage) * FTickRateExtraAverage
+  else if FTickRateExtraAverage < 0.00 then
+    FTickRateExtraAverageTime := -((1 / -FTickRateAverage) * FTickRateExtraAverage)
+  else
+    FTickRateExtraAverageTime := 0.00;
+  Unlock;
+end;
+
 procedure TLKThread.SetTickRateLimit(const ATickRateLimit: Double);
 begin
   Lock;
   FTickRateLimit := ATickRateLimit;
+  // If the Limit is LOWER than the defined "Desired" Rate, then we cannot desire MORE than the limit,
+  // so we match the two.
+  if (FTickRateLimit > 0) and (FTickRateLimit < FTickRateDesired) then
+    FTickRateDesired := FTickRateLimit;
   Unlock;
 end;
 

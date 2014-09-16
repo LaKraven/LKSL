@@ -49,6 +49,7 @@ interface
 
   Changelog (latest changes first):
     15th September 2014:
+      - Removed unnecessary Callback Types (they weren't used anywhere).
       - Fixed several bugs (including one critical bug)
     9th Steptember 2014:
       - Removed a piece of fault-finding code I had forgotten about
@@ -99,10 +100,6 @@ type
   TLKEventType = class of TLKEvent;
   TLKEventListenerType = class of TLKEventListener;
 
-  { Method Types }
-  TLKEventClassCallback = procedure(const AEvent: TLKEvent) of object;
-  TLKEventUnboundCallback = procedure(const AEvent: TLKEvent) of object;
-
   { Array Types }
   TLKEventArray = Array of TLKEvent;
   TLKEventTypeArray = Array of TLKEventType;
@@ -141,8 +138,7 @@ type
     procedure SetStreamEvent(const AStreamEvent: Boolean);
   protected
     // You MUST override "Clone"
-    // Start with "inherited;" then (remembering to type-cast "AFromEvent" to your Event Type)
-    // populate your Event Type's properties.
+    // (Remembering to type-cast "AFromEvent" to your Event Type) populate your Event Type's properties.
     procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
     // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
     // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.

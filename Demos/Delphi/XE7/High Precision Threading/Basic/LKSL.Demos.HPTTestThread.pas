@@ -10,7 +10,7 @@ type
   TTestThread = class;
 
   { Callback Types }
-  TTestThreadTickCallback = procedure(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit, ANextTick: Double) of object;
+  TTestThreadTickCallback = procedure(const ADelta, AStartTime, ATickRate, ATickRateAverage, ATickRateAverageOver, ATickRateLimit, ANextTick, AExtraTicks, AExtraTicksAverage, AExtraTime, AExtraTimeAverage: Double) of object;
 
   TTestThread = class(TLKThread)
   private
@@ -56,7 +56,7 @@ begin
   Synchronize(procedure begin
                 Lock;
                 if Assigned(FOnTick) then
-                  FOnTick(ADelta, AStartTime, TickRate, TickRateAverage, TickRateAverageOver, TickRateLimit, NextTickTime);
+                  FOnTick(ADelta, AStartTime, TickRate, TickRateAverage, TickRateAverageOver, TickRateLimit, NextTickTime, TickRateExtraTicks, TickRateExtraTicksAverage, TickRateExtraTime, TickRateExtraTimeAverage);
                 Unlock;
               end);
 end;
