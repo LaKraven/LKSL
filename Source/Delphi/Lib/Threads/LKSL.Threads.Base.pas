@@ -47,6 +47,10 @@ unit LKSL.Threads.Base;
       folder
 
   Changelog (latest changes first):
+    19th September 2014:
+      - Added Protected Function "CalculateExtraTime" which returns the number of seconds
+        (double-precision) available between the time at which you place the call, and the time at which
+        the next Tick is scheduled to occur.
     16th September 2014:
       - Added Property "TickRateDesired" which is used to define the rate you want the Thread to run at.
         This is NOT the same as "TickRateLimit"... it is used to calculate how much EXTRA time is
@@ -159,6 +163,8 @@ type
     // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
     function GetInitialThreadState: TLKThreadState; virtual;
 
+    function CalculateExtraTime: Double;
+
     // YOU MUST NOT override the TThread.Execute method in your descendants of TLKThread!!!!!!!!
     procedure Execute; override; final;
 
@@ -228,6 +234,11 @@ begin
   Lock;
   FNextTickTime := GetReferenceTime;
   Unlock;
+end;
+
+function TLKThread.CalculateExtraTime: Double;
+begin
+  Result := NextTickTime - GetReferenceTime;
 end;
 
 constructor TLKThread.Create;
