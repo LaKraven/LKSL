@@ -48,6 +48,9 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
 
   Changelog (latest changes first):
+    21st September 2014:
+      - Immuted the "Tick" Procedure in TLKEventThread, as you may not wish to have a looped process
+        taking place in an Event Thread (given that the Thread is Event-Driven).
     15th September 2014:
       - Removed unnecessary Callback Types (they weren't used anywhere).
       - Fixed several bugs (including one critical bug)
@@ -310,6 +313,7 @@ type
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: Double); override;
     procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
+    procedure Tick(const ADelta, AStartTime: Double); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -1101,6 +1105,11 @@ begin
     FEvents[0].Free; // Destroy the Event
     RemoveEvent(0); // Rebalance the Event Array
   end;
+end;
+
+procedure TLKEventThread.Tick(const ADelta, AStartTime: Double);
+begin
+  // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
 
 { TLKEventQueue }
