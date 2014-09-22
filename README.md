@@ -14,3 +14,5 @@ High Precision Threading (a special Thread type which provide extremely accurate
 Event Engine (a VERY powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems)
 
 Educational articles demonstrating the various features of the LKSL can be found at http://otapi.com
+
+Donations (while by no means mandatory) are always appreciated, and can be made to paypal {at} lakraven [dot] com
