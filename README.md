@@ -5,6 +5,8 @@ LaKraven Studios Standard Library (for RAD Studio and AppMethod)
 
 This library provides a vast (and growing) range of powerful features for Delphi and C++ Builder.
 
+INSTALLATION: Please run the LKSLInstall.exe file to configure your version(s) of the IDE to use the LKSL. It simply adds the LKSL source paths to RAD Studio's respective Search Paths. This executable can be re-run each time new paths are introduced in the LKSL.
+
 NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
 
 Current features:
