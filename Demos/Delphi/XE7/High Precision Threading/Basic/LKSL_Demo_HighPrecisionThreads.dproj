@@ -250,8 +250,8 @@
                 <DeployFile LocalName="c:\program files (x86)\embarcadero\studio\15.0\lib\android\debug\x86\libnative-activity.so" Configuration="Debug" Class="AndroidLibnativeX86File"/>
                 <DeployFile LocalName="$(BDS)\bin\Artwork\Android\FM_SplashImage_640x480.png" Configuration="Debug" Class="Android_SplashImage640"/>
                 <DeployFile LocalName="c:\program files (x86)\embarcadero\studio\15.0\lib\android\debug\armeabi\libnative-activity.so" Configuration="Debug" Class="AndroidLibnativeArmeabiFile"/>
-                <DeployFile LocalName="$(BDS)\bin\Artwork\Android\FM_LauncherIcon_48x48.png" Configuration="Debug" Class="Android_LauncherIcon48"/>
                 <DeployFile LocalName="..\..\Bin\Android\Debug\AndroidManifest.xml" Configuration="Debug" Class="ProjectAndroidManifest"/>
+                <DeployFile LocalName="$(BDS)\bin\Artwork\Android\FM_LauncherIcon_48x48.png" Configuration="Debug" Class="Android_LauncherIcon48"/>
                 <DeployFile LocalName="c:\program files (x86)\embarcadero\studio\15.0\lib\android\debug\mips\libnative-activity.so" Configuration="Debug" Class="AndroidLibnativeMipsFile"/>
                 <DeployFile LocalName="..\..\Bin\Win32\Debug\LKSL_Demo_HighPrecisionThreads.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
@@ -627,7 +627,7 @@
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
-                <Platform value="Android" ActiveMobileDevice="015d25783713fe13">True</Platform>
+                <Platform value="Android">True</Platform>
                 <Platform value="iOSDevice">True</Platform>
                 <Platform value="iOSSimulator" ActiveMobileDevice="iPhone">True</Platform>
                 <Platform value="OSX32">True</Platform>

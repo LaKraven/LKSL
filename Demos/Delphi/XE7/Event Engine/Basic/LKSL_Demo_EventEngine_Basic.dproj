@@ -306,8 +306,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\PlatformSDKs\android-ndk-r9c\prebuilt\android-arm\gdbserver\gdbserver" Configuration="Debug" Class="AndroidGDBServer">
-                    <Platform Name="Android">
+                <DeployFile LocalName="Win32\Debug\LKSL_Demo_EventEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>LKSL_Demo_EventEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -317,9 +318,8 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\LKSL_Demo_EventEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>LKSL_Demo_EventEngine_Basic.exe</RemoteName>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\PlatformSDKs\android-ndk-r9c\prebuilt\android-arm\gdbserver\gdbserver" Configuration="Debug" Class="AndroidGDBServer">
+                    <Platform Name="Android">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -715,7 +715,7 @@
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
-                <Platform value="Android" ActiveMobileDevice="015d25783713fe13">True</Platform>
+                <Platform value="Android">True</Platform>
                 <Platform value="iOSDevice">True</Platform>
                 <Platform value="iOSSimulator" ActiveMobileDevice="iPhone">True</Platform>
                 <Platform value="OSX32">True</Platform>

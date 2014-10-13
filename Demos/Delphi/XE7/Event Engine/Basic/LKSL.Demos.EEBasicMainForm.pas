@@ -86,7 +86,7 @@ begin
   if FBitmap.Canvas.BeginScene then
   begin
     FBitmap.Canvas.Clear(TAlphaColors.Black);
-    FBitmap.Canvas.Stroke.Color := TAlphaColors.Blue;
+    FBitmap.Canvas.Stroke.Color := TAlphaColors.Aliceblue;
 //    FBitmap.Canvas.StrokeThickness := 1.5;
     for I := Low(LEdges) to High(LEdges) do
       FBitmap.Canvas.DrawLine(LEdges[I].Vertice1, LEdges[I].Vertice2, 1.00);

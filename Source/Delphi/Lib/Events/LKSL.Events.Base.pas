@@ -48,6 +48,13 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
 
   Changelog (latest changes first):
+    13th October 2014:
+      - Added Enum "TLKEventProcessMode"
+      - Added Property "ProcessMode" to TLKEventThreadBase to switch between full queue processing and
+        one 'Single Event per Cycle' processing.
+      - Set TLKEventThread to use the new full queue processing mode by default
+        (set "ProcessMode := epmOneByOne;" against your Event Thread if you want the old processing
+        mode instead of the new (more efficient) one.
     21st September 2014:
       - Immuted the "Tick" Procedure in TLKEventThread, as you may not wish to have a looped process
         taking place in an Event Thread (given that the Thread is Event-Driven).
@@ -98,6 +105,7 @@ type
 
   { Enum Types }
   TLKEventPriority = (epQueue, epStack);
+  TLKEventProcessMode = (epmOneByOne, epmAll);
 
   { Class References }
   TLKEventType = class of TLKEvent;
@@ -272,6 +280,10 @@ type
     FEventLock: TCriticalSection;
     FEvents: TLKEventArray;
 
+    FProcessMode: TLKEventProcessMode;
+    function GetProcessMode: TLKEventProcessMode;
+    procedure SetProcessMode(const AProcessMode: TLKEventProcessMode);
+
     procedure AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
     procedure ClearEvents;
     procedure ClearEventListenerGroups;
@@ -299,6 +311,8 @@ type
     destructor Destroy; override;
     // "AddEvent" adds an Event to the Thread's internal Event Array for processing
     procedure AddEvent(const AEvent: TLKEvent); virtual;
+
+    property ProcessMode: TLKEventProcessMode read GetProcessMode write SetProcessMode;
   end;
 
   {
@@ -937,6 +951,7 @@ begin
   inherited;
   FEventListenerGroupLock := TCriticalSection.Create;
   FEventLock := TCriticalSection.Create;
+  FProcessMode := epmAll;
 end;
 
 procedure TLKEventThreadBase.DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
@@ -995,6 +1010,13 @@ begin
   UnlockEventListenerGroups;
 end;
 
+function TLKEventThreadBase.GetProcessMode: TLKEventProcessMode;
+begin
+  Lock;
+  Result := FProcessMode;
+  Unlock;
+end;
+
 procedure TLKEventThreadBase.LockEventListenerGroups;
 begin
   FEventListenerGroupLock.Acquire;
@@ -1047,6 +1069,13 @@ begin
   UnlockEvents;
 end;
 
+procedure TLKEventThreadBase.SetProcessMode(const AProcessMode: TLKEventProcessMode);
+begin
+  Lock;
+  FProcessMode := AProcessMode;
+  Unlock;
+end;
+
 procedure TLKEventThreadBase.UnlockEventListenerGroups;
 begin
   FEventListenerGroupLock.Release;
@@ -1096,14 +1125,36 @@ begin
 end;
 
 procedure TLKEventThread.ProcessEvents(const ADelta, AStartTime: Double);
+var
+  I, LEnd: Integer;
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
   if Length(FEvents) > 0 then
   begin
-    ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
-    FEvents[0].Free; // Destroy the Event
-    RemoveEvent(0); // Rebalance the Event Array
+    case FProcessMode of
+      epmOneByOne: begin
+                     ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
+                     FEvents[0].Free; // Destroy the Event
+                     RemoveEvent(0); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := 0 to LEnd do
+                begin
+                  ProcessListeners(FEvents[I], ADelta, AStartTime);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                for I := 0 to High(FEvents) - LEnd do
+                  FEvents[I] := FEvents[I + 1 + LEnd];
+                SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                UnlockEvents;
+              end;
+    end;
   end;
 end;
 
@@ -1126,13 +1177,37 @@ begin
 end;
 
 procedure TLKEventQueue.ProcessEvents(const ADelta, AStartTime: Double);
+var
+  I, LEnd: Integer;
 begin
+  // We don't Lock the Event Array at this point, as doing so would prevent additional
+  // events from being added to the Queue (and could cause a Thread to freeze)
   if Length(FEvents) > 0 then
   begin
-    ProcessListeners(FEvents[0], ADelta, AStartTime);
-    FEvents[0].Free;
-    RemoveEvent(0);
-  end;;
+    case FProcessMode of
+      epmOneByOne: begin
+                     ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
+                     FEvents[0].Free; // Destroy the Event
+                     RemoveEvent(0); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := 0 to LEnd do
+                begin
+                  ProcessListeners(FEvents[I], ADelta, AStartTime);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                for I := 0 to High(FEvents) - LEnd do
+                  FEvents[I] := FEvents[I + 1 + LEnd];
+                SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                UnlockEvents;
+              end;
+    end;
+  end;
 end;
 
 procedure TLKEventQueue.Tick(const ADelta, AStartTime: Double);
@@ -1158,16 +1233,48 @@ begin
 end;
 
 procedure TLKEventStack.ProcessEvents(const ADelta, AStartTime: Double);
+//var
+//  LEvent: Integer;
 var
-  LEvent: Integer;
+  I, LEnd: Integer;
 begin
-  LEvent := High(FEvents);
-  if LEvent > -1 then
+  // We don't Lock the Event Array at this point, as doing so would prevent additional
+  // events from being added to the Queue (and could cause a Thread to freeze)
+  if Length(FEvents) > 0 then
   begin
-    ProcessListeners(FEvents[LEvent], ADelta, AStartTime);
-    FEvents[LEvent].Free;
-    RemoveEvent(LEvent);
+    case FProcessMode of
+      epmOneByOne: begin
+                     LEnd := High(FEvents);
+                     ProcessListeners(FEvents[LEnd], ADelta, AStartTime); // Process the first Event in the Queue
+                     FEvents[LEnd].Free; // Destroy the Event
+                     RemoveEvent(LEnd); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := LEnd downto 0 do
+                begin
+                  ProcessListeners(FEvents[I], ADelta, AStartTime);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                for I := 0 to High(FEvents) - LEnd do
+                  FEvents[I] := FEvents[I + 1 + LEnd];
+                SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                UnlockEvents;
+              end;
+    end;
   end;
+//  LEvent := High(FEvents);
+//  if LEvent > -1 then
+//  begin
+//    ProcessListeners(FEvents[LEvent], ADelta, AStartTime);
+//    FEvents[LEvent].Free;
+//    RemoveEvent(LEvent);
+//  end;
+
 end;
 
 procedure TLKEventStack.Tick(const ADelta, AStartTime: Double);

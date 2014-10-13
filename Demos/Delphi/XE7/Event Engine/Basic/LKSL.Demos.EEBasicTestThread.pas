@@ -107,7 +107,7 @@ begin
   LEdges[High(LEdges)].Vertice2 := LVector2;
 
   // Now dispatch a confirmation Event containing the Edges
-  QueueEvent(TEventCircleGenerated.Create(LEdges, GetReferenceTime - LTimeStart));
+  TEventCircleGenerated.Create(LEdges, GetReferenceTime - LTimeStart).Stack;
 end;
 
 function TCircleGenerator.GetInitialThreadState: TLKThreadState;
