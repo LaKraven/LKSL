@@ -55,7 +55,7 @@ uses
 type
   { Forward Declarations }
   TLKThreadGeneric = class;
-  TLKSLPrecisionThread = class;
+  TLKPrecisionThread = class;
 
   TLKThreadTickCallback = procedure (const ADelta, AStartTime: Double) of object;
 
@@ -74,10 +74,10 @@ type
   end;
 
   {
-    TLKSLPrecisionThread
+    TLKPrecisionThread
       - Component Layer for a simple TLKThread
   }
-  TLKSLPrecisionThread = class(TComponent)
+  TLKPrecisionThread = class(TComponent)
   private
     FActive: Boolean;
     FThread: TLKThreadGeneric;
@@ -137,22 +137,22 @@ begin
   end;
 end;
 
-{ TLKSLPrecisionThread }
+{ TLKPrecisionThread }
 
-constructor TLKSLPrecisionThread.Create(AOwner: TComponent);
+constructor TLKPrecisionThread.Create(AOwner: TComponent);
 begin
   inherited;
   FThread := TLKThreadGeneric.Create;
   FActive := False;
 end;
 
-destructor TLKSLPrecisionThread.Destroy;
+destructor TLKPrecisionThread.Destroy;
 begin
   FThread.Kill;
   inherited;
 end;
 
-function TLKSLPrecisionThread.GetActive: Boolean;
+function TLKPrecisionThread.GetActive: Boolean;
 begin
   if (csDesigning in ComponentState) then
     Result := FActive
@@ -160,62 +160,62 @@ begin
     Result := (FThread.ThreadState = tsRunning);
 end;
 
-function TLKSLPrecisionThread.GetNextTickTime: Double;
+function TLKPrecisionThread.GetNextTickTime: Double;
 begin
   Result := FThread.NextTickTime;
 end;
 
-function TLKSLPrecisionThread.GetOnTick: TLKThreadTickCallback;
+function TLKPrecisionThread.GetOnTick: TLKThreadTickCallback;
 begin
   Result := FThread.OnTick;
 end;
 
-function TLKSLPrecisionThread.GetTickRate: Double;
+function TLKPrecisionThread.GetTickRate: Double;
 begin
   Result := FThread.TickRate;
 end;
 
-function TLKSLPrecisionThread.GetTickRateAverage: Double;
+function TLKPrecisionThread.GetTickRateAverage: Double;
 begin
   Result := FThread.TickRateAverage;
 end;
 
-function TLKSLPrecisionThread.GetTickRateAverageOver: Double;
+function TLKPrecisionThread.GetTickRateAverageOver: Double;
 begin
   Result := FThread.TickRateAverageOver;
 end;
 
-function TLKSLPrecisionThread.GetTickRateDesired: Double;
+function TLKPrecisionThread.GetTickRateDesired: Double;
 begin
   Result := FThread.TickRateDesired;
 end;
 
-function TLKSLPrecisionThread.GetTickRateExtraTicksAverage: Double;
+function TLKPrecisionThread.GetTickRateExtraTicksAverage: Double;
 begin
   Result := FThread.TickRateExtraTicksAverage;
 end;
 
-function TLKSLPrecisionThread.GetTickRateExtraTicks: Double;
+function TLKPrecisionThread.GetTickRateExtraTicks: Double;
 begin
   Result := FThread.TickRateExtraTicks;
 end;
 
-function TLKSLPrecisionThread.GetTickRateExtraTime: Double;
+function TLKPrecisionThread.GetTickRateExtraTime: Double;
 begin
   Result := FThread.TickRateExtraTime;
 end;
 
-function TLKSLPrecisionThread.GetTickRateExtraTimeAverage: Double;
+function TLKPrecisionThread.GetTickRateExtraTimeAverage: Double;
 begin
   Result := FThread.TickRateExtraTimeAverage;
 end;
 
-function TLKSLPrecisionThread.GetTickRateLimit: Double;
+function TLKPrecisionThread.GetTickRateLimit: Double;
 begin
   Result := Fthread.TickRateLimit;
 end;
 
-procedure TLKSLPrecisionThread.SetActive(const AActive: Boolean);
+procedure TLKPrecisionThread.SetActive(const AActive: Boolean);
 const
   THREAD_STATE: Array[Boolean] of TLKThreadState = (tsPaused, tsRunning);
 begin
@@ -225,22 +225,22 @@ begin
     FThread.ThreadState := THREAD_STATE[AActive];
 end;
 
-procedure TLKSLPrecisionThread.SetOnTick(const AOnTick: TLKThreadTickCallback);
+procedure TLKPrecisionThread.SetOnTick(const AOnTick: TLKThreadTickCallback);
 begin
   FThread.OnTick := AOnTick;
 end;
 
-procedure TLKSLPrecisionThread.SetTickRateAverageOver(const AAverageOver: Double);
+procedure TLKPrecisionThread.SetTickRateAverageOver(const AAverageOver: Double);
 begin
   FThread.TickRateAverageOver := AAverageOver;
 end;
 
-procedure TLKSLPrecisionThread.SetTickRateDesired(const ATickRateDesired: Double);
+procedure TLKPrecisionThread.SetTickRateDesired(const ATickRateDesired: Double);
 begin
   FThread.TickRateDesired := ATickRateDesired;
 end;
 
-procedure TLKSLPrecisionThread.SetTickRateLimit(const ATickRateLimit: Double);
+procedure TLKPrecisionThread.SetTickRateLimit(const ATickRateLimit: Double);
 begin
   FThread.TickRateLimit := ATickRateLimit;
 end;

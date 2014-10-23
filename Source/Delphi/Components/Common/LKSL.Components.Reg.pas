@@ -60,7 +60,7 @@ uses
 
 procedure Register;
 begin
-  RegisterComponents('[LKSL] Threads', [TLKSLPrecisionThread]);
+  RegisterComponents('[LKSL] Threads', [TLKPrecisionThread]);
 end;
 
 end.
