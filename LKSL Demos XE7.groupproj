@@ -3,6 +3,9 @@
         <ProjectGuid>{9078DE60-3CB7-44B7-A2A7-58BCD2B14BF1}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
+        <Projects Include="Packages\Delphi\XE7\LKSL_ComponentsXE7.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Demos\Delphi\XE7\High Precision Threading\Basic\LKSL_Demo_HighPrecisionThreads.dproj">
             <Dependencies/>
         </Projects>
@@ -15,6 +18,9 @@
         <Projects Include="Demos\Delphi\XE7\Event Engine\Client-Server Event Streaming\Client\LKSL_Demo_EventEngine_StreamingClient.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Demos\Delphi\XE7\Package Engine\Basic\LKSL_Demo_PackageEngine_Basic.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -23,6 +29,15 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
+    <Target Name="LKSL_ComponentsXE7">
+        <MSBuild Projects="Packages\Delphi\XE7\LKSL_ComponentsXE7.dproj"/>
+    </Target>
+    <Target Name="LKSL_ComponentsXE7:Clean">
+        <MSBuild Projects="Packages\Delphi\XE7\LKSL_ComponentsXE7.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_ComponentsXE7:Make">
+        <MSBuild Projects="Packages\Delphi\XE7\LKSL_ComponentsXE7.dproj" Targets="Make"/>
+    </Target>
     <Target Name="LKSL_Demo_HighPrecisionThreads">
         <MSBuild Projects="Demos\Delphi\XE7\High Precision Threading\Basic\LKSL_Demo_HighPrecisionThreads.dproj"/>
     </Target>
@@ -59,14 +74,23 @@
     <Target Name="LKSL_Demo_EventEngine_StreamingClient:Make">
         <MSBuild Projects="Demos\Delphi\XE7\Event Engine\Client-Server Event Streaming\Client\LKSL_Demo_EventEngine_StreamingClient.dproj" Targets="Make"/>
     </Target>
+    <Target Name="LKSL_Demo_PackageEngine_Basic">
+        <MSBuild Projects="Demos\Delphi\XE7\Package Engine\Basic\LKSL_Demo_PackageEngine_Basic.dproj"/>
+    </Target>
+    <Target Name="LKSL_Demo_PackageEngine_Basic:Clean">
+        <MSBuild Projects="Demos\Delphi\XE7\Package Engine\Basic\LKSL_Demo_PackageEngine_Basic.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_Demo_PackageEngine_Basic:Make">
+        <MSBuild Projects="Demos\Delphi\XE7\Package Engine\Basic\LKSL_Demo_PackageEngine_Basic.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="LKSL_Demo_HighPrecisionThreads;LKSL_Demo_EventEngine_Basic;LKSL_Demo_StreamablesEngine_Basic;LKSL_Demo_EventEngine_StreamingClient"/>
+        <CallTarget Targets="LKSL_ComponentsXE7;LKSL_Demo_HighPrecisionThreads;LKSL_Demo_EventEngine_Basic;LKSL_Demo_StreamablesEngine_Basic;LKSL_Demo_EventEngine_StreamingClient;LKSL_Demo_PackageEngine_Basic"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="LKSL_Demo_HighPrecisionThreads:Clean;LKSL_Demo_EventEngine_Basic:Clean;LKSL_Demo_StreamablesEngine_Basic:Clean;LKSL_Demo_EventEngine_StreamingClient:Clean"/>
+        <CallTarget Targets="LKSL_ComponentsXE7:Clean;LKSL_Demo_HighPrecisionThreads:Clean;LKSL_Demo_EventEngine_Basic:Clean;LKSL_Demo_StreamablesEngine_Basic:Clean;LKSL_Demo_EventEngine_StreamingClient:Clean;LKSL_Demo_PackageEngine_Basic:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="LKSL_Demo_HighPrecisionThreads:Make;LKSL_Demo_EventEngine_Basic:Make;LKSL_Demo_StreamablesEngine_Basic:Make;LKSL_Demo_EventEngine_StreamingClient:Make"/>
+        <CallTarget Targets="LKSL_ComponentsXE7:Make;LKSL_Demo_HighPrecisionThreads:Make;LKSL_Demo_EventEngine_Basic:Make;LKSL_Demo_StreamablesEngine_Basic:Make;LKSL_Demo_EventEngine_StreamingClient:Make;LKSL_Demo_PackageEngine_Basic:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

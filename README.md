@@ -7,6 +7,8 @@ This library provides a vast (and growing) range of powerful features for Delphi
 
 INSTALLATION: Please run the LKSLInstall.exe file to configure your version(s) of the IDE to use the LKSL. It simply adds the LKSL source paths to RAD Studio's respective Search Paths. This executable can be re-run each time new paths are introduced in the LKSL.
 
+COMPONENT INSTALLATION: Please load \Packages\Delphi\<version>\LKSL_Components<version>.dproj in Delphi, right-click on the Project Manager and click "Install".
+
 NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
 
 Current features:

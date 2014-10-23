@@ -45,7 +45,7 @@ interface
     - This unit also provides the Abstract Base Implementation for the same.
 
   Included Usage Demos:
-    - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine - Basic" folder
+    - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
     13th October 2014:
@@ -1033,14 +1033,14 @@ var
 begin
   AEvent.FDelta := ADelta;
   AEvent.FProcessedTime := AStartTime;
-  LockEventListenerGroups;
+//  LockEventListenerGroups;
   LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
   if LEventListenerGroup > - 1 then
   begin
     if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
       FEventListenerGroups[LEventListenerGroup].ProcessEvent(AEvent);
   end;
-  UnlockEventListenerGroups;
+//  UnlockEventListenerGroups;
 end;
 
 procedure TLKEventThreadBase.RegisterListener(const AListener: TLKEventListener);

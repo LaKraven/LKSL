@@ -268,7 +268,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_StreamablesEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -288,7 +288,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\Bin\Win32\Debug\LKSL_Demo_StreamablesEngine_Basic.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_StreamablesEngine_Basic.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -625,7 +625,7 @@
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
-                <Platform value="Android" ActiveMobileDevice="015d25783713fe13">True</Platform>
+                <Platform value="Android">True</Platform>
                 <Platform value="iOSDevice">True</Platform>
                 <Platform value="iOSSimulator" ActiveMobileDevice="iPhone">True</Platform>
                 <Platform value="OSX32">True</Platform>
