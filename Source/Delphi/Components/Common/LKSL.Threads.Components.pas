@@ -79,6 +79,7 @@ type
   }
   TLKSLPrecisionThread = class(TComponent)
   private
+    FActive: Boolean;
     FThread: TLKThreadGeneric;
     // Getters
     function GetActive: Boolean;
@@ -142,6 +143,7 @@ constructor TLKSLPrecisionThread.Create(AOwner: TComponent);
 begin
   inherited;
   FThread := TLKThreadGeneric.Create;
+  FActive := False;
 end;
 
 destructor TLKSLPrecisionThread.Destroy;
@@ -152,7 +154,10 @@ end;
 
 function TLKSLPrecisionThread.GetActive: Boolean;
 begin
-  Result := (FThread.ThreadState = tsRunning);
+  if (csDesigning in ComponentState) then
+    Result := FActive
+  else
+    Result := (FThread.ThreadState = tsRunning);
 end;
 
 function TLKSLPrecisionThread.GetNextTickTime: Double;
@@ -214,7 +219,10 @@ procedure TLKSLPrecisionThread.SetActive(const AActive: Boolean);
 const
   THREAD_STATE: Array[Boolean] of TLKThreadState = (tsPaused, tsRunning);
 begin
-  FThread.ThreadState := THREAD_STATE[AActive];
+  if (csDesigning in ComponentState) then
+    FActive := AActive
+  else
+    FThread.ThreadState := THREAD_STATE[AActive];
 end;
 
 procedure TLKSLPrecisionThread.SetOnTick(const AOnTick: TLKThreadTickCallback);
