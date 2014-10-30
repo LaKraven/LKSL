@@ -125,7 +125,6 @@
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="..\..\..\Source\Delphi\Components\Common\LKSL.Threads.Components.pas"/>
-        <DCCReference Include="..\..\..\Source\Delphi\Components\Common\LKSL.Events.Components.pas"/>
         <DCCReference Include="..\..\..\Source\Delphi\Components\Common\LKSL.Components.Reg.pas"/>
         <DCCReference Include="..\..\..\Source\Delphi\Lib\Common\LKSL.Common.Types.pas"/>
         <DCCReference Include="..\..\..\Source\Delphi\Lib\Threads\LKSL.Threads.Base.pas"/>

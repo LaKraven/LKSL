@@ -32,7 +32,6 @@ requires
 
 contains
   LKSL.Threads.Components in '..\..\..\Source\Delphi\Components\Common\LKSL.Threads.Components.pas',
-  LKSL.Events.Components in '..\..\..\Source\Delphi\Components\Common\LKSL.Events.Components.pas',
   LKSL.Components.Reg in '..\..\..\Source\Delphi\Components\Common\LKSL.Components.Reg.pas',
   LKSL.Common.Types in '..\..\..\Source\Delphi\Lib\Common\LKSL.Common.Types.pas',
   LKSL.Threads.Base in '..\..\..\Source\Delphi\Lib\Threads\LKSL.Threads.Base.pas';
