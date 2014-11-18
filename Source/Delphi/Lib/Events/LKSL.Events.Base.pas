@@ -39,6 +39,8 @@ unit LKSL.Events.Base;
 
 interface
 
+{$I LKSL.inc}
+
 {
   About this unit:
     - This unit provides type declarations required for our "Event Engine"
@@ -52,6 +54,8 @@ interface
       - Added a GENERIC version of TLKEventListener contributed by Uwe Raab
         see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/
         This eliminates the replication of boilerplate code for easier implementation.
+      - Deprecated "QueueEvent" and "StackEvent" procedures. Will be removed after 1st December 2014
+      - Added LKSL.INC include for configuration settings and version-specific configurations
     13th October 2014:
       - Added Enum "TLKEventProcessMode"
       - Added Property "ProcessMode" to TLKEventThreadBase to switch between full queue processing and
@@ -249,25 +253,27 @@ type
     property NewestEventOnly: Boolean read GetNewestEventOnly write SetNewestEventOnly;
   end;
 
-  {
-    TLKEventListener
-      - A Generic version of the original TLKEventListener
-      - Eliminates some replication of boilerplate code.
-      - Contributed by Uwe Raab
-      - (see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/)
-  }
-  TLKEventListener<T: TLKEvent> = class(TLKEventListener)
-  type
-    TEventCallback = procedure(const AEvent: T) of object;
-  private
-    FOnEvent: TEventCallback;
-    function GetOnEvent: TEventCallback;
-    procedure SetOnEvent(const AOnEvent: TEventCallback);
-  public
-    procedure EventCall(const AEvent: TLKEvent); override;
-    function GetEventType: TLKEventType; override;
-    property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
-  end;
+  {$IFDEF LKSL_USE_GENERICS}
+    {
+      TLKEventListener
+        - A Generic version of the original TLKEventListener
+        - Eliminates some replication of boilerplate code.
+        - Contributed by Uwe Raab
+        - (see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/)
+    }
+    TLKEventListener<T: TLKEvent> = class(TLKEventListener)
+    type
+      TEventCallback = procedure(const AEvent: T) of object;
+    private
+      FOnEvent: TEventCallback;
+      function GetOnEvent: TEventCallback;
+      procedure SetOnEvent(const AOnEvent: TEventCallback);
+    public
+      procedure EventCall(const AEvent: TLKEvent); override;
+      function GetEventType: TLKEventType; override;
+      property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
+    end;
+  {$ENDIF LKSL_USE_GENERICS}
 
   {
     TLKEventListenerGroup
@@ -476,8 +482,8 @@ type
 var
   Events: TLKEventHandler;
 
-procedure QueueEvent(const AEvent: TLKEvent);
-procedure StackEvent(const AEvent: TLKEvent);
+procedure QueueEvent(const AEvent: TLKEvent); deprecated 'Call .Queue against your Event instance! Removing after 1st Dec 2014';
+procedure StackEvent(const AEvent: TLKEvent); deprecated 'Call .Stack against your Event instance! Removing after 1st Dec 2014';
 
 implementation
 
@@ -628,7 +634,7 @@ end;
 
 procedure TLKEvent.Queue;
 begin
-  QueueEvent(Self);
+  Events.QueueEvent(Self);
 end;
 
 procedure TLKEvent.ReadFromStream(const AStream: TStream);
@@ -659,7 +665,7 @@ end;
 
 procedure TLKEvent.Stack;
 begin
-  StackEvent(Self);
+  Events.StackEvent(Self);
 end;
 
 procedure TLKEvent.TransmitOnly;
@@ -808,43 +814,43 @@ begin
       FIndex := FEventThread.UnregisterListener(Self);
   end;
 end;
-
-{ TLKEventListener }
-procedure TLKEventListener<T>.EventCall(const AEvent: TLKEvent);
-var
-  LCallback: TEventCallback;
-begin
-  inherited;
-  LCallback := OnEvent;
-  if Assigned(LCallback) then
-    LCallback(T(AEvent));
-end;
-
-function TLKEventListener<T>.GetEventType: TLKEventType;
-begin
-  Result := T;
-end;
-
-function TLKEventListener<T>.GetOnEvent: TEventCallback;
-begin
-  Lock;
-  try
-    Result := FOnEvent;
-  finally
-    Unlock;
+{$IFDEF LKSL_USE_GENERICS}
+  { TLKEventListener }
+  procedure TLKEventListener<T>.EventCall(const AEvent: TLKEvent);
+  var
+    LCallback: TEventCallback;
+  begin
+    inherited;
+    LCallback := OnEvent;
+    if Assigned(LCallback) then
+      LCallback(T(AEvent));
   end;
-end;
 
-procedure TLKEventListener<T>.SetOnEvent(const AOnEvent: TEventCallback);
-begin
-  Lock;
-  try
-    FOnEvent := AOnEvent;
-  finally
-    Unlock;
+  function TLKEventListener<T>.GetEventType: TLKEventType;
+  begin
+    Result := T;
   end;
-end;
 
+  function TLKEventListener<T>.GetOnEvent: TEventCallback;
+  begin
+    Lock;
+    try
+      Result := FOnEvent;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKEventListener<T>.SetOnEvent(const AOnEvent: TEventCallback);
+  begin
+    Lock;
+    try
+      FOnEvent := AOnEvent;
+    finally
+      Unlock;
+    end;
+  end;
+{$ENDIF LKSL_USE_GENERICS}
 { TLKEventListenerGroup }
 
 constructor TLKEventListenerGroup.Create(const AEventThread: TLKEventThreadBase; const AEventType: TLKEventType);
