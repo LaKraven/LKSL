@@ -383,6 +383,7 @@
   {$IFDEF DELPHI2009}
     {$DEFINE SUPPORTS_UNICODE}
     {$DEFINE SUPPORTS_GENERICS}
+    {$DEFINE SUPPORTS_ANONYMOUSMETHODS}
   {$ENDIF}
 
   {$IFDEF DELPHI2010}
@@ -427,8 +428,8 @@
   {$ENDIF}
 
 // MINIMUM SUPPORTED VERSION
-  {$IFNDEF DELPHI2007}
-    {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2007, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
+  {$IFNDEF DELPHI2009}
+    {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2009, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
   {$ELSE}
     {$DEFINE LKSL}
   {$ENDIF}
