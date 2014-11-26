@@ -50,6 +50,10 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    26th November 2014:
+      - Added overloaded Constructors to the GENERIC version of TLKEventListener.
+        You can now pass an Event Callback as a parameter of the Constructor to streamline the
+        initialization of the Listener (one line instead of 2)
     18th November 2014:
       - Added a GENERIC version of TLKEventListener contributed by Uwe Raab
         see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/
@@ -260,6 +264,9 @@ type
         - Eliminates some replication of boilerplate code.
         - Contributed by Uwe Raab
         - (see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/)
+        ---
+        - Updated by Simon J Stuart (26th October 2011)
+          - Now includes overloaded Constructors so you can assign "OnEvent" inline on creation
     }
     TLKEventListener<T: TLKEvent> = class(TLKEventListener)
     type
@@ -269,6 +276,8 @@ type
       function GetOnEvent: TEventCallback;
       procedure SetOnEvent(const AOnEvent: TEventCallback);
     public
+      constructor Create(const AOnEvent: TEventCallback); reintroduce; overload;
+      constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback); reintroduce; overload;
       procedure EventCall(const AEvent: TLKEvent); override;
       function GetEventType: TLKEventType; override;
       property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
@@ -816,6 +825,18 @@ begin
 end;
 {$IFDEF LKSL_USE_GENERICS}
   { TLKEventListener }
+  constructor TLKEventListener<T>.Create(const AOnEvent: TEventCallback);
+  begin
+    inherited Create;
+    FOnEvent := AOnEvent;
+  end;
+
+  constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback);
+  begin
+    inherited Create(AEventThread);
+    FOnEvent := AOnEvent;
+  end;
+
   procedure TLKEventListener<T>.EventCall(const AEvent: TLKEvent);
   var
     LCallback: TEventCallback;
