@@ -39,12 +39,26 @@ unit LKSL.Streams.System;
 
 interface
 
+{$I LKSL.inc}
+
 {
   About this unit:
     - This unit provides a series of methods to Delete, Insert, Read and Write values to/from Streams
     - The Types covered are those defined in "System.pas"
 
   Changelog (latest changes first):
+    26th October 2014:
+      - Added explicit "Cardinal" support (Delete, Insert, Read, Write)
+      - Added "StreamManager" class
+        - Delete = StreamManager.Delete<Integer>(MyStream);
+        - Insert = StreamManager.Insert<Integer>(MyStream, MyInteger);
+        - Read = MyInteger := StreamManager<Integer>(MyStream);
+        - Write = StreamManager.Write<Integer>(MyStream, MyInteger);
+      - Added GENERIC HELPER "TLKStreamHelper" for TStream
+        - Delete = MyStream.DeleteValue<Integer>;
+        - Insert = MyStream.InsertValue<Integer>(MyInteger);
+        - Read = MyInteger := MyStream.ReadValue<Integer>;
+        - Write = MyStream.WriteValue<Integer>(MyInteger);
     6th September 2014 (bug fix commit):
       - Fixed a silly bug in every "Insert" method
     6th September 2014:
@@ -53,6 +67,34 @@ interface
 
 uses
   System.Classes, System.SysUtils;
+
+{$IFDEF LKSL_USE_GENERICS}
+  type
+    StreamManager = class
+    public
+      class procedure Delete<T>(const AStream: TStream); overload; inline;
+      class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+      class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
+      class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+      class function Read<T>(const AStream: TStream): T; overload; inline;
+      class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
+      class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
+      class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+    end;
+  {$IFDEF LKSL_USE_HELPERS}
+    TLKStreamHelper = class helper for TStream
+    public
+      procedure DeleteValue<T>; overload;
+      procedure DeleteValue<T>(const APosition: Int64); overload;
+      procedure InsertValue<T>(const AValue: T); overload;
+      procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
+      function ReadValue<T>: T; overload;
+      function ReadValue<T>(const APosition: Int64): T; overload;
+      procedure WriteValue<T>(const AValue: T); overload;
+      procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
+    end;
+  {$ENDIF}
+{$ENDIF}
 
 // Utility Methods
 procedure StreamClearSpace(const AStream: TStream; const ASize: Int64); overload;
@@ -70,6 +112,8 @@ procedure StreamDeleteBoolean(const AStream: TStream); overload;
 procedure StreamDeleteBoolean(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteByte(const AStream: TStream); overload;
 procedure StreamDeleteByte(const AStream: TStream; const APosition: Int64); overload;
+procedure StreamDeleteCardinal(const AStream: TStream); overload;
+procedure StreamDeleteCardinal(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteChar(const AStream: TStream); overload;
 procedure StreamDeleteChar(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteCurrency(const AStream: TStream); overload;
@@ -121,6 +165,8 @@ procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean); ov
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
 procedure StreamInsertByte(const AStream: TStream; const AValue: Byte); overload;
 procedure StreamInsertByte(const AStream: TStream; const AValue: Byte; const APosition: Int64); overload;
+procedure StreamInsertCardinal(const AStream: TStream; const AValue: Cardinal); overload;
+procedure StreamInsertCardinal(const AStream: TStream; const AValue: Cardinal; const APosition: Int64); overload;
 procedure StreamInsertChar(const AStream: TStream; const AValue: Char); overload;
 procedure StreamInsertChar(const AStream: TStream; const AValue: Char; const APosition: Int64); overload;
 procedure StreamInsertCurrency(const AStream: TStream; const AValue: Currency); overload;
@@ -174,6 +220,8 @@ function StreamReadBoolean(const AStream: TStream): Boolean; overload;
 function StreamReadBoolean(const AStream: TStream; const APosition: Int64): Boolean; overload;
 function StreamReadByte(const AStream: TStream): Byte; overload;
 function StreamReadByte(const AStream: TStream; const APosition: Int64): Byte; overload;
+function StreamReadCardinal(const AStream: TStream): Cardinal; overload;
+function StreamReadCardinal(const AStream: TStream; const APosition: Int64): Cardinal; overload;
 function StreamReadChar(const AStream: TStream): Char; overload;
 function StreamReadChar(const AStream: TStream; const APosition: Int64): Char; overload;
 function StreamReadCurrency(const AStream: TStream): Currency; overload;
@@ -227,6 +275,8 @@ procedure StreamWriteBoolean(const AStream: TStream; const AValue: Boolean); ove
 procedure StreamWriteBoolean(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
 procedure StreamWriteByte(const AStream: TStream; const AValue: Byte); overload;
 procedure StreamWriteByte(const AStream: TStream; const AValue: Byte; const APosition: Int64); overload;
+procedure StreamWriteCardinal(const AStream: TStream; const AValue: Cardinal); overload;
+procedure StreamWriteCardinal(const AStream: TStream; const AValue: Cardinal; const APosition: Int64); overload;
 procedure StreamWriteChar(const AStream: TStream; const AValue: Char); overload;
 procedure StreamWriteChar(const AStream: TStream; const AValue: Char; const APosition: Int64); overload;
 procedure StreamWriteCurrency(const AStream: TStream; const AValue: Currency); overload;
@@ -365,6 +415,16 @@ end;
 procedure StreamDeleteByte(const AStream: TStream; const APosition: Int64);
 begin
   StreamClearSpace(AStream, APosition, SizeOf(Byte));
+end;
+
+procedure StreamDeleteCardinal(const AStream: TStream);
+begin
+  StreamDeleteCardinal(AStream, AStream.Position);
+end;
+
+procedure StreamDeleteCardinal(const AStream: TStream; const APosition: Int64);
+begin
+  StreamClearSpace(AStream, APosition, SizeOf(Cardinal));
 end;
 
 procedure StreamDeleteChar(const AStream: TStream);
@@ -632,6 +692,17 @@ procedure StreamInsertByte(const AStream: TStream; const AValue: Byte; const APo
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(Byte));
   AStream.Write(AValue, SizeOf(Byte));
+end;
+
+procedure StreamInsertCardinal(const AStream: TStream; const AValue: Cardinal);
+begin
+  StreamInsertCardinal(AStream, AValue, AStream.Position);
+end;
+
+procedure StreamInsertCardinal(const AStream: TStream; const AValue: Cardinal; const APosition: Int64);
+begin
+  StreamMakeSpace(AStream, APosition, SizeOf(Cardinal));
+  AStream.Write(AValue, SizeOf(Cardinal));
 end;
 
 procedure StreamInsertChar(const AStream: TStream; const AValue: Char);
@@ -910,6 +981,17 @@ function StreamReadByte(const AStream: TStream; const APosition: Int64): Byte;
 begin
   AStream.Position := APosition;
   AStream.Read(Result, SizeOf(Byte));
+end;
+
+function StreamReadCardinal(const AStream: TStream): Cardinal;
+begin
+  Result := StreamReadCardinal(AStream, AStream.Position);
+end;
+
+function StreamReadCardinal(const AStream: TStream; const APosition: Int64): Cardinal;
+begin
+  AStream.Position := APosition;
+  AStream.Read(Result, SizeOf(Result));
 end;
 
 function StreamReadChar(const AStream: TStream): Char;
@@ -1196,6 +1278,17 @@ begin
   AStream.Write(AValue, SizeOf(Byte));
 end;
 
+procedure StreamWriteCardinal(const AStream: TStream; const AValue: Cardinal);
+begin
+  StreamWriteCardinal(AStream, AValue, AStream.Size);
+end;
+
+procedure StreamWriteCardinal(const AStream: TStream; const AValue: Cardinal; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  AStream.Write(AValue, SizeOf(AValue));
+end;
+
 procedure StreamWriteChar(const AStream: TStream; const AValue: Char);
 begin
   StreamWriteChar(AStream, AValue, AStream.Size);
@@ -1422,4 +1515,97 @@ begin
   AStream.Write(AValue, SizeOf(Word));
 end;
 
+{$IFDEF LKSL_USE_GENERICS}
+  { StreamManager }
+  class procedure StreamManager.Delete<T>(const AStream: TStream);
+  begin
+    Delete<T>(AStream, AStream.Position);
+  end;
+
+  class procedure StreamManager.Delete<T>(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(T));
+  end;
+
+  class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T);
+  begin
+    Insert<T>(AStream, AValue, AStream.Position);
+  end;
+
+  class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
+  begin
+    StreamMakeSpace(AStream, APosition, SizeOf(T));
+    AStream.Write(AValue, SizeOf(T));
+  end;
+
+  class function StreamManager.Read<T>(const AStream: TStream): T;
+  begin
+    Result := Read<T>(AStream, AStream.Position);
+  end;
+
+  class function StreamManager.Read<T>(const AStream: TStream; const APosition: Int64): T;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(Result, SizeOf(T));
+  end;
+
+  class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T);
+  begin
+    Write<T>(AStream, AValue, AStream.Size);
+  end;
+
+  class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, SizeOf(T));
+  end;
+
+  {$IFDEF LKSL_USE_HELPERS}
+
+    { TLKStreamHelper }
+    procedure TLKStreamHelper.DeleteValue<T>;
+    begin
+      StreamManager.Delete<T>(Self);
+    end;
+
+    procedure TLKStreamHelper.DeleteValue<T>(const APosition: Int64);
+    begin
+      StreamManager.Delete<T>(Self, APosition);
+    end;
+
+    procedure TLKStreamHelper.InsertValue<T>(const AValue: T);
+    begin
+      StreamManager.Insert<T>(Self, AValue);
+    end;
+
+    procedure TLKStreamHelper.InsertValue<T>(const AValue: T; const APosition: Int64);
+    begin
+      StreamManager.Insert<T>(Self, AValue, APosition);
+    end;
+
+    function TLKStreamHelper.ReadValue<T>: T;
+    begin
+      Result := StreamManager.Read<T>(Self);
+    end;
+
+    function TLKStreamHelper.ReadValue<T>(const APosition: Int64): T;
+    begin
+      Result := StreamManager.Read<T>(Self, APosition);
+    end;
+
+    procedure TLKStreamHelper.WriteValue<T>(const AValue: T);
+    begin
+      StreamManager.Write<T>(Self, AValue);
+    end;
+
+    procedure TLKStreamHelper.WriteValue<T>(const AValue: T; const APosition: Int64);
+    begin
+      StreamManager.Write<T>(Self, AValue, APosition);
+    end;
+
+  {$ENDIF LKSL_USE_HELPERS}
+
+{$ENDIF LKSL_USE_GENERICS}
+
 end.
+

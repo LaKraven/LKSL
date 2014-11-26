@@ -41,3 +41,7 @@
 {$IFDEF SUPPORTS_GENERICS}
   {$DEFINE LKSL_USE_GENERICS} // Place a DOT after the brace to disable Generics
 {$ENDIF}
+
+{$IFDEF SUPPORTS_RECORDHELPERS}
+  {$DEFINE LKSL_USE_HELPERS} // Place a DOT after the brace to disable Helpers
+{$ENDIF}
