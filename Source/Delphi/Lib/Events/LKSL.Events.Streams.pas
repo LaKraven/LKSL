@@ -44,6 +44,8 @@ unit LKSL.Events.Streams;
       to/from Streams.
 
   Changelog (latest changes first):
+    27th November 2014:
+      - "TLKPriority" became "TLKDispatchMethod" (see LKSL.Events.Base.pas changelog for details)
     6th September 2014:
       - Prepared for Release
 }
@@ -56,17 +58,17 @@ uses
   LKSL.Events.Base;
 
 // Delete Methods
-procedure StreamDeleteTLKEventPriority(const AStream: TStream); overload;
-procedure StreamDeleteTLKEventPriority(const AStream: TStream; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream); overload;
+procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64); overload;
 // Insert Methods
-procedure StreamInsertTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority); overload;
-procedure StreamInsertTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority; const APosition: Int64); overload;
+procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod); overload;
+procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
 // Read Methods
-function StreamReadTLKEventPriority(const AStream: TStream): TLKEventPriority; overload;
-function StreamReadTLKEventPriority(const AStream: TStream; const APosition: Int64): TLKEventPriority; overload;
+function StreamReadTLKEventDispatchMethod(const AStream: TStream): TLKEventDispatchMethod; overload;
+function StreamReadTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64): TLKEventDispatchMethod; overload;
 // Write Methods
-procedure StreamWriteTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority); overload;
-procedure StreamWriteTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority; const APosition: Int64); overload;
+procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod); overload;
+procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
 
 implementation
 
@@ -75,24 +77,24 @@ uses
 
 // Delete Methods
 
-procedure StreamDeleteTLKEventPriority(const AStream: TStream);
+procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream);
 begin
-  StreamDeleteTLKEventPriority(AStream, AStream.Position);
+  StreamDeleteTLKEventDispatchMethod(AStream, AStream.Position);
 end;
 
-procedure StreamDeleteTLKEventPriority(const AStream: TStream; const APosition: Int64);
+procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64);
 begin
-  StreamClearSpace(AStream, APosition, SizeOf(TLKEventPriority));
+  StreamClearSpace(AStream, APosition, SizeOf(TLKEventDispatchMethod));
 end;
 
 // Insert Methods
 
-procedure StreamInsertTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority);
+procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod);
 begin
-  StreamInsertTLKEventPriority(AStream, AValue, AStream.Position);
+  StreamInsertTLKEventDispatchMethod(AStream, AValue, AStream.Position);
 end;
 
-procedure StreamInsertTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority; const APosition: Int64);
+procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
@@ -100,12 +102,12 @@ end;
 
 // Read Methods
 
-function StreamReadTLKEventPriority(const AStream: TStream): TLKEventPriority;
+function StreamReadTLKEventDispatchMethod(const AStream: TStream): TLKEventDispatchMethod;
 begin
-  Result := StreamReadTLKEventPriority(AStream, AStream.Position);
+  Result := StreamReadTLKEventDispatchMethod(AStream, AStream.Position);
 end;
 
-function StreamReadTLKEventPriority(const AStream: TStream; const APosition: Int64): TLKEventPriority;
+function StreamReadTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64): TLKEventDispatchMethod;
 begin
   AStream.Position := APosition;
   AStream.Read(Result, SizeOf(Result));
@@ -113,12 +115,12 @@ end;
 
 // Write Methods
 
-procedure StreamWriteTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority);
+procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod);
 begin
-  StreamWriteTLKEventPriority(AStream, AValue, AStream.Size);
+  StreamWriteTLKEventDispatchMethod(AStream, AValue, AStream.Size);
 end;
 
-procedure StreamWriteTLKEventPriority(const AStream: TStream; const AValue: TLKEventPriority; const APosition: Int64);
+procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
 begin
   AStream.Position := APosition;
   AStream.Write(AValue, SizeOf(AValue));

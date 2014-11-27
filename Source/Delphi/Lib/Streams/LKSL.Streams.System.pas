@@ -70,7 +70,7 @@ uses
 
 {$IFDEF LKSL_USE_GENERICS}
   type
-    StreamManager = class
+    StreamManager = class abstract
     public
       class procedure Delete<T>(const AStream: TStream); overload; inline;
       class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;

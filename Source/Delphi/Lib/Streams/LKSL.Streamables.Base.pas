@@ -47,6 +47,24 @@ unit LKSL.Streamables.Base;
       IN THE "FINALIZATION" SECTION OF YOUR DEFINING UNITS!
 
   Changelog (latest changes first):
+    27th November 2014:
+      - Added Class Procedure "Register" to TLKStreamable
+        - It's basically an alias of "Streamables.Register(Self);"
+      - Added overloaded Constructor to TLKStreamable
+        - Takes a TStream reference, and initialzies the object using the serialization in the Stream
+      - Added function "CreateStreamableFromStream" Params: (AStream: TStream; APosition: Int64 [optional])
+        - Returns a new instance of the appropriate Streamable Type populated from the Stream
+        - Returns a "nil" if the signature does not match a registered Streamable Type
+      - TLKStreamable significant INTERFACE-BREAKING changes:
+        > For the sake of implementation overrides:
+          - (Public) "DeleteFromStream" became (Protected) "RemoveFromStream"
+          - (Public) "ReadFromStream" became (Protected) "ReadFromStream"
+          - (Public) "InsertIntoStream" became (Protected) "InsertIntoStream"
+          - (Public) "WriteToStream" became (Protected) "WriteToStream"
+        > For the sake of external calls to TLKStreamable descendents:
+          - "DeleteFromStream" remains the same (only the implementation has been relocated)
+          - "LoadFromStream" replaces "ReadFromStream" for external reference
+          - "SaveToStream" replaces "WriteToStream" and "InsertIntoSTream" for external reference
     6th September 2014:
       - Prepared for Release
 }
@@ -93,7 +111,26 @@ type
   TLKStreamable = class abstract(TLKPersistent)
   private
     FVersion: Double;
+  protected
+    // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
+    // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
+    // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
+    procedure ReadFromStream(const AStream: TStream); virtual; abstract;
+    // "RemoveFromStream" needs to remove an instance of your Streamable Type from the given Stream.
+    // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
+    class procedure RemoveFromStream(Const AStream: TStream); virtual; abstract;
+    // "InjectIntoStream" inserts an instance of your Streamable Type into the given Stream.
+    // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
+    procedure InsertIntoStream(const AStream: TStream); virtual; abstract;
+    // "WriteToStream" writes an instance of your Streamable Type to the END of the given Stream.
+    // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
+    procedure WriteToStream(const AStream: TStream); virtual; abstract;
   public
+    // Creates a BLANK instance of your Streamable
+    constructor Create; overload; override;
+    // Creates a POPULATED instance of your Streamable from a Stream
+    constructor Create(const AStream: TStream); reintroduce; overload;
+    constructor Create(const AStream: TStream; const APosition: Int64); reintroduce; overload;
     // You MUST provide a UNIQUE GUID String identifier for ALL Streamable Types
     // This GUID is used to uniquely identify a Streamable Type when Reading back Streamables from a Stream.
     // Override "GetTypeGUID" and return a GUID String.
@@ -105,41 +142,32 @@ type
     // Streamable Type. You can use an "IF" statement on new additions or changes to ensure that those
     // changed valuesets are only considered if the serialization matches a given version.
     class function GetTypeVersion: Double; virtual;
-
-    constructor Create; override;
-
+    // "Register" will register this Streamable Type with the "Streamable Types Manager"
+    // This means you can request the appropriate Streamable Type using its Type GUID String from a
+    // Stream.
+    // NOTE: You should ALWAYS Register TLKStreamable descendants (but NOT Abstract descendants).
+    //       You can call "Streamables.Register" and pass an ARRAY of TLKStreamable descendants too!
+    class procedure Register;
     // "DeleteFromStream" removes an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // DON'T FORGET TO CALL "INHERITED;" FIRST
     // NOTE: "DeleteFromStream" MUST be a CLASS method!
     //       Remember that a Stream knows how large each data block is, and the Stream Handlers know how
     //       much memory to clear automagically.
-    class procedure DeleteFromStream(const AStream: TStream); virtual;
-    // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
-    // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
-    // DON'T FORGET TO CALL "INHERITED;" FIRST
-    procedure ReadFromStream(const AStream: TStream); virtual;
-    // "InsertIntoStream" inserts an instance of your Streamable Type from the given Stream.
-    // NOTE: Don't forget to set the starting Position at which you wish your Streamable Instance to be
-    //       Inserted into the Stream
-    // DON'T FORGET TO CALL "INHERITED;" FIRST
-    procedure InsertIntoStream(const AStream: TStream); virtual;
-    // "WriteToStream" writes an instance of your Streamable Type from the given Stream.
-    // NOTE: It is always added to the END of the given Stream.
-    // DON'T FORGET TO CALL "INHERITED;" FIRST
-    procedure WriteToStream(const AStream: TStream); virtual;
-
+    class procedure DeleteFromStream(const AStream: TStream);
     // "LoadFromFile" sets the Member Data of your Streamable Instance from a saved File
     procedure LoadFromFile(const AFileName: String);
-    // "LoadFromsTream" sets the Member Data of your Streamable Instance from a Stream
+    // "LoadFromStream" sets the Member Data of your Streamable Instance from a Stream
     // It is essentially an ALIAS of "ReadFromStream"
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
-    procedure LoadFromStream(const AStream: TStream);
+    procedure LoadFromStream(const AStream: TStream); overload;
+    procedure LoadFromSTream(const AStream: TStream; const APosition: Int64); overload; inline;
     // "SaveToFile" saves the Member Data of your Streamable Instance to a File
     procedure SaveToFile(const AFileName: String);
     // "SaveToStream" WRITES the Member Data of your Streamable Instance to the END of the given Stream.
     // It is essentially an ALIAS of "WriteToStream"
-    procedure SaveToStream(const AStream: TStream);
+    procedure SaveToStream(const AStream: TStream); overload;
+    procedure SaveToStream(const AStream: TStream; const APosition: Int64); overload;
 
     property Version: Double read FVersion;
   end;
@@ -155,11 +183,12 @@ type
     FName: String;
     function GetName: String;
     procedure SetName(const AName: String);
-  public
-    class procedure DeleteFromStream(const AStream: TStream); override;
+  protected
+    class procedure RemoveFromStream(const AStream: TStream); override;
     procedure ReadFromStream(const AStream: TStream); override;
     procedure InsertIntoStream(const AStream: TStream); override;
     procedure WriteToStream(const AStream: TStream); override;
+  public
     property Name: String read GetName write SetName;
   end;
 
@@ -193,8 +222,10 @@ type
     procedure Unregister(const AStreamableType: TLKStreamableType); overload;
     procedure Unregister(const AStreamableTypes: Array of TLKStreamableType); overload;
 
-    function StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
+    function CreateStreamableFromStream(const AStream: TStream): TLKStreamable; overload;
+    function CreateStreamableFromStream(const AStream: TStream; const APosition: Int64): TLKStreamable; overload;
     function GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
+    function StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
 
     procedure DeleteArrayOfStreamables(const AStream: TStream);
     procedure InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
@@ -218,21 +249,28 @@ begin
   FVersion := GetTypeVersion;
 end;
 
+constructor TLKStreamable.Create(const AStream: TStream);
+begin
+  inherited Create;
+  ReadFromStream(AStream);
+end;
+
+constructor TLKStreamable.Create(const AStream: TStream; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  Create(AStream);
+end;
+
 class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
 begin
   StreamDeleteString(AStream); // Remove the GUID
   StreamDeleteDouble(AStream); // Remove the Version
+  RemoveFromStream(AStream); // Remove the descendant's custom members
 end;
 
 class function TLKStreamable.GetTypeVersion: Double;
 begin
   Result := 0.00; // We assume that this is the FRIST version of this Streamable Type
-end;
-
-procedure TLKStreamable.InsertIntoStream(const AStream: TStream);
-begin
-  StreamInsertString(AStream, GetTypeGUID); // Insert the GUID
-  StreamInsertDouble(AStream, GetTypeVersion); // Insert the Version
 end;
 
 procedure TLKStreamable.LoadFromFile(const AFileName: String);
@@ -247,23 +285,35 @@ begin
   end;
 end;
 
-procedure TLKStreamable.LoadFromStream(const AStream: TStream);
+procedure TLKStreamable.LoadFromStream(const AStream: TStream; const APosition: Int64);
 begin
-  ReadFromStream(AStream);
+  AStream.Position := APosition;
+  LoadFromStream(AStream);
 end;
 
-procedure TLKStreamable.ReadFromStream(const AStream: TStream);
+procedure TLKStreamable.LoadFromStream(const AStream: TStream);
 var
   LSignature: String;
 begin
-  LSignature := StreamReadString(AStream); // Read the GUID
-  if LSignature = GetTypeGUID then // Check if the Signature matches the expected GUID
-  begin
-    FVersion := StreamReadDouble(AStream); // Read the Version
-  end else
-  begin
-    raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GetTypeGUID, LSignature]);
+  Lock;
+  try
+    LSignature := StreamReadString(AStream); // Read the GUID
+    if LSignature = GetTypeGUID then // Check if the Signature matches the expected GUID
+    begin
+      FVersion := StreamReadDouble(AStream); // Read the Version
+      ReadFromStream(AStream); // Read this type's specific values
+    end else
+    begin
+      raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GetTypeGUID, LSignature]);
+    end;
+  finally
+    Unlock;
   end;
+end;
+
+class procedure TLKStreamable.Register;
+begin
+  Streamables.Register(Self);
 end;
 
 procedure TLKStreamable.SaveToFile(const AFileName: String);
@@ -278,20 +328,38 @@ begin
   end;
 end;
 
-procedure TLKStreamable.SaveToStream(const AStream: TStream);
+procedure TLKStreamable.SaveToStream(const AStream: TStream; const APosition: Int64);
 begin
-  WriteToStream(AStream);
+  if APosition = AStream.Size then
+    SaveToStream(AStream)
+  else
+  begin
+    Lock;
+    try
+      StreamInsertString(AStream, GetTypeGUID, APosition);
+      StreamInsertDouble(AStream, GetTypeVersion);
+      InsertIntoStream(AStream);
+    finally
+      Unlock;
+    end;
+  end;
 end;
 
-procedure TLKStreamable.WriteToStream(const AStream: TStream);
+procedure TLKStreamable.SaveToStream(const AStream: TStream);
 begin
-  StreamWriteString(AStream, GetTypeGUID); // Write the GUID
-  StreamWriteDouble(AStream, GetTypeVersion); // Write the Version
+  Lock;
+  try
+    StreamWriteString(AStream, GetTypeGUID); // Write the GUID
+    StreamWriteDouble(AStream, GetTypeVersion); // Write the Version
+    WriteToStream(AStream);
+  finally
+    Unlock;
+  end;
 end;
 
 { TLKStreamableNamed }
 
-class procedure TLKStreamableNamed.DeleteFromStream(const AStream: TStream);
+class procedure TLKStreamableNamed.RemoveFromStream(const AStream: TStream);
 begin
   inherited;
   StreamDeleteString(AStream); // Delete Name
@@ -347,6 +415,23 @@ end;
 constructor TLKStreamables.Create;
 begin
   inherited
+end;
+
+function TLKStreamables.CreateStreamableFromStream(const AStream: TStream): TLKStreamable;
+begin
+  Result := CreateStreamableFromStream(AStream, AStream.Position);
+end;
+
+function TLKStreamables.CreateStreamableFromStream(const AStream: TStream; const APosition: Int64): TLKStreamable;
+var
+  LStreamableType: TLKStreamableType;
+begin
+  AStream.Position := APosition;
+  LStreamableType := GetStreamableTypeFromStream(AStream);
+  if LStreamableType = nil then
+    Result := nil
+  else
+    Result := LStreamableType.Create(AStream);
 end;
 
 procedure TLKStreamables.DeleteArrayOfStreamables(const AStream: TStream);
@@ -525,7 +610,7 @@ var
 begin
   StreamWriteInteger(AStream, Length(AStreamables)); // Write the Array Count into the Stream
   for I := Low(AStreamables) to High(AStreamables) do // Iterate the Array
-    AStreamables[I].WriteToStream(AStream); // Write the Item into the Stream
+    AStreamables[I].SaveToStream(AStream); // Write the Item into the Stream
 end;
 
 procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);
