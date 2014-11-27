@@ -148,6 +148,7 @@ type
     // NOTE: You should ALWAYS Register TLKStreamable descendants (but NOT Abstract descendants).
     //       You can call "Streamables.Register" and pass an ARRAY of TLKStreamable descendants too!
     class procedure Register;
+    class procedure Unregister;
     // "DeleteFromStream" removes an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // DON'T FORGET TO CALL "INHERITED;" FIRST
@@ -343,6 +344,11 @@ begin
       Unlock;
     end;
   end;
+end;
+
+class procedure TLKStreamable.Unregister;
+begin
+  Streamables.Unregister(Self);
 end;
 
 procedure TLKStreamable.SaveToStream(const AStream: TStream);
