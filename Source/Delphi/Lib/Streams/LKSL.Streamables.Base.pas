@@ -50,8 +50,10 @@ unit LKSL.Streamables.Base;
     27th November 2014:
       - Added Class Procedure "Register" to TLKStreamable
         - It's basically an alias of "Streamables.Register(Self);"
-      - Added overloaded Constructor to TLKStreamable
+      - Added Constructor "CreateFromStream" to TLKStreamable
         - Takes a TStream reference, and initialzies the object using the serialization in the Stream
+      - Added Constructor "CreateFromFile" to TLKStreamable
+        - Takes a Filename and initializes the object using the serialization in that File
       - Added function "CreateStreamableFromStream" Params: (AStream: TStream; APosition: Int64 [optional])
         - Returns a new instance of the appropriate Streamable Type populated from the Stream
         - Returns a "nil" if the signature does not match a registered Streamable Type
@@ -127,10 +129,12 @@ type
     procedure WriteToStream(const AStream: TStream); virtual; abstract;
   public
     // Creates a BLANK instance of your Streamable
-    constructor Create; overload; override;
+    constructor Create; override;
     // Creates a POPULATED instance of your Streamable from a Stream
-    constructor Create(const AStream: TStream); reintroduce; overload;
-    constructor Create(const AStream: TStream; const APosition: Int64); reintroduce; overload;
+    constructor CreateFromStream(const AStream: TStream); overload;
+    constructor CreateFromStream(const AStream: TStream; const APosition: Int64); overload;
+    // Creates a POPULATED instance of your Streamable from a File
+    constructor CreateFromFile(const AFileName: String);
     // You MUST provide a UNIQUE GUID String identifier for ALL Streamable Types
     // This GUID is used to uniquely identify a Streamable Type when Reading back Streamables from a Stream.
     // Override "GetTypeGUID" and return a GUID String.
@@ -250,16 +254,22 @@ begin
   FVersion := GetTypeVersion;
 end;
 
-constructor TLKStreamable.Create(const AStream: TStream);
+constructor TLKStreamable.CreateFromStream(const AStream: TStream);
 begin
   inherited Create;
   ReadFromStream(AStream);
 end;
 
-constructor TLKStreamable.Create(const AStream: TStream; const APosition: Int64);
+constructor TLKStreamable.CreateFromFile(const AFileName: String);
+begin
+  inherited Create;
+  LoadFromFile(AFileName);
+end;
+
+constructor TLKStreamable.CreateFromStream(const AStream: TStream; const APosition: Int64);
 begin
   AStream.Position := APosition;
-  Create(AStream);
+  CreateFromStream(AStream);
 end;
 
 class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
@@ -437,7 +447,7 @@ begin
   if LStreamableType = nil then
     Result := nil
   else
-    Result := LStreamableType.Create(AStream);
+    Result := LStreamableType.CreateFromStream(AStream);
 end;
 
 procedure TLKStreamables.DeleteArrayOfStreamables(const AStream: TStream);
