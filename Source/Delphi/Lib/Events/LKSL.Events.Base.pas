@@ -50,6 +50,8 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    28th November 2014 (2nd update):
+      - Reverted some of the "for in" loops because of performance implications!
     28th November 2014:
       - Added integration for Generic Containers (TDictionary) for Event Listener Groups
         in TLKEventThreadBase
@@ -999,26 +1001,26 @@ end;
 
 procedure TLKEventListenerGroup.ProcessEvent(const AEvent: TLKEvent);
 var
-  LListener: TLKEventListener;
+  I: Integer;
 begin
   Lock;
   try
-    for LListener in FListeners do
+    for I := Low(FListeners) to High(FListeners) do
     begin
-      if AEvent.GetTypeGUID = LListener.GetEventType.GetTypeGUID then
+      if AEvent.GetTypeGUID = FListeners[I].GetEventType.GetTypeGUID then
       begin
-        if (((LListener.NewestEventOnly) and (AEvent.DispatchTime > LListener.LastEventTime)) or
-           (not LListener.NewestEventOnly)) and (LListener.GetConditionsMatch(AEvent)) and
-           (((LListener.ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < LListener.ExpireAfter)) or
-           (LListener.ExpireAfter <= 0.00)) then
+        if (((FListeners[I].NewestEventOnly) and (AEvent.DispatchTime > FListeners[I].LastEventTime)) or
+           (not FListeners[I].NewestEventOnly)) and (FListeners[I].GetConditionsMatch(AEvent)) and
+           (((FListeners[I].ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < FListeners[I].ExpireAfter)) or
+           (FListeners[I].ExpireAfter <= 0.00)) then
         begin
-          if LListener.CallUIThread then
+          if FListeners[I].CallUIThread then
           begin
             FEventThread.Synchronize(procedure begin
-                                        LListener.EventCall(AEvent);
+                                        FListeners[I].EventCall(AEvent);
                                       end);
           end else
-            LListener.EventCall(AEvent);
+            FListeners[I].EventCall(AEvent);
         end;
       end;
     end;
@@ -1878,16 +1880,16 @@ end;
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
 var
-  LEventThread: TLKEventThread;
+  I: Integer;
   LClone: TLKEvent;
 begin
   LockThreads;
   try
-    for LEventThread in FEventThreads do
+    for I := Low(FEventThreads) to High(FEventThreads) do
     begin
       LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
       LClone.Assign(AEvent); // Copy the original data into the Clone
-      LEventThread.AddEvent(LClone); // Send a CLONE of the Event to the Thread!
+      FEventThreads[I].AddEvent(LClone); // Send a CLONE of the Event to the Thread!
     end;
   finally
     UnlockThreads;

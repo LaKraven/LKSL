@@ -49,6 +49,8 @@ unit LKSL.Streamables.Base;
       IN THE "FINALIZATION" SECTION OF YOUR DEFINING UNITS!
 
   Changelog (latest changes first):
+    28th November 2014 (second commit):
+      - Reverted some of the "for in" loops due to performance implications
     28th November 2014:
       - Added integration for Generic Containers (TDictionary) for Streamable Types in TLKStreamables.
       - Made some trivial syntactic changes to certain "for" loops because it looks cleaner.
@@ -590,19 +592,19 @@ end;
 
 procedure TLKStreamables.InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
 var
-  LStreamable: TLKStreamable;
+  I: Integer;
 begin
   StreamInsertInteger(AStream, Length(AStreamables)); // Insert the Array Count into the Stream
-  for LStreamable in AStreamables do
-    LStreamable.InsertInToStream(AStream); // Insert the Item into the Stream
+  for I := Low(AStreamables) to High(AStreamables) do
+    AStreamables[I].InsertInToStream(AStream); // Insert the Item into the Stream
 end;
 
 procedure TLKStreamables.Register(const AStreamableTypes: array of TLKStreamableType);
 var
-  LStreamableType: TLKStreamableType;
+  I: Integer;
 begin
-  for LStreamableType in AStreamableTypes do
-    Register(LStreamableType);
+  for I := Low(AStreamableTypes) to High(AStreamableTypes) do
+    Register(AStreamableTypes[I]);
 end;
 
 function TLKStreamables.StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
@@ -676,19 +678,19 @@ end;
 
 procedure TLKStreamables.Unregister(const AStreamableTypes: array of TLKStreamableType);
 var
-  LStreamableType: TLKStreamableType;
+  I: Integer;
 begin
-  for LStreamableType in AStreamableTypes do
-    Unregister(LStreamableType);
+  for I := Low(AStreamableTypes) to High(AStreamableTypes) do
+    Unregister(AStreamableTypes[I]);
 end;
 
 procedure TLKStreamables.WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
 var
-  LStreamable: TLKStreamable;
+  I: Integer;
 begin
   StreamWriteInteger(AStream, Length(AStreamables)); // Write the Array Count into the Stream
-  for LStreamable in AStreamables do
-    LStreamable.SaveToStream(AStream); // Write the Item into the Stream
+  for I := Low(AStreamables) to High(AStreamables) do
+    AStreamables[I].SaveToStream(AStream); // Write the Item into the Stream
 end;
 
 procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);
