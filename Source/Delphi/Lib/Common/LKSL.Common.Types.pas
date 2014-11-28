@@ -37,6 +37,8 @@
 }
 unit LKSL.Common.Types;
 
+{$I LKSL.inc}
+
 {
   About this unit:
     - This unit provides fundamental abstract base types used throughout the LKSL
@@ -49,7 +51,11 @@ unit LKSL.Common.Types;
 interface
 
 uses
-  System.Classes, System.SysUtils, System.SyncObjs;
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils, System.SyncObjs;
+  {$ELSE}
+    Classes, SysUtils, SyncObjs;
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
 type
   { Forward Declarations }

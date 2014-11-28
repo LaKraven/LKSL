@@ -37,6 +37,8 @@
 }
 unit LKSL.Threads.Base;
 
+{$I LKSL.inc}
+
 {
   About this unit:
     - This unit provides type declarations required for our "High Precision Threads"
@@ -86,8 +88,12 @@ unit LKSL.Threads.Base;
 interface
 
 uses
-  {$IFDEF POSIX}Posix.Unistd,{$ENDIF} System.Classes, System.SysUtils, System.Diagnostics,
-  System.SyncObjs, System.Math;
+  {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs;
+  {$ELSE}
+    Classes, SysUtils, Diagnostics, Math, SyncObjs;
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
 type
   { Forward Declarations }

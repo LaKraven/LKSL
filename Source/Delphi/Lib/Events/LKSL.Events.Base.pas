@@ -137,7 +137,11 @@ interface
 }
 
 uses
-  System.Classes, System.SysUtils, System.SyncObjs,
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils, System.SyncObjs,
+  {$ELSE}
+    Classes, SysUtils, SyncObjs,
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   {$IFDEF LKSL_USE_GENERICS}Generics.Collections,{$ENDIF LKSL_USE_GENERICS}
   LKSL.Common.Types,
   LKSL.Threads.Base,
@@ -517,6 +521,9 @@ uses
 
 type
   { Forward Declarations }
+  TLKEventQueue = class;
+  TLKEventStack = class;
+  TLKEventRecorder = class;
   TLKEventEngine = class;
 
   {
@@ -545,9 +552,16 @@ type
     procedure AddEvent(const AEvent: TLKEvent); override;
   end;
 
+  {
+    TLKEventRecorder
+      - A thread for spooling ANY Event type (along with its parameter values) out into a Stream
+  }
+  TLKEventRecorder = class(TLKThread)
+
+  end;
 
   {
-    TLKEventHandler
+    TLKEventEngine
       - Heart and soul of the Event Engine.
   }
   TLKEventEngine = class(TLKPersistent)

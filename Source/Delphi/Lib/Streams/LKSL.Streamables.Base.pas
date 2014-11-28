@@ -82,7 +82,11 @@ unit LKSL.Streamables.Base;
 interface
 
 uses
-  System.Classes, System.SysUtils,
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils,
+  {$ELSE}
+    Classes, SysUtils,
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   {$IFDEF LKSL_USE_GENERICS}Generics.Collections,{$ENDIF LKSL_USE_GENERICS}
   LKSL.Common.Types,
   LKSL.Streams.System;

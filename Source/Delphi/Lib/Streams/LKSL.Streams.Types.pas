@@ -37,6 +37,8 @@
 }
 unit LKSL.Streams.Types;
 
+{$I LKSL.inc}
+
 interface
 
 {
@@ -53,7 +55,11 @@ interface
 }
 
 uses
-  System.Classes, System.SysUtils, System.Types;
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils, System.Types;
+  {$ELSE}
+    Classes, SysUtils, Types;
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
 // Delete Methods
 procedure StreamDeleteTPoint(const AStream: TStream); overload;

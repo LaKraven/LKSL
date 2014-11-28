@@ -37,6 +37,8 @@
 }
 unit LKSL.Events.Streams;
 
+{$I LKSL.inc}
+
 {
   About this unit:
     - This unit is used internally by the "Event Engine"
@@ -53,7 +55,11 @@ unit LKSL.Events.Streams;
 interface
 
 uses
-  System.Classes, System.SysUtils,
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    System.Classes, System.SysUtils,
+  {$ELSE}
+    Classes, SysUtils,
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Events.Base;
 
