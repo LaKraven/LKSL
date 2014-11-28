@@ -50,6 +50,10 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    28th November 2014:
+      - Added integration for Generic Containers (TDictionary) for Event Listener Groups
+        in TLKEventThreadBase
+      - Made some trivial syntactic changes to certain "for" loops because it looks cleaner.
     27th November 2014:
       - A known "ISSUE" remains in TLKEventThreadBase.ProcessListeners
         - Locking the Event Listener Groups at the point of a call represents a significant risk
@@ -132,6 +136,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, System.SyncObjs,
+  {$IFDEF LKSL_USE_GENERICS}Generics.Collections,{$ENDIF LKSL_USE_GENERICS}
   LKSL.Common.Types,
   LKSL.Threads.Base,
   LKSL.Streamables.Base;
@@ -339,7 +344,9 @@ type
   private
     FEventThread: TLKEventThreadBase;
     FEventType: TLKEventType;
-    FIndex: Integer;
+    {$IFNDEF LKSL_USE_GENERICS}
+      FIndex: Integer;
+    {$ENDIF LKSL_USE_GENERICS}
     FListeners: TLKEventListenerArray;
   public
     constructor Create(const AEventThread: TLKEventThreadBase; const AEventType: TLKEventType); reintroduce;
@@ -359,7 +366,11 @@ type
   TLKEventThreadBase = class abstract(TLKThread)
   private
     FEventListenerGroupLock: TCriticalSection;
-    FEventListenerGroups: TLKEventListenerGroupArray;
+    {$IFDEF LKSL_USE_GENERICS}
+      FEventListenerGroups: TDictionary<TGUID, TLKEventListenerGroup>;
+    {$ELSE}
+      FEventListenerGroups: TLKEventListenerGroupArray;
+    {$ENDIF LKSL_USE_GENERICS}
 
     FEventLock: TCriticalSection;
     FEvents: TLKEventArray;
@@ -372,7 +383,7 @@ type
     procedure ClearEvents;
     procedure ClearEventListenerGroups;
     procedure DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-    function GetEventListenerGroup(const AEventType: TLKEventType): Integer;
+    function GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
     // "ProcessListeners" iterates every Listener paired with the Thread and (assuming
     // the parameters match) executes the Event Call on the Listeners (respectively)
     procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
@@ -988,26 +999,26 @@ end;
 
 procedure TLKEventListenerGroup.ProcessEvent(const AEvent: TLKEvent);
 var
-  I: Integer;
+  LListener: TLKEventListener;
 begin
   Lock;
   try
-    for I := Low(FListeners) to High(FListeners) do
+    for LListener in FListeners do
     begin
-      if AEvent.GetTypeGUID = FListeners[I].GetEventType.GetTypeGUID then
+      if AEvent.GetTypeGUID = LListener.GetEventType.GetTypeGUID then
       begin
-        if (((FListeners[I].NewestEventOnly) and (AEvent.DispatchTime > FListeners[I].LastEventTime)) or
-           (not FListeners[I].NewestEventOnly)) and (FListeners[I].GetConditionsMatch(AEvent)) and
-           (((FListeners[I].ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < FListeners[I].ExpireAfter)) or
-           (FListeners[I].ExpireAfter <= 0.00)) then
+        if (((LListener.NewestEventOnly) and (AEvent.DispatchTime > LListener.LastEventTime)) or
+           (not LListener.NewestEventOnly)) and (LListener.GetConditionsMatch(AEvent)) and
+           (((LListener.ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < LListener.ExpireAfter)) or
+           (LListener.ExpireAfter <= 0.00)) then
         begin
-          if FListeners[I].CallUIThread then
+          if LListener.CallUIThread then
           begin
             FEventThread.Synchronize(procedure begin
-                                        FListeners[I].EventCall(AEvent);
+                                        LListener.EventCall(AEvent);
                                       end);
           end else
-            FListeners[I].EventCall(AEvent);
+            LListener.EventCall(AEvent);
         end;
       end;
     end;
@@ -1056,7 +1067,7 @@ procedure TLKEventThreadBase.AddEvent(const AEvent: TLKEvent);
 var
   LIndex: Integer;
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = -1 then
+  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = nil then
   begin
     AEvent.Free;
     Exit;
@@ -1073,54 +1084,61 @@ begin
 end;
 
 procedure TLKEventThreadBase.AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-  function GetSortedPosition: Integer;
-  var
-    LIndex, LLow, LHigh: Integer;
-  begin
-    Result := 0;
-    LLow := 0;
-    LHigh := Length(FEventListenerGroups) - 1;
-    if LHigh = - 1 then
-      Exit;
-    if LLow < LHigh then
+{$IFNDEF LKSL_USE_GENERICS}
+    function GetSortedPosition: Integer;
+    var
+      LIndex, LLow, LHigh: Integer;
     begin
-      while (LHigh - LLow > 1) do
+      Result := 0;
+      LLow := 0;
+      LHigh := Length(FEventListenerGroups) - 1;
+      if LHigh = - 1 then
+        Exit;
+      if LLow < LHigh then
       begin
-        LIndex := (LHigh + LLow) div 2;
-        if AEventListenerGroup.EventType.GetTypeGUID <= FEventListenerGroups[LIndex].EventType.GetTypeGUID then
-          LHigh := LIndex
-        else
-          LLow := LIndex;
+        while (LHigh - LLow > 1) do
+        begin
+          LIndex := (LHigh + LLow) div 2;
+          if GUIDToString(AEventListenerGroup.EventType.GetTypeGUID) <= GUIDToString(FEventListenerGroups[LIndex].EventType.GetTypeGUID) then
+            LHigh := LIndex
+          else
+            LLow := LIndex;
+        end;
       end;
+      if (GUIDToString(FEventListenerGroups[LHigh].EventType.GetTypeGUID) < GUIDToString(AEventListenerGroup.EventType.GetTypeGUID)) then
+        Result := LHigh + 1
+      else if (GUIDToString(FEventListenerGroups[LLow].EventType.GetTypeGUID) < GUIDToString(AEventListenerGroup.EventType.GetTypeGUID)) then
+        Result := LLow + 1
+      else
+        Result := LLow;
     end;
-    if (FEventListenerGroups[LHigh].EventType.GetTypeGUID < AEventListenerGroup.EventType.GetTypeGUID) then
-      Result := LHigh + 1
-    else if (FEventListenerGroups[LLow].EventType.GetTypeGUID < AEventListenerGroup.EventType.GetTypeGUID) then
-      Result := LLow + 1
-    else
-      Result := LLow;
-  end;
-var
-  LIndex, I: Integer;
+  var
+    LIndex, I: Integer;
+{$ENDIF LKSL_USE_GENERICS}
 begin
-  LIndex := GetEventListenerGroup(AEventListenerGroup.EventType);
   LockEventListenerGroups;
   try
-    if LIndex = -1 then
-    begin
-      LIndex := GetSortedPosition;
-      SetLength(FEventListenerGroups, Length(FEventListenerGroups) + 1);
-      // Shift items to the RIGHT
-      if LIndex < Length(FEventListenerGroups) - 1 then
-        for I := Length(FEventListenerGroups) - 1 downto (LIndex + 1) do
-        begin
-          FEventListenerGroups[I] := FEventListenerGroups[I - 1];
-          FEventListenerGroups[I].FIndex := I;
-        end;
-      // Insert new Event Group
-      FEventListenerGroups[LIndex] := AEventListenerGroup;
-      AEventListenerGroup.FIndex := LIndex;
-    end;
+    {$IFDEF LKSL_USE_GENERICS}
+      if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType.GetTypeGUID)) then
+        FEventListenerGroups.Add(AEventListenerGroup.EventType.GetTypeGUID, AEventListenerGroup);
+    {$ELSE}
+      LIndex := GetEventListenerGroup(AEventListenerGroup.EventType).FIndex;
+      if LIndex = -1 then
+      begin
+        LIndex := GetSortedPosition;
+        SetLength(FEventListenerGroups, Length(FEventListenerGroups) + 1);
+        // Shift items to the RIGHT
+        if LIndex < Length(FEventListenerGroups) - 1 then
+          for I := Length(FEventListenerGroups) - 1 downto (LIndex + 1) do
+          begin
+            FEventListenerGroups[I] := FEventListenerGroups[I - 1];
+            FEventListenerGroups[I].FIndex := I;
+          end;
+        // Insert new Event Group
+        FEventListenerGroups[LIndex] := AEventListenerGroup;
+        AEventListenerGroup.FIndex := LIndex;
+      end;
+    {$ENDIF LKSL_USE_GENERICS}
   finally
     UnlockEventListenerGroups;
   end;
@@ -1128,12 +1146,21 @@ end;
 
 procedure TLKEventThreadBase.ClearEventListenerGroups;
 var
-  I: Integer;
+  {$IFDEF LKSL_USE_GENERICS}
+    LEventListenerGroup: TLKEventListenerGroup;
+  {$ELSE}
+    I: Integer;
+  {$ENDIF LKSL_USE_GENERICS}
 begin
   LockEventListenerGroups;
   try
-    for I := High(FEventListenerGroups) downto Low(FEventListenerGroups) do
-      FEventListenerGroups[I].Free;
+    {$IFDEF LKSL_USE_GENERICS}
+      for LEventListenerGroup in FEventListenerGroups.Values do
+        LEventListenerGroup.Free;
+    {$ELSE}
+      for I := High(FEventListenerGroups) downto Low(FEventListenerGroups) do
+        FEventListenerGroups[I].Free;
+    {$ENDIF LKSL_USE_GENERICS}
   finally
     UnlockEventListenerGroups;
   end;
@@ -1158,24 +1185,33 @@ begin
   FEventListenerGroupLock := TCriticalSection.Create;
   FEventLock := TCriticalSection.Create;
   FProcessMode := epmAll;
+  {$IFDEF LKSL_USE_GENERICS}
+    FEventListenerGroups := TDictionary<TGUID, TLKEventListenerGroup>.Create;
+  {$ENDIF LKSL_USE_GENERICS}
 end;
 
 procedure TLKEventThreadBase.DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-var
-  LCount, I: Integer;
+{$IFNDEF LKSL_USE_GENERICS}
+  var
+    LCount, I: Integer;
+{$ENDIF LKSL_USE_GENERICS}
 begin
   LockEventListenerGroups;
   try
-    LCount := Length(FEventListenerGroups);
-    if (AEventListenerGroup.FIndex < 0) or (AEventListenerGroup.FIndex > LCount - 1) then
-      Exit;
-    if (AEventListenerGroup.FIndex < (LCount - 1)) then
-      for I := AEventListenerGroup.FIndex to LCount - 2 do
-      begin
-        FEventListenerGroups[I] := FEventListenerGroups[I + 1];
-        FEventListenerGroups[I].FIndex := I;
-      end;
-    SetLength(FEventListenerGroups, LCount - 1);
+    {$IFDEF LKSL_USE_GENERICS}
+      FEventListenerGroups.Remove(AEventListenerGroup.EventType.GetTypeGUID);
+    {$ELSE}
+      LCount := Length(FEventListenerGroups);
+      if (AEventListenerGroup.FIndex < 0) or (AEventListenerGroup.FIndex > LCount - 1) then
+        Exit;
+      if (AEventListenerGroup.FIndex < (LCount - 1)) then
+        for I := AEventListenerGroup.FIndex to LCount - 2 do
+        begin
+          FEventListenerGroups[I] := FEventListenerGroups[I + 1];
+          FEventListenerGroups[I].FIndex := I;
+        end;
+      SetLength(FEventListenerGroups, LCount - 1);
+    {$ENDIF LKSL_USE_GENERICS}
   finally
     UnlockEventListenerGroups;
   end;
@@ -1185,38 +1221,48 @@ destructor TLKEventThreadBase.Destroy;
 begin
   ClearEvents;
   ClearEventListenerGroups;
+  {$IFDEF LKSL_USE_GENERICS}
+    FEventListenerGroups.Free;
+  {$ENDIF LKSL_USE_GENERICS}
   FEventListenerGroupLock.Free;
   FEventLock.Free;
   inherited;
 end;
 
-function TLKEventThreadBase.GetEventListenerGroup(const AEventType: TLKEventType): Integer;
-var
-  LIndex, LLow, LHigh: Integer;
+function TLKEventThreadBase.GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
+{$IFNDEF LKSL_USE_GENERICS}
+  var
+    LIndex, LLow, LHigh: Integer;
+{$ENDIF LKSL_USE_GENERICS}
 begin
   LockEventListenerGroups;
   try
-    Result := -1;
-    LLow := 0;
-    LHigh := Length(FEventListenerGroups) - 1;
-    if LHigh > -1 then
-    begin
-      if LLow < LHigh then
+    {$IFDEF LKSL_USE_GENERICS}
+      if not (FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result)) then
+        Result := nil
+    {$ELSE}
+      Result := nil;
+      LLow := 0;
+      LHigh := Length(FEventListenerGroups) - 1;
+      if LHigh > -1 then
       begin
-        while (LHigh - LLow > 1) do
+        if LLow < LHigh then
         begin
-          LIndex := (LHigh + LLow) div 2;
-          if AEventType.GetTypeGUID <= FEventListenerGroups[LIndex].EventType.GetTypeGUID then
-            LHigh := LIndex
-          else
-            LLow := LIndex;
+          while (LHigh - LLow > 1) do
+          begin
+            LIndex := (LHigh + LLow) div 2;
+            if GUIDToString(AEventType.GetTypeGUID) <= GUIDToString(FEventListenerGroups[LIndex].EventType.GetTypeGUID) then
+              LHigh := LIndex
+            else
+              LLow := LIndex;
+          end;
         end;
+        if (GUIDToString(FEventListenerGroups[LHigh].EventType.GetTypeGUID) = GUIDToString(AEventType.GetTypeGUID)) then
+          Result := FEventListenerGroups[LHigh]
+        else if (GUIDToString(FEventListenerGroups[LLow].EventType.GetTypeGUID) = GUIDToString(AEventType.GetTypeGUID)) then
+          Result := FEventListenerGroups[LLow];
       end;
-      if (FEventListenerGroups[LHigh].EventType.GetTypeGUID = AEventType.GetTypeGUID) then
-        Result := LHigh
-      else if (FEventListenerGroups[LLow].EventType.GetTypeGUID = AEventType.GetTypeGUID) then
-        Result := LLow;
-    end;
+    {$ENDIF LKSL_USE_GENERICS}
   finally
     UnlockEventListenerGroups;
   end;
@@ -1244,17 +1290,17 @@ end;
 
 procedure TLKEventThreadBase.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
 var
-  LEventListenerGroup: Integer;
+  LEventListenerGroup: TLKEventListenerGroup;
 begin
   AEvent.FDelta := ADelta;
   AEvent.FProcessedTime := AStartTime;
 //  LockEventListenerGroups;
 //  try
   LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
-  if LEventListenerGroup > - 1 then
+  if LEventListenerGroup <> nil then
   begin
     if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
-      FEventListenerGroups[LEventListenerGroup].ProcessEvent(AEvent);
+      LEventListenerGroup.ProcessEvent(AEvent);
   end;
 //  finally
 //    UnlockEventListenerGroups;
@@ -1263,17 +1309,16 @@ end;
 
 procedure TLKEventThreadBase.RegisterListener(const AListener: TLKEventListener);
 var
-  LIndex: Integer;
+  LEventListenerGroup: TLKEventListenerGroup;
 begin
   LockEventListenerGroups;
   try
-    LIndex := GetEventListenerGroup(AListener.GetEventType);
-    if LIndex = -1 then // If there's no Event Group for this Event Type...
+    LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
+    if LEventListenerGroup = nil then // If there's no Event Group for this Event Type...
     begin
-      LIndex := TLKEventListenerGroup.Create(Self, AListener.GetEventType).FIndex; // Register it
-  //    LIndex := GetEventListenerGroup(AListener.GetEventType);
+      LEventListenerGroup := TLKEventListenerGroup.Create(Self, AListener.GetEventType); // Register it
     end;
-    FEventListenerGroups[LIndex].RegisterListener(AListener);
+    LEventListenerGroup.RegisterListener(AListener);
   finally
     UnlockEventListenerGroups;
   end;
@@ -1315,13 +1360,13 @@ end;
 
 function TLKEventThreadBase.UnregisterListener(const AListener: TLKEventListener): Integer;
 var
-  LIndex: Integer;
+  LEventListenerGroup: TLKEventListenerGroup;
 begin
   LockEventListenerGroups;
   try
-    LIndex := GetEventListenerGroup(AListener.GetEventType);
-    if LIndex > -1 then
-      FEventListenerGroups[LIndex].UnregisterListener(AListener);
+    LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
+    if LEventListenerGroup <> nil then
+      LEventListenerGroup.UnregisterListener(AListener);
     UnlockEventListenerGroups;
   finally
     Result := -1;
@@ -1670,12 +1715,12 @@ end;
 
 procedure TLKEventTransmitterManager.ClearEvents;
 var
-  I: Integer;
+  LEvent: TLKEvent;
 begin
   LockEvents;
   try
-    for I := Low(FEvents) to High(FEvents) do
-      FEvents[I].Free;
+    for LEvent in FEvents do
+      LEvent.Free;
 
     SetLength(FEvents, 0);
   finally
@@ -1833,16 +1878,16 @@ end;
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
 var
-  I: Integer;
+  LEventThread: TLKEventThread;
   LClone: TLKEvent;
 begin
   LockThreads;
   try
-    for I := Low(FEventThreads) to High(FEventThreads) do
+    for LEventThread in FEventThreads do
     begin
       LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
       LClone.Assign(AEvent); // Copy the original data into the Clone
-      FEventThreads[I].AddEvent(LClone); // Send a CLONE of the Event to the Thread!
+      LEventThread.AddEvent(LClone); // Send a CLONE of the Event to the Thread!
     end;
   finally
     UnlockThreads;
