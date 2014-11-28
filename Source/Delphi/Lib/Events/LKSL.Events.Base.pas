@@ -50,6 +50,24 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    28th November 2014 (3rd update):
+      - Support for non-namespaced units added
+      - Introduced the "Event Recorder" system
+        - Events can be set to allow or disallow recording
+        - Events that allow recording will be recorded regardless of whether or not there are
+          any "Listeners" registered for that Event Type.
+        - Event Recordings can be replayed either in the same application, or in any application you want
+          so long as that application has all of the same Event Types registered.
+      - TLKEvent additions:
+        - (Protected) "GetDefaultAllowRecording"
+          - Default = True
+          - Override if you want your Event Type to NOT be Recordable by default
+        - (Public, Property) "AllowRecording"
+          - True = Allow the Event to be Recorded
+          - False = Do NOT allow the Event to be Recorded.
+        - (Public, Property) "IsReplay" [Read-only]
+          - True = The Event Instance is part of a Replay
+          - False = The Event Instance is NOT part of a Replay
     28th November 2014 (2nd update):
       - Reverted some of the "for in" loops because of performance implications!
     28th November 2014:
@@ -159,9 +177,12 @@ type
   TLKEventReceiverBase = class;
 
   { Enum Types }
-  TLKEventDispatchMode = (edmQueueOrStack, edmQueueOnly, edmStackOnly);
+  TLKEventDispatchMode = (edmQueue, edmStack, edmThreads);
   TLKEventDispatchMethod = (edQueue, edStack);
   TLKEventProcessMode = (epmOneByOne, epmAll);
+
+  { Set Types }
+  TLKEventDispatchModes = set of TLKEventDispatchMode;
 
   { Class References }
   TLKEventType = class of TLKEvent;
@@ -187,21 +208,26 @@ type
   }
   TLKEvent = class abstract(TLKStreamable)
   private
+    FAllowRecording: Boolean;
     FDelta: Double;
-    FDispatchMode: TLKEventDispatchMode;
+    FDispatchModes: TLKEventDispatchModes;
     FDispatchMethod: TLKEventDispatchMethod;
     FDispatchTime: Double;
     FExpiresAfter: Double;
+    FIsReplay: Boolean;
     FProcessedTime: Double;
     FStreamEvent: Boolean;
 
+    function GetAllowRecording: Boolean;
     function GetDelta: Double;
     function GetDispatchMethod: TLKEventDispatchMethod;
     function GetDispatchTime: Double;
     function GetExpiresAfter: Double;
+    function GetIsReplay: Boolean;
     function GetProcessedTime: Double;
     function GetStreamEvent: Boolean;
 
+    procedure SetAllowRecording(const AAllowRecording: Boolean);
     procedure SetExpiresAfter(const AExpiresAfter: Double);
     procedure SetStreamEvent(const AStreamEvent: Boolean);
   protected
@@ -224,6 +250,12 @@ type
     // You MUST override and implement "WriteEventToStream"
     // This APPENDS your Event Instance's data to the END of a Stream
     procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
+    // Override "GetDefaultAllowRecording" if you want to PREVENT your Event from being recorded for replay.
+    // You can also set individual Event Instances to Allow or Disallow recording by setting the
+    // "AllowRecording" property to True (will record) or False (won't record)
+    // Default = True
+    // CRITICAL: If your Event Type contains a Pointer or Reference, you must NOT let it be recorded!
+    function GetDefaultAllowRecording: Boolean; virtual;
     // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
     // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.
     function GetDefaultExpiresAfter: Double; virtual;
@@ -232,10 +264,10 @@ type
     // By default, it returns "False" indicating that this Event isn't intended to be Streamed to
     // another process.
     function GetDefaultStreamEvent: Boolean; virtual;
-    // Override "GetDispatchMode" if you want the Event to restrict the way your Event Type is dispatched.
-    // Available modes are: edmQueueOrStack, edmQueueOnly, edmStackOnly.
-    // Default = edmQueueOrStack
-    function GetDispatchMode: TLKEventDispatchMode; virtual;
+    // Override "GetDispatchModes" if you want the Event to restrict the way your Event Type is dispatched.
+    // Available mode switches are: edmQueue, edmStack, edmThreads.
+    // Default = [edmQueue, edmStack, edmThreads]
+    function GetDispatchModes: TLKEventDispatchModes; virtual;
   public
     constructor Create; override;
 
@@ -245,10 +277,12 @@ type
     procedure Stack; // Add this Event to the Event Stack
     procedure TransmitOnly; // DOESN'T Queue OR Stack the Event for internal processing, just Transmits it
 
+    property AllowRecording: Boolean read GetAllowRecording write SetAllowRecording;
     property Delta: Double read GetDelta;
     property DispatchMethod: TLKEventDispatchMethod read GetDispatchMethod;
     property DispatchTime: Double read GetDispatchTime;
     property ExpiresAfter: Double read GetExpiresAfter write SetExpiresAfter;
+    property IsReplay: Boolean read GetIsReplay;
     property ProcessedTime: Double read GetProcessedTime;
     property StreamEvent: Boolean read GetStreamEvent write SetStreamEvent;
   end;
@@ -587,9 +621,9 @@ type
     destructor Destroy; override;
 
     // "QueueEvent" adds an Event to the Processing Queue (first in, first out)
-    procedure QueueEvent(const AEvent: TLKEvent);
+    procedure QueueEvent(const AEvent: TLKEvent); inline;
     // "StackEvent" adds an Event to the Processing Stack (last in, first out)
-    procedure StackEvent(const AEvent: TLKEvent);
+    procedure StackEvent(const AEvent: TLKEvent); inline;
     // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
     procedure TransmitEvent(const AEvent: TLKEvent);
 
@@ -607,7 +641,10 @@ begin
   if AFromEvent is TLKEvent then
   begin
     TLKEvent(AFromEvent).Lock;
+    Lock;
     try
+      FAllowRecording := TLKEvent(AFromEvent).FAllowRecording;
+      FIsReplay := TLKEvent(AFromEvent).FIsReplay;
       FDelta := TLKEvent(AFromEvent).FDelta;
       FDispatchTime := TLKEvent(AFromEvent).FDispatchTime;
       FExpiresAfter := TLKEvent(AFromEvent).FExpiresAfter;
@@ -616,6 +653,7 @@ begin
       FStreamEvent := TLKEvent(AFromEvent).FStreamEvent;
       Clone(TLKEvent(AFromEvent));
     finally
+      Unlock;
       TLKEvent(AFromEvent).Unlock;
     end;
   end else
@@ -625,28 +663,47 @@ end;
 constructor TLKEvent.Create;
 begin
   inherited;
+  FAllowRecording := GetDefaultAllowRecording;
   FDelta := 0.00;
   FDispatchTime := 0.00;
   FExpiresAfter := GetDefaultExpiresAfter;
   FDispatchMethod := edQueue;
+  FIsReplay := False;
   FProcessedTime := 0.00;
   FStreamEvent := GetDefaultStreamEvent;
-  FDispatchMode := GetDispatchMode;
+  FDispatchModes := GetDispatchModes;
 end;
 
 class procedure TLKEvent.RemoveFromStream(const AStream: TStream);
 begin
   inherited;
+  StreamDeleteBoolean(AStream); // Delete FAllowRecording
+  StreamDeleteBoolean(AStream); // Delete FIsReplay
   StreamDeleteDouble(AStream); // Delete FDelta
   StreamDeleteDouble(AStream); // Delete FDispatchTime
   StreamDeleteDouble(AStream); // Delete FExpiresAfter
-  StreamDeleteTLKEventDispatchMethod(AStream);// Delete FDispatchMethod
+  StreamDeleteTLKEventDispatchMethod(AStream); // Delete FDispatchMethod
   StreamDeleteDouble(AStream); // Delete FProcessedTime
 end;
 
-function TLKEvent.GetDispatchMode: TLKEventDispatchMode;
+function TLKEvent.GetDispatchModes: TLKEventDispatchModes;
 begin
-  Result := edmQueueOrStack;
+  Result := [edmQueue, edmStack, edmThreads];
+end;
+
+function TLKEvent.GetAllowRecording: Boolean;
+begin
+  Lock;
+  try
+    Result := FAllowRecording;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEvent.GetDefaultAllowRecording: Boolean;
+begin
+  Result := True;
 end;
 
 function TLKEvent.GetDefaultExpiresAfter: Double;
@@ -689,6 +746,16 @@ begin
   end;
 end;
 
+function TLKEvent.GetIsReplay: Boolean;
+begin
+  Lock;
+  try
+    Result := FIsReplay;
+  finally
+    Unlock;
+  end;
+end;
+
 function TLKEvent.GetDispatchMethod: TLKEventDispatchMethod;
 begin
   Lock;
@@ -722,30 +789,43 @@ end;
 procedure TLKEvent.InsertIntoStream(const AStream: TStream);
 begin
   inherited;
+  StreamInsertBoolean(AStream, FAllowRecording); // Insert FAllowRecording
+  StreamInsertBoolean(AStream, FIsReplay); // Insert FIsReplay
   StreamInsertDouble(AStream, FDelta); // Insert FDelta
   StreamInsertDouble(AStream, FDispatchTime); // Insert FDispatchTime
   StreamInsertDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
-  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod);// Delete FDispatchMethod
+  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Insert FDispatchMethod
   StreamInsertDouble(AStream, FProcessedTime); // Insert FProcessedTime
 end;
 
 procedure TLKEvent.Queue;
 begin
-  case FDispatchMode of
-    edmQueueOrStack: Events.QueueEvent(Self);
-    edmQueueOnly: Events.QueueEvent(Self);
-    edmStackOnly: Events.StackEvent(Self);
-  end;
+  if (edmQueue in FDispatchModes) then
+    Events.QueueEvent(Self)
+  else if (edmStack in FDispatchModes) then
+    Events.StackEvent(Self);
 end;
 
 procedure TLKEvent.ReadFromStream(const AStream: TStream);
 begin
   inherited;
+  FAllowRecording := StreamReadBoolean(AStream); // read FAllowRecording
+  FIsReplay := StreamReadBoolean(AStream); // read FIsReplay
   FDelta := StreamReadDouble(AStream); // Read FDelta
   FDispatchTime := StreamReadDouble(AStream); // Read FDispatchTime
   FExpiresAfter := StreamReadDouble(AStream); // Read FExpiresAfter
-  FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);// Read FDispatchMethod
+  FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream); // Read FDispatchMethod
   FProcessedTime := StreamReadDouble(AStream); // Read FProcessedTime
+end;
+
+procedure TLKEvent.SetAllowRecording(const AAllowRecording: Boolean);
+begin
+  Lock;
+  try
+    FAllowRecording := AAllowRecording;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: Double);
@@ -770,11 +850,10 @@ end;
 
 procedure TLKEvent.Stack;
 begin
-  case FDispatchMode of
-    edmQueueOrStack: Events.StackEvent(Self);
-    edmStackOnly: Events.StackEvent(Self);
-    edmQueueOnly: Events.QueueEvent(Self);
-  end;
+  if (edmStack in FDispatchModes) then
+    Events.StackEvent(Self)
+  else if (edmQueue in FDispatchModes) then
+    Events.QueueEvent(Self);
 end;
 
 procedure TLKEvent.TransmitOnly;
@@ -785,11 +864,13 @@ end;
 procedure TLKEvent.WriteToStream(const AStream: TStream);
 begin
   inherited;
-  StreamWriteDouble(AStream, FDelta); // Insert FDelta
-  StreamWriteDouble(AStream, FDispatchTime); // Insert FDispatchTime
-  StreamWriteDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
-  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod);// Delete FDispatchMethod
-  StreamWriteDouble(AStream, FProcessedTime); // Insert FProcessedTime
+  StreamWriteBoolean(AStream, FAllowRecording); // Append FAllowRecording
+  StreamWriteBoolean(AStream, FIsReplay); // Append FIsReplay
+  StreamWriteDouble(AStream, FDelta); // Append FDelta
+  StreamWriteDouble(AStream, FDispatchTime); // Append FDispatchTime
+  StreamWriteDouble(AStream, FExpiresAfter); // Append FExpiresAfter
+  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Append FDispatchMethod
+  StreamWriteDouble(AStream, FProcessedTime); // Append FProcessedTime
 end;
 
 { TLKEventListener }
