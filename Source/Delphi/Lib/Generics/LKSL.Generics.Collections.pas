@@ -55,6 +55,7 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  Generics.Defaults,
   Generics.Collections,
   LKSL.Common.Types;
 
@@ -109,7 +110,11 @@ type
   private
     FLock: TCriticalSection;
   public
-    constructor Create; reintroduce;
+    constructor Create(ACapacity: Integer = 0); reintroduce; overload;
+    constructor Create(const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+    constructor Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+    constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>); reintroduce; overload;
+    constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
     destructor Destroy; override;
 
     procedure Lock; inline;
@@ -221,10 +226,34 @@ end;
 
 { TLKDictionary<TKey, TValue> }
 
-constructor TLKDictionary<TKey, TValue>.Create;
+constructor TLKDictionary<TKey, TValue>.Create(const AComparer: IEqualityComparer<TKey>);
 begin
-  inherited;
   FLock := TCriticalSection.Create;
+  inherited Create(AComparer);
+end;
+
+constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer);
+begin
+  FLock := TCriticalSection.Create;
+  inherited Create(ACapacity);
+end;
+
+constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>);
+begin
+  FLock := TCriticalSection.Create;
+  inherited Create(ACapacity, AComparer);
+end;
+
+constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>; const AComparer: IEqualityComparer<TKey>);
+begin
+  FLock := TCriticalSection.Create;
+  inherited Create(Collection, AComparer);
+end;
+
+constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>);
+begin
+  FLock := TCriticalSection.Create;
+  inherited Create(Collection);
 end;
 
 destructor TLKDictionary<TKey, TValue>.Destroy;
