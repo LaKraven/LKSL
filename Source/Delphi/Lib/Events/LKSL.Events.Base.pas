@@ -50,7 +50,9 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
-    28th November 2014 (3rd update):
+    30th November 2014:
+      - Generics are now mandatory (support for non-Generics versions of Delphi is not being considered)
+      - "TDictionary" references replaced by "TLKDictionary" (which integrates the thread-safe Lock)
       - Support for non-namespaced units added
       - Introduced the "Event Recorder" system
         - Events can be set to allow or disallow recording
@@ -58,6 +60,8 @@ interface
           any "Listeners" registered for that Event Type.
         - Event Recordings can be replayed either in the same application, or in any application you want
           so long as that application has all of the same Event Types registered.
+        - TLKEvent.GetDefaultStreamEvent changed to "GetDefaultAllowTransmit"
+        - TLKEvent.StreamEvent changed to "AllowTransmit"
       - TLKEvent additions:
         - (Protected) "GetDefaultAllowRecording"
           - Default = True
@@ -160,7 +164,7 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  {$IFDEF LKSL_USE_GENERICS}Generics.Collections,{$ENDIF LKSL_USE_GENERICS}
+  Generics.Collections, LKSL.Generics.Collections,
   LKSL.Common.Types,
   LKSL.Threads.Base,
   LKSL.Streamables.Base;
@@ -171,10 +175,12 @@ type
   TLKEventListener = class;
   TLKEventListenerGroup = class;
   TLKEventThreadBase = class;
+  TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
   TLKEventTransmitterBase = class;
   TLKEventTransmitterManager = class;
   TLKEventReceiverBase = class;
+  TLKEventRecorder = class;
 
   { Enum Types }
   TLKEventDispatchMode = (edmQueue, edmStack, edmThreads);
@@ -189,13 +195,16 @@ type
   TLKEventListenerType = class of TLKEventListener;
 
   { Array Types }
-  TLKEventArray = Array of TLKEvent;
-  TLKEventTypeArray = Array of TLKEventType;
-  TLKEventListenerArray = Array of TLKEventListener;
-  TLKEventListenerGroupArray = Array of TLKEventListenerGroup;
-  TLKEventThreadArray = Array of TLKEventThread;
-  TLKEventTransmitterArray = Array of TLKEventTransmitterBase;
-  TLKEventReceiverArray = Array of TLKEventReceiverBase;
+  TLKEventArray = TArray<TLKEvent>;
+  TLKEventTypeArray = TArray<TLKEventType>;
+  TLKEventListenerArray = TArray<TLKEventListener>;
+  TLKEventThreadArray = TArray<TLKEventThread>;
+  TLKEventTransmitterArray = TArray<TLKEventTransmitterBase>;
+  TLKEventReceiverArray = TArray<TLKEventReceiverBase>;
+  TLKEventRecorderArray = TArray<TLKEventRecorder>;
+
+  { Hashmap Types }
+  TLKEventListenerGroupDictionary = TLKDictionary<TGUID, TLKEventListenerGroup>;
 
   {
     TLKEvent
@@ -209,6 +218,7 @@ type
   TLKEvent = class abstract(TLKStreamable)
   private
     FAllowRecording: Boolean;
+    FAllowTransmit: Boolean;
     FDelta: Double;
     FDispatchModes: TLKEventDispatchModes;
     FDispatchMethod: TLKEventDispatchMethod;
@@ -216,20 +226,19 @@ type
     FExpiresAfter: Double;
     FIsReplay: Boolean;
     FProcessedTime: Double;
-    FStreamEvent: Boolean;
 
     function GetAllowRecording: Boolean;
+    function GetAllowTransmit: Boolean;
     function GetDelta: Double;
     function GetDispatchMethod: TLKEventDispatchMethod;
     function GetDispatchTime: Double;
     function GetExpiresAfter: Double;
     function GetIsReplay: Boolean;
     function GetProcessedTime: Double;
-    function GetStreamEvent: Boolean;
 
     procedure SetAllowRecording(const AAllowRecording: Boolean);
+    procedure SetAllowTransmit(const AAllowTransmit: Boolean);
     procedure SetExpiresAfter(const AExpiresAfter: Double);
-    procedure SetStreamEvent(const AStreamEvent: Boolean);
   protected
     class procedure RemoveFromStream(const AStream: TStream); override; final;
     procedure ReadFromStream(const AStream: TStream); override; final;
@@ -259,11 +268,11 @@ type
     // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
     // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.
     function GetDefaultExpiresAfter: Double; virtual;
-    // Override "GetDefaultStreamEvent" if you want the Event to be passed over to your Event Streaming
-    // system. Your Event Streaming system should then decide where this Event should be Streamed to.
+    // Override "GetDefaultAllowTransmit" if you want the Event to be passed over to your Event Streaming
+    // system. Your Event Transmission system should then decide where this Event should be Streamed to.
     // By default, it returns "False" indicating that this Event isn't intended to be Streamed to
     // another process.
-    function GetDefaultStreamEvent: Boolean; virtual;
+    function GetDefaultAllowTransmit: Boolean; virtual;
     // Override "GetDispatchModes" if you want the Event to restrict the way your Event Type is dispatched.
     // Available mode switches are: edmQueue, edmStack, edmThreads.
     // Default = [edmQueue, edmStack, edmThreads]
@@ -271,20 +280,20 @@ type
   public
     constructor Create; override;
 
-    procedure Assign(AFromEvent: TPersistent); override;
+    procedure Assign(AFromEvent: TPersistent); override; final;
 
     procedure Queue; // Add this Event to the Event Queue
     procedure Stack; // Add this Event to the Event Stack
     procedure TransmitOnly; // DOESN'T Queue OR Stack the Event for internal processing, just Transmits it
 
     property AllowRecording: Boolean read GetAllowRecording write SetAllowRecording;
+    property AllowTransmit: Boolean read GetAllowTransmit write SetAllowTransmit;
     property Delta: Double read GetDelta;
     property DispatchMethod: TLKEventDispatchMethod read GetDispatchMethod;
     property DispatchTime: Double read GetDispatchTime;
     property ExpiresAfter: Double read GetExpiresAfter write SetExpiresAfter;
     property IsReplay: Boolean read GetIsReplay;
     property ProcessedTime: Double read GetProcessedTime;
-    property StreamEvent: Boolean read GetStreamEvent write SetStreamEvent;
   end;
 
   {
@@ -347,32 +356,30 @@ type
     property NewestEventOnly: Boolean read GetNewestEventOnly write SetNewestEventOnly;
   end;
 
-  {$IFDEF LKSL_USE_GENERICS}
-    {
-      TLKEventListener
-        - A Generic version of the original TLKEventListener
-        - Eliminates some replication of boilerplate code.
-        - Contributed by Uwe Raab
-        - (see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/)
-        ---
-        - Updated by Simon J Stuart (26th October 2011)
-          - Now includes overloaded Constructors so you can assign "OnEvent" inline on creation
-    }
-    TLKEventListener<T: TLKEvent> = class(TLKEventListener)
-    type
-      TEventCallback = procedure(const AEvent: T) of object;
-    private
-      FOnEvent: TEventCallback;
-      function GetOnEvent: TEventCallback;
-      procedure SetOnEvent(const AOnEvent: TEventCallback);
-    public
-      constructor Create(const AOnEvent: TEventCallback); reintroduce; overload;
-      constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback); reintroduce; overload;
-      procedure EventCall(const AEvent: TLKEvent); override;
-      function GetEventType: TLKEventType; override;
-      property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
-    end;
-  {$ENDIF LKSL_USE_GENERICS}
+  {
+    TLKEventListener
+      - A Generic version of the original TLKEventListener
+      - Eliminates some replication of boilerplate code.
+      - Contributed by Uwe Raab
+      - (see http://www.uweraabe.de/Blog/2014/11/09/a-generic-tlkeventlistener-for-lksl/)
+      ---
+      - Updated by Simon J Stuart (26th October 2011)
+        - Now includes overloaded Constructors so you can assign "OnEvent" inline on creation
+  }
+  TLKEventListener<T: TLKEvent> = class(TLKEventListener)
+  type
+    TEventCallback = procedure(const AEvent: T) of object;
+  private
+    FOnEvent: TEventCallback;
+    function GetOnEvent: TEventCallback;
+    procedure SetOnEvent(const AOnEvent: TEventCallback);
+  public
+    constructor Create(const AOnEvent: TEventCallback); reintroduce; overload;
+    constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback); reintroduce; overload;
+    procedure EventCall(const AEvent: TLKEvent); override;
+    function GetEventType: TLKEventType; override;
+    property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
+  end;
 
   {
     TLKEventListenerGroup
@@ -382,14 +389,11 @@ type
   }
   TLKEventListenerGroup = class(TLKPersistent)
   private
-    FEventThread: TLKEventThreadBase;
+    FEventThread: TLKEventThreadBaseWithListeners;
     FEventType: TLKEventType;
-    {$IFNDEF LKSL_USE_GENERICS}
-      FIndex: Integer;
-    {$ENDIF LKSL_USE_GENERICS}
     FListeners: TLKEventListenerArray;
   public
-    constructor Create(const AEventThread: TLKEventThreadBase; const AEventType: TLKEventType); reintroduce;
+    constructor Create(const AEventThread: TLKEventThreadBaseWithListeners; const AEventType: TLKEventType); reintroduce;
     destructor Destroy; override;
 
     procedure ProcessEvent(const AEvent: TLKEvent);
@@ -405,13 +409,6 @@ type
   }
   TLKEventThreadBase = class abstract(TLKThread)
   private
-    FEventListenerGroupLock: TCriticalSection;
-    {$IFDEF LKSL_USE_GENERICS}
-      FEventListenerGroups: TDictionary<TGUID, TLKEventListenerGroup>;
-    {$ELSE}
-      FEventListenerGroups: TLKEventListenerGroupArray;
-    {$ENDIF LKSL_USE_GENERICS}
-
     FEventLock: TCriticalSection;
     FEvents: TLKEventArray;
 
@@ -419,25 +416,13 @@ type
     function GetProcessMode: TLKEventProcessMode;
     procedure SetProcessMode(const AProcessMode: TLKEventProcessMode);
 
-    procedure AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
     procedure ClearEvents;
-    procedure ClearEventListenerGroups;
-    procedure DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-    function GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
-    // "ProcessListeners" iterates every Listener paired with the Thread and (assuming
-    // the parameters match) executes the Event Call on the Listeners (respectively)
-    procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
     // Once we've executed an Event, "RemoveEvent" is called to manage the Event Array
     procedure RemoveEvent(const AIndex: Integer);
-    // We use a separate Lock for Event Listener Groups
-    procedure LockEventListenerGroups;
-    procedure UnlockEventListenerGroups;
     // We also use a separate Lock for Events
-    procedure LockEvents;
-    procedure UnlockEvents;
-    // Methods to register and unregister Event Listeners
-    procedure RegisterListener(const AListener: TLKEventListener);
-    function UnregisterListener(const AListener: TLKEventListener): Integer;
+    procedure LockEvents; inline;
+    procedure UnlockEvents; inline;
+  protected
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
     procedure ProcessEvents(const ADelta, AStartTime: Double); virtual; abstract;
@@ -451,11 +436,37 @@ type
   end;
 
   {
+    TLKEventThreadBase
+      - Abstract Base Type for Threads containing Event Listeners
+  }
+  TLKEventThreadBaseWithListeners = class abstract(TLKEventThreadBase)
+  private
+    FEventListenerGroups: TLKEventListenerGroupDictionary;
+
+    procedure AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
+    procedure ClearEventListenerGroups;
+    procedure DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
+    function GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
+    // "ProcessListeners" iterates every Listener paired with the Thread and (assuming
+    // the parameters match) executes the Event Call on the Listeners (respectively)
+    procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
+
+    // Methods to register and unregister Event Listeners
+    procedure RegisterListener(const AListener: TLKEventListener);
+    function UnregisterListener(const AListener: TLKEventListener): Integer;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure AddEvent(const AEvent: TLKEvent); override;
+  end;
+
+  {
     TLKEventThread
       - A "High Precision Thread" with an added Event Queue.
       - Each cycle will process Events from the Queue before processing your Tick method.
   }
-  TLKEventThread = class abstract(TLKEventThreadBase)
+  TLKEventThread = class abstract(TLKEventThreadBaseWithListeners)
   private
     FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
   protected
@@ -547,6 +558,29 @@ type
 
   end;
 
+  {
+    TLKEventRecorder
+      - A thread for spooling ANY Event type (along with its parameter values) out into a Stream
+  }
+  TLKEventRecorder = class abstract(TLKEventThreadBase)
+  private
+    FIndex: Integer;
+  protected
+    function GetInitialThreadState: TLKThreadState; override;
+    procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
+    procedure Tick(const ADelta, AStartTime: Double); override;
+    //
+    procedure RecordEvent(const AEvent: TLKEvent); virtual; abstract;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure Subscribe;
+    procedure Unsubscribe;
+
+    procedure AddEvent(const AEvent: TLKEvent); override;
+  end;
+
 implementation
 
 uses
@@ -557,14 +591,13 @@ type
   { Forward Declarations }
   TLKEventQueue = class;
   TLKEventStack = class;
-  TLKEventRecorder = class;
   TLKEventEngine = class;
 
   {
     TLKEventQueue
       - Processes Events "first in, first out"
   }
-  TLKEventQueue = class(TLKEventThreadBase)
+  TLKEventQueue = class(TLKEventThreadBaseWithListeners)
   protected
     function GetInitialThreadState: TLKThreadState; override;
     procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
@@ -577,21 +610,13 @@ type
     TLKEventStack
       - Processes Events "last in, first out"
   }
-  TLKEventStack = class(TLKEventThreadBase)
+  TLKEventStack = class(TLKEventThreadBaseWithListeners)
   protected
     function GetInitialThreadState: TLKThreadState; override;
     procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
     procedure Tick(const ADelta, AStartTime: Double); override;
   public
     procedure AddEvent(const AEvent: TLKEvent); override;
-  end;
-
-  {
-    TLKEventRecorder
-      - A thread for spooling ANY Event type (along with its parameter values) out into a Stream
-  }
-  TLKEventRecorder = class(TLKThread)
-
   end;
 
   {
@@ -602,24 +627,18 @@ type
   private
     FEventThreadLock: TCriticalSection;
     FEventThreads: TLKEventThreadArray;
-    FQueue: TLKEventThreadBase;
-    FStack: TLKEventThreadBase;
+    FQueue: TLKEventThreadBaseWithListeners;
+    FStack: TLKEventThreadBaseWithListeners;
     FTransmitters: TLKEventTransmitterManager;
+    FRecorderLock: TCriticalSection;
+    FRecorders: TLKEventRecorderArray;
 
-    procedure AddEvent(const AEvent: TLKEvent; const AProcessingThread: TLKEventThreadBase);
+    procedure AddEvent(const AEvent: TLKEvent; const AProcessingThread: TLKEventThreadBaseWithListeners);
     // "QueueInThreads" iterates through all Event Threads and (if there's a relevant
     // Listener for the Event Type) adds the Event to the Thread's internal Event Queue
     procedure QueueInThreads(const AEvent: TLKEvent);
-
-    procedure RegisterEventThread(const AEventThread: TLKEventThread);
-    procedure UnregisterEventThread(const AEventThread: TLKEventThread);
-
-    procedure RegisterListener(const AListener: TLKEventListener);
-    function UnregisterListener(const AListener: TLKEventListener): Integer;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
+    // "QueueInRecorders" iterates through all Event Recorders and adds the Event to them
+    procedure QueueInRecorders(const AEvent: TLKEvent);
     // "QueueEvent" adds an Event to the Processing Queue (first in, first out)
     procedure QueueEvent(const AEvent: TLKEvent); inline;
     // "StackEvent" adds an Event to the Processing Stack (last in, first out)
@@ -627,8 +646,23 @@ type
     // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
     procedure TransmitEvent(const AEvent: TLKEvent);
 
-    procedure LockThreads;
-    procedure UnlockThreads;
+    procedure LockThreads; inline;
+    procedure UnlockThreads; inline;
+
+    procedure RegisterEventThread(const AEventThread: TLKEventThread);
+    procedure UnregisterEventThread(const AEventThread: TLKEventThread);
+
+    procedure LockRecorders; inline;
+    procedure UnlockRecorders; inline;
+
+    procedure RegisterRecorder(const ARecorder: TLKEventRecorder);
+    procedure UnregisterRecorder(const ARecorder: TLKEventRecorder);
+
+    procedure RegisterListener(const AListener: TLKEventListener);
+    function UnregisterListener(const AListener: TLKEventListener): Integer;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
   end;
 
 var
@@ -644,13 +678,13 @@ begin
     Lock;
     try
       FAllowRecording := TLKEvent(AFromEvent).FAllowRecording;
-      FIsReplay := TLKEvent(AFromEvent).FIsReplay;
+      FAllowTransmit := TLKEvent(AFromEvent).FAllowTransmit;
       FDelta := TLKEvent(AFromEvent).FDelta;
+      FDispatchMethod := TLKEvent(AFromEvent).FDispatchMethod;
       FDispatchTime := TLKEvent(AFromEvent).FDispatchTime;
       FExpiresAfter := TLKEvent(AFromEvent).FExpiresAfter;
-      FDispatchMethod := TLKEvent(AFromEvent).FDispatchMethod;
+      FIsReplay := TLKEvent(AFromEvent).FIsReplay;
       FProcessedTime := TLKEvent(AFromEvent).FProcessedTime;
-      FStreamEvent := TLKEvent(AFromEvent).FStreamEvent;
       Clone(TLKEvent(AFromEvent));
     finally
       Unlock;
@@ -670,7 +704,7 @@ begin
   FDispatchMethod := edQueue;
   FIsReplay := False;
   FProcessedTime := 0.00;
-  FStreamEvent := GetDefaultStreamEvent;
+  FAllowTransmit := GetDefaultAllowTransmit;
   FDispatchModes := GetDispatchModes;
 end;
 
@@ -711,7 +745,7 @@ begin
   Result := 0.00;
 end;
 
-function TLKEvent.GetDefaultStreamEvent: Boolean;
+function TLKEvent.GetDefaultAllowTransmit: Boolean;
 begin
   Result := False; // We don't intend to transmit Event Types to other process by default
 end;
@@ -776,11 +810,11 @@ begin
   end;
 end;
 
-function TLKEvent.GetStreamEvent: Boolean;
+function TLKEvent.GetAllowTransmit: Boolean;
 begin
   Lock;
   try
-    Result := FStreamEvent;
+    Result := FAllowTransmit;
   finally
     Unlock;
   end;
@@ -838,11 +872,11 @@ begin
   end;
 end;
 
-procedure TLKEvent.SetStreamEvent(const AStreamEvent: Boolean);
+procedure TLKEvent.SetAllowTransmit(const AAllowTransmit: Boolean);
 begin
   Lock;
   try
-    FStreamEvent := AStreamEvent;
+    FAllowTransmit := AAllowTransmit;
   finally
     Unlock;
   end;
@@ -1029,58 +1063,58 @@ begin
       FIndex := FEventThread.UnregisterListener(Self);
   end;
 end;
-{$IFDEF LKSL_USE_GENERICS}
-  { TLKEventListener }
-  constructor TLKEventListener<T>.Create(const AOnEvent: TEventCallback);
-  begin
-    inherited Create;
+
+{ TLKEventListener }
+constructor TLKEventListener<T>.Create(const AOnEvent: TEventCallback);
+begin
+  inherited Create;
+  FOnEvent := AOnEvent;
+end;
+
+constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback);
+begin
+  inherited Create(AEventThread);
+  FOnEvent := AOnEvent;
+end;
+
+procedure TLKEventListener<T>.EventCall(const AEvent: TLKEvent);
+var
+  LCallback: TEventCallback;
+begin
+  inherited;
+  LCallback := OnEvent;
+  if Assigned(LCallback) then
+    LCallback(T(AEvent));
+end;
+
+function TLKEventListener<T>.GetEventType: TLKEventType;
+begin
+  Result := T;
+end;
+
+function TLKEventListener<T>.GetOnEvent: TEventCallback;
+begin
+  Lock;
+  try
+    Result := FOnEvent;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEventListener<T>.SetOnEvent(const AOnEvent: TEventCallback);
+begin
+  Lock;
+  try
     FOnEvent := AOnEvent;
+  finally
+    Unlock;
   end;
+end;
 
-  constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback);
-  begin
-    inherited Create(AEventThread);
-    FOnEvent := AOnEvent;
-  end;
-
-  procedure TLKEventListener<T>.EventCall(const AEvent: TLKEvent);
-  var
-    LCallback: TEventCallback;
-  begin
-    inherited;
-    LCallback := OnEvent;
-    if Assigned(LCallback) then
-      LCallback(T(AEvent));
-  end;
-
-  function TLKEventListener<T>.GetEventType: TLKEventType;
-  begin
-    Result := T;
-  end;
-
-  function TLKEventListener<T>.GetOnEvent: TEventCallback;
-  begin
-    Lock;
-    try
-      Result := FOnEvent;
-    finally
-      Unlock;
-    end;
-  end;
-
-  procedure TLKEventListener<T>.SetOnEvent(const AOnEvent: TEventCallback);
-  begin
-    Lock;
-    try
-      FOnEvent := AOnEvent;
-    finally
-      Unlock;
-    end;
-  end;
-{$ENDIF LKSL_USE_GENERICS}
 { TLKEventListenerGroup }
 
-constructor TLKEventListenerGroup.Create(const AEventThread: TLKEventThreadBase; const AEventType: TLKEventType);
+constructor TLKEventListenerGroup.Create(const AEventThread: TLKEventThreadBaseWithListeners; const AEventType: TLKEventType);
 begin
   inherited Create;
   FEventThread := AEventThread;
@@ -1164,11 +1198,6 @@ procedure TLKEventThreadBase.AddEvent(const AEvent: TLKEvent);
 var
   LIndex: Integer;
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = nil then
-  begin
-    AEvent.Free;
-    Exit;
-  end;
   LockEvents;
   try
     AEvent.FDispatchTime := GetReferenceTime;
@@ -1177,89 +1206,6 @@ begin
     FEvents[LIndex] := AEvent;
   finally
     UnlockEvents;
-  end;
-end;
-
-procedure TLKEventThreadBase.AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-{$IFNDEF LKSL_USE_GENERICS}
-    function GetSortedPosition: Integer;
-    var
-      LIndex, LLow, LHigh: Integer;
-    begin
-      Result := 0;
-      LLow := 0;
-      LHigh := Length(FEventListenerGroups) - 1;
-      if LHigh = - 1 then
-        Exit;
-      if LLow < LHigh then
-      begin
-        while (LHigh - LLow > 1) do
-        begin
-          LIndex := (LHigh + LLow) div 2;
-          if GUIDToString(AEventListenerGroup.EventType.GetTypeGUID) <= GUIDToString(FEventListenerGroups[LIndex].EventType.GetTypeGUID) then
-            LHigh := LIndex
-          else
-            LLow := LIndex;
-        end;
-      end;
-      if (GUIDToString(FEventListenerGroups[LHigh].EventType.GetTypeGUID) < GUIDToString(AEventListenerGroup.EventType.GetTypeGUID)) then
-        Result := LHigh + 1
-      else if (GUIDToString(FEventListenerGroups[LLow].EventType.GetTypeGUID) < GUIDToString(AEventListenerGroup.EventType.GetTypeGUID)) then
-        Result := LLow + 1
-      else
-        Result := LLow;
-    end;
-  var
-    LIndex, I: Integer;
-{$ENDIF LKSL_USE_GENERICS}
-begin
-  LockEventListenerGroups;
-  try
-    {$IFDEF LKSL_USE_GENERICS}
-      if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType.GetTypeGUID)) then
-        FEventListenerGroups.Add(AEventListenerGroup.EventType.GetTypeGUID, AEventListenerGroup);
-    {$ELSE}
-      LIndex := GetEventListenerGroup(AEventListenerGroup.EventType).FIndex;
-      if LIndex = -1 then
-      begin
-        LIndex := GetSortedPosition;
-        SetLength(FEventListenerGroups, Length(FEventListenerGroups) + 1);
-        // Shift items to the RIGHT
-        if LIndex < Length(FEventListenerGroups) - 1 then
-          for I := Length(FEventListenerGroups) - 1 downto (LIndex + 1) do
-          begin
-            FEventListenerGroups[I] := FEventListenerGroups[I - 1];
-            FEventListenerGroups[I].FIndex := I;
-          end;
-        // Insert new Event Group
-        FEventListenerGroups[LIndex] := AEventListenerGroup;
-        AEventListenerGroup.FIndex := LIndex;
-      end;
-    {$ENDIF LKSL_USE_GENERICS}
-  finally
-    UnlockEventListenerGroups;
-  end;
-end;
-
-procedure TLKEventThreadBase.ClearEventListenerGroups;
-var
-  {$IFDEF LKSL_USE_GENERICS}
-    LEventListenerGroup: TLKEventListenerGroup;
-  {$ELSE}
-    I: Integer;
-  {$ENDIF LKSL_USE_GENERICS}
-begin
-  LockEventListenerGroups;
-  try
-    {$IFDEF LKSL_USE_GENERICS}
-      for LEventListenerGroup in FEventListenerGroups.Values do
-        LEventListenerGroup.Free;
-    {$ELSE}
-      for I := High(FEventListenerGroups) downto Low(FEventListenerGroups) do
-        FEventListenerGroups[I].Free;
-    {$ENDIF LKSL_USE_GENERICS}
-  finally
-    UnlockEventListenerGroups;
   end;
 end;
 
@@ -1279,90 +1225,15 @@ end;
 constructor TLKEventThreadBase.Create;
 begin
   inherited;
-  FEventListenerGroupLock := TCriticalSection.Create;
   FEventLock := TCriticalSection.Create;
   FProcessMode := epmAll;
-  {$IFDEF LKSL_USE_GENERICS}
-    FEventListenerGroups := TDictionary<TGUID, TLKEventListenerGroup>.Create;
-  {$ENDIF LKSL_USE_GENERICS}
-end;
-
-procedure TLKEventThreadBase.DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
-{$IFNDEF LKSL_USE_GENERICS}
-  var
-    LCount, I: Integer;
-{$ENDIF LKSL_USE_GENERICS}
-begin
-  LockEventListenerGroups;
-  try
-    {$IFDEF LKSL_USE_GENERICS}
-      FEventListenerGroups.Remove(AEventListenerGroup.EventType.GetTypeGUID);
-    {$ELSE}
-      LCount := Length(FEventListenerGroups);
-      if (AEventListenerGroup.FIndex < 0) or (AEventListenerGroup.FIndex > LCount - 1) then
-        Exit;
-      if (AEventListenerGroup.FIndex < (LCount - 1)) then
-        for I := AEventListenerGroup.FIndex to LCount - 2 do
-        begin
-          FEventListenerGroups[I] := FEventListenerGroups[I + 1];
-          FEventListenerGroups[I].FIndex := I;
-        end;
-      SetLength(FEventListenerGroups, LCount - 1);
-    {$ENDIF LKSL_USE_GENERICS}
-  finally
-    UnlockEventListenerGroups;
-  end;
 end;
 
 destructor TLKEventThreadBase.Destroy;
 begin
   ClearEvents;
-  ClearEventListenerGroups;
-  {$IFDEF LKSL_USE_GENERICS}
-    FEventListenerGroups.Free;
-  {$ENDIF LKSL_USE_GENERICS}
-  FEventListenerGroupLock.Free;
   FEventLock.Free;
   inherited;
-end;
-
-function TLKEventThreadBase.GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
-{$IFNDEF LKSL_USE_GENERICS}
-  var
-    LIndex, LLow, LHigh: Integer;
-{$ENDIF LKSL_USE_GENERICS}
-begin
-  LockEventListenerGroups;
-  try
-    {$IFDEF LKSL_USE_GENERICS}
-      if not (FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result)) then
-        Result := nil
-    {$ELSE}
-      Result := nil;
-      LLow := 0;
-      LHigh := Length(FEventListenerGroups) - 1;
-      if LHigh > -1 then
-      begin
-        if LLow < LHigh then
-        begin
-          while (LHigh - LLow > 1) do
-          begin
-            LIndex := (LHigh + LLow) div 2;
-            if GUIDToString(AEventType.GetTypeGUID) <= GUIDToString(FEventListenerGroups[LIndex].EventType.GetTypeGUID) then
-              LHigh := LIndex
-            else
-              LLow := LIndex;
-          end;
-        end;
-        if (GUIDToString(FEventListenerGroups[LHigh].EventType.GetTypeGUID) = GUIDToString(AEventType.GetTypeGUID)) then
-          Result := FEventListenerGroups[LHigh]
-        else if (GUIDToString(FEventListenerGroups[LLow].EventType.GetTypeGUID) = GUIDToString(AEventType.GetTypeGUID)) then
-          Result := FEventListenerGroups[LLow];
-      end;
-    {$ENDIF LKSL_USE_GENERICS}
-  finally
-    UnlockEventListenerGroups;
-  end;
 end;
 
 function TLKEventThreadBase.GetProcessMode: TLKEventProcessMode;
@@ -1375,50 +1246,9 @@ begin
   end;
 end;
 
-procedure TLKEventThreadBase.LockEventListenerGroups;
-begin
-  FEventListenerGroupLock.Acquire;
-end;
-
 procedure TLKEventThreadBase.LockEvents;
 begin
   FEventLock.Acquire;
-end;
-
-procedure TLKEventThreadBase.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
-var
-  LEventListenerGroup: TLKEventListenerGroup;
-begin
-  AEvent.FDelta := ADelta;
-  AEvent.FProcessedTime := AStartTime;
-//  LockEventListenerGroups;
-//  try
-  LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
-  if LEventListenerGroup <> nil then
-  begin
-    if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
-      LEventListenerGroup.ProcessEvent(AEvent);
-  end;
-//  finally
-//    UnlockEventListenerGroups;
-//  end;
-end;
-
-procedure TLKEventThreadBase.RegisterListener(const AListener: TLKEventListener);
-var
-  LEventListenerGroup: TLKEventListenerGroup;
-begin
-  LockEventListenerGroups;
-  try
-    LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
-    if LEventListenerGroup = nil then // If there's no Event Group for this Event Type...
-    begin
-      LEventListenerGroup := TLKEventListenerGroup.Create(Self, AListener.GetEventType); // Register it
-    end;
-    LEventListenerGroup.RegisterListener(AListener);
-  finally
-    UnlockEventListenerGroups;
-  end;
 end;
 
 procedure TLKEventThreadBase.RemoveEvent(const AIndex: Integer);
@@ -1445,26 +1275,125 @@ begin
   end;
 end;
 
-procedure TLKEventThreadBase.UnlockEventListenerGroups;
-begin
-  FEventListenerGroupLock.Release;
-end;
-
 procedure TLKEventThreadBase.UnlockEvents;
 begin
   FEventLock.Release;
 end;
 
-function TLKEventThreadBase.UnregisterListener(const AListener: TLKEventListener): Integer;
+{ TLKEventThreadBaseWithListeners }
+
+procedure TLKEventThreadBaseWithListeners.AddEvent(const AEvent: TLKEvent);
+begin
+  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = nil then
+    AEvent.Free
+  else
+    inherited;
+end;
+
+procedure TLKEventThreadBaseWithListeners.AddEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
+begin
+  FEventListenerGroups.Lock;
+  try
+    if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType.GetTypeGUID)) then
+      FEventListenerGroups.Add(AEventListenerGroup.EventType.GetTypeGUID, AEventListenerGroup);
+  finally
+    FEventListenerGroups.Unlock;
+  end;
+end;
+
+procedure TLKEventThreadBaseWithListeners.ClearEventListenerGroups;
 var
   LEventListenerGroup: TLKEventListenerGroup;
 begin
-  LockEventListenerGroups;
+  FEventListenerGroups.Lock;
+  try
+    for LEventListenerGroup in FEventListenerGroups.Values do
+      LEventListenerGroup.Free;
+  finally
+    FEventListenerGroups.Unlock;
+  end;
+end;
+
+constructor TLKEventThreadBaseWithListeners.Create;
+begin
+  inherited;
+  FEventListenerGroups := TLKDictionary<TGUID, TLKEventListenerGroup>.Create;
+end;
+
+procedure TLKEventThreadBaseWithListeners.DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
+begin
+  FEventListenerGroups.Lock;
+  try
+    FEventListenerGroups.Remove(AEventListenerGroup.EventType.GetTypeGUID);
+  finally
+    FEventListenerGroups.Unlock;
+  end;
+end;
+
+destructor TLKEventThreadBaseWithListeners.Destroy;
+begin
+  ClearEventListenerGroups;
+  FEventListenerGroups.Free;
+  inherited;
+end;
+
+function TLKEventThreadBaseWithListeners.GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
+begin
+  FEventListenerGroups.Lock;
+  try
+    if not (FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result)) then
+      Result := nil
+  finally
+    FEventListenerGroups.Unlock;
+  end;
+end;
+
+procedure TLKEventThreadBaseWithListeners.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
+var
+  LEventListenerGroup: TLKEventListenerGroup;
+begin
+  AEvent.FDelta := ADelta;
+  AEvent.FProcessedTime := AStartTime;
+//  FEventListenerGroups.Lock;
+//  try
+  LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
+  if LEventListenerGroup <> nil then
+  begin
+    if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
+      LEventListenerGroup.ProcessEvent(AEvent);
+  end;
+//  finally
+//    FEventListenerGroups.Unlock;
+//  end;
+end;
+
+procedure TLKEventThreadBaseWithListeners.RegisterListener(const AListener: TLKEventListener);
+var
+  LEventListenerGroup: TLKEventListenerGroup;
+begin
+  FEventListenerGroups.Lock;
+  try
+    LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
+    if LEventListenerGroup = nil then // If there's no Event Group for this Event Type...
+    begin
+      LEventListenerGroup := TLKEventListenerGroup.Create(Self, AListener.GetEventType); // Register it
+    end;
+    LEventListenerGroup.RegisterListener(AListener);
+  finally
+    FEventListenerGroups.Unlock;
+  end;
+end;
+
+function TLKEventThreadBaseWithListeners.UnregisterListener(const AListener: TLKEventListener): Integer;
+var
+  LEventListenerGroup: TLKEventListenerGroup;
+begin
+  FEventListenerGroups.Lock;
   try
     LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
     if LEventListenerGroup <> nil then
       LEventListenerGroup.UnregisterListener(AListener);
-    UnlockEventListenerGroups;
+    FEventListenerGroups.Unlock;
   finally
     Result := -1;
   end;
@@ -1536,133 +1465,6 @@ end;
 procedure TLKEventThread.Tick(const ADelta, AStartTime: Double);
 begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
-end;
-
-{ TLKEventQueue }
-
-procedure TLKEventQueue.AddEvent(const AEvent: TLKEvent);
-begin
-  inherited;
-  ThreadState := tsRunning;
-end;
-
-function TLKEventQueue.GetInitialThreadState: TLKThreadState;
-begin
-  Result := tsPaused;
-end;
-
-procedure TLKEventQueue.ProcessEvents(const ADelta, AStartTime: Double);
-var
-  I, LEnd: Integer;
-begin
-  // We don't Lock the Event Array at this point, as doing so would prevent additional
-  // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
-  begin
-    case FProcessMode of
-      epmOneByOne: begin
-                     ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
-                     FEvents[0].Free; // Destroy the Event
-                     RemoveEvent(0); // Rebalance the Event Array
-                   end;
-      epmAll: begin
-                // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
-                // Iterate the Events up to the High Range and Process
-                for I := 0 to LEnd do
-                begin
-                  ProcessListeners(FEvents[I], ADelta, AStartTime);
-                  FEvents[I].Free;
-                end;
-                // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
-              end;
-    end;
-  end;
-end;
-
-procedure TLKEventQueue.Tick(const ADelta, AStartTime: Double);
-begin
-  ProcessEvents(ADelta, AStartTime);
-  LockEvents;
-  try
-    if Length(FEvents) = 0 then
-      ThreadState := tsPaused;
-  finally
-    UnlockEvents;
-  end;
-end;
-
-{ TLKEventStack }
-
-procedure TLKEventStack.AddEvent(const AEvent: TLKEvent);
-begin
-  inherited;
-  ThreadState := tsRunning;
-end;
-
-function TLKEventStack.GetInitialThreadState: TLKThreadState;
-begin
-  Result := tsPaused;
-end;
-
-procedure TLKEventStack.ProcessEvents(const ADelta, AStartTime: Double);
-//var
-//  LEvent: Integer;
-var
-  I, LEnd: Integer;
-begin
-  // We don't Lock the Event Array at this point, as doing so would prevent additional
-  // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
-  begin
-    case FProcessMode of
-      epmOneByOne: begin
-                     LEnd := High(FEvents);
-                     ProcessListeners(FEvents[LEnd], ADelta, AStartTime); // Process the first Event in the Queue
-                     FEvents[LEnd].Free; // Destroy the Event
-                     RemoveEvent(LEnd); // Rebalance the Event Array
-                   end;
-      epmAll: begin
-                // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
-                // Iterate the Events up to the High Range and Process
-                for I := LEnd downto 0 do
-                begin
-                  ProcessListeners(FEvents[I], ADelta, AStartTime);
-                  FEvents[I].Free;
-                end;
-                // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
-              end;
-    end;
-  end;
-end;
-
-procedure TLKEventStack.Tick(const ADelta, AStartTime: Double);
-begin
-  ProcessEvents(ADelta, AStartTime);
-  LockEvents;
-  try
-    if Length(FEvents) = 0 then
-      ThreadState := tsPaused;
-  finally
-    UnlockEvents;
-  end;
 end;
 
 { TLKEventTransmitterBase }
@@ -1890,7 +1692,7 @@ begin
     try
       // Since we're NOW Streaming the Event, we don't want an endless loop where Program A streams to
       // Program B, then Program B instantly streams back to Program A.... that would suck!
-      FEvents[0].FStreamEvent := False;
+      FEvents[0].FAllowTransmit := False;
       FEvents[0].WriteToStream(LEventStream); // Serialize the Event into the Event Stream
       LockTransmitters;
       try
@@ -1933,12 +1735,231 @@ begin
   FTransmitterLock.Release;
 end;
 
+{ TLKEventRecorder }
+
+procedure TLKEventRecorder.AddEvent(const AEvent: TLKEvent);
+begin
+  inherited;
+  ThreadState := tsRunning;
+end;
+
+constructor TLKEventRecorder.Create;
+begin
+  inherited;
+  FIndex := -1;
+end;
+
+destructor TLKEventRecorder.Destroy;
+begin
+  if FIndex <> -1 then
+    Unsubscribe;
+  inherited;
+end;
+
+function TLKEventRecorder.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
+end;
+
+procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: Double);
+var
+  I, LEnd: Integer;
+begin
+  // We don't Lock the Event Array at this point, as doing so would prevent additional
+  // events from being added to the Queue (and could cause a Thread to freeze)
+  if Length(FEvents) > 0 then
+  begin
+    case FProcessMode of
+      epmOneByOne: begin
+                     FEvents[0].FDelta := ADelta;
+                     FEvents[0].FProcessedTime := AStartTime;
+                     RecordEvent(FEvents[0]); // Process the first Event in the Queue
+                     FEvents[0].Free; // Destroy the Event
+                     RemoveEvent(0); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := 0 to LEnd do
+                begin
+                  FEvents[I].FDelta := ADelta;
+                  FEvents[I].FProcessedTime := AStartTime;
+                  RecordEvent(FEvents[I]);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                try
+                  for I := 0 to High(FEvents) - LEnd do
+                    FEvents[I] := FEvents[I + 1 + LEnd];
+                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                finally
+                  UnlockEvents;
+                end;
+              end;
+    end;
+  end;
+end;
+
+procedure TLKEventRecorder.Subscribe;
+begin
+  if FIndex = -1 then
+    Events.RegisterRecorder(Self);
+end;
+
+procedure TLKEventRecorder.Tick(const ADelta, AStartTime: Double);
+begin
+  ProcessEvents(ADelta, AStartTime);
+  LockEvents;
+  try
+    if Length(FEvents) = 0 then
+      ThreadState := tsPaused;
+  finally
+    UnlockEvents;
+  end;
+end;
+
+procedure TLKEventRecorder.Unsubscribe;
+begin
+  if FIndex <> -1 then
+    Events.UnregisterRecorder(Self);
+end;
+
+{ TLKEventQueue }
+
+procedure TLKEventQueue.AddEvent(const AEvent: TLKEvent);
+begin
+  inherited;
+  ThreadState := tsRunning;
+end;
+
+function TLKEventQueue.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
+end;
+
+procedure TLKEventQueue.ProcessEvents(const ADelta, AStartTime: Double);
+var
+  I, LEnd: Integer;
+begin
+  // We don't Lock the Event Array at this point, as doing so would prevent additional
+  // events from being added to the Queue (and could cause a Thread to freeze)
+  if Length(FEvents) > 0 then
+  begin
+    case FProcessMode of
+      epmOneByOne: begin
+                     ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
+                     FEvents[0].Free; // Destroy the Event
+                     RemoveEvent(0); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := 0 to LEnd do
+                begin
+                  ProcessListeners(FEvents[I], ADelta, AStartTime);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                try
+                  for I := 0 to High(FEvents) - LEnd do
+                    FEvents[I] := FEvents[I + 1 + LEnd];
+                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                finally
+                  UnlockEvents;
+                end;
+              end;
+    end;
+  end;
+end;
+
+procedure TLKEventQueue.Tick(const ADelta, AStartTime: Double);
+begin
+  ProcessEvents(ADelta, AStartTime);
+  LockEvents;
+  try
+    if Length(FEvents) = 0 then
+      ThreadState := tsPaused;
+  finally
+    UnlockEvents;
+  end;
+end;
+
+{ TLKEventStack }
+
+procedure TLKEventStack.AddEvent(const AEvent: TLKEvent);
+begin
+  inherited;
+  ThreadState := tsRunning;
+end;
+
+function TLKEventStack.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
+end;
+
+procedure TLKEventStack.ProcessEvents(const ADelta, AStartTime: Double);
+//var
+//  LEvent: Integer;
+var
+  I, LEnd: Integer;
+begin
+  // We don't Lock the Event Array at this point, as doing so would prevent additional
+  // events from being added to the Queue (and could cause a Thread to freeze)
+  if Length(FEvents) > 0 then
+  begin
+    case FProcessMode of
+      epmOneByOne: begin
+                     LEnd := High(FEvents);
+                     ProcessListeners(FEvents[LEnd], ADelta, AStartTime); // Process the first Event in the Queue
+                     FEvents[LEnd].Free; // Destroy the Event
+                     RemoveEvent(LEnd); // Rebalance the Event Array
+                   end;
+      epmAll: begin
+                // Set the High Range to the number of Events in  the Array right NOW.
+                LEnd := High(FEvents);
+                // Iterate the Events up to the High Range and Process
+                for I := LEnd downto 0 do
+                begin
+                  ProcessListeners(FEvents[I], ADelta, AStartTime);
+                  FEvents[I].Free;
+                end;
+                // Shift the positions of any new Events in the Array
+                LockEvents;
+                try
+                  for I := 0 to High(FEvents) - LEnd do
+                    FEvents[I] := FEvents[I + 1 + LEnd];
+                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                finally
+                  UnlockEvents;
+                end;
+              end;
+    end;
+  end;
+end;
+
+procedure TLKEventStack.Tick(const ADelta, AStartTime: Double);
+begin
+  ProcessEvents(ADelta, AStartTime);
+  LockEvents;
+  try
+    if Length(FEvents) = 0 then
+      ThreadState := tsPaused;
+  finally
+    UnlockEvents;
+  end;
+end;
+
 { TLKEventEngine }
 
-procedure TLKEventEngine.AddEvent(const AEvent: TLKEvent; const AProcessingThread: TLKEventThreadBase);
+procedure TLKEventEngine.AddEvent(const AEvent: TLKEvent; const AProcessingThread: TLKEventThreadBaseWithListeners);
 begin
+  QueueInRecorders(AEvent);
   QueueInThreads(AEvent);
-  if AEvent.StreamEvent then
+  if AEvent.AllowTransmit then
     FTransmitters.AddEvent(AEvent);
   AProcessingThread.AddEvent(AEvent);
 end;
@@ -1950,16 +1971,28 @@ begin
   FQueue := TLKEventQueue.Create;
   FStack := TLKEventStack.Create;
   FTransmitters := TLKEventTransmitterManager.Create;
+  FRecorderLock := TCriticalSection.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
+var
+  I: Integer;
 begin
   FTransmitters.Kill;
-  SetLength(FEventThreads, 0);
+  for I := High(FEventThreads) downto Low(FEventThreads) do
+    UnregisterEventThread(FEventThreads[I]);
   FEventThreadLock.Free;
+  for I := High(FRecorders) downto Low(FRecorders) do
+    FRecorders[I].Unsubscribe;
+  FRecorderLock.Free;
   FQueue.Kill;
   FStack.Kill;
   inherited;
+end;
+
+procedure TLKEventEngine.LockRecorders;
+begin
+  FRecorderLock.Acquire;
 end;
 
 procedure TLKEventEngine.LockThreads;
@@ -1971,6 +2004,24 @@ procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
 begin
   AEvent.FDispatchMethod := edQueue;
   AddEvent(AEvent, FQueue);
+end;
+
+procedure TLKEventEngine.QueueInRecorders(const AEvent: TLKEvent);
+var
+  I: Integer;
+  LClone: TLKEvent;
+begin
+  LockRecorders;
+  try
+    for I := Low(FRecorders) to High(FRecorders) do
+    begin
+      LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
+      LClone.Assign(AEvent); // Copy the original data into the Clone
+      FRecorders[I].AddEvent(LClone); // Send a CLONE of the Event to the Recorder!
+    end;
+  finally
+    UnlockRecorders;
+  end;
 end;
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
@@ -2012,6 +2063,21 @@ begin
   FQueue.RegisterListener(AListener);
 end;
 
+procedure TLKEventEngine.RegisterRecorder(const ARecorder: TLKEventRecorder);
+var
+  LIndex: Integer;
+begin
+  LockRecorders;
+  try
+    LIndex := Length(FRecorders);
+    SetLength(FRecorders, LIndex + 1);
+    FRecorders[LIndex] := ARecorder;
+    ARecorder.FIndex := LIndex;
+  finally
+    UnlockRecorders;
+  end;
+end;
+
 procedure TLKEventEngine.StackEvent(const AEvent: TLKEvent);
 begin
   AEvent.FDispatchMethod := edStack;
@@ -2022,6 +2088,11 @@ procedure TLKEventEngine.TransmitEvent(const AEvent: TLKEvent);
 begin
   FTransmitters.AddEvent(AEvent);
   AEvent.Free;
+end;
+
+procedure TLKEventEngine.UnlockRecorders;
+begin
+  FRecorderLock.Release;
 end;
 
 procedure TLKEventEngine.UnlockThreads;
@@ -2051,6 +2122,11 @@ begin
   FStack.UnregisterListener(AListener);
   FQueue.UnregisterListener(AListener);
   Result := -1;
+end;
+
+procedure TLKEventEngine.UnregisterRecorder(const ARecorder: TLKEventRecorder);
+begin
+
 end;
 
 initialization

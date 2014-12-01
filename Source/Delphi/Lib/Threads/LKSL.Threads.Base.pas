@@ -49,6 +49,8 @@ unit LKSL.Threads.Base;
       folder
 
   Changelog (latest changes first):
+    30th November 2014:
+      - Put "try/finally" blocks around all Lock requests (so if the code fails, the Lock will be released)
     19th September 2014:
       - Added Protected Function "CalculateExtraTime" which returns the number of seconds
         (double-precision) available between the time at which you place the call, and the time at which
@@ -201,10 +203,10 @@ type
 
     // "Lock" locks the Thread's global "Critical Section" using a "Spinlock"
     // (Public just in case you need to call it externally for some reason)
-    procedure Lock;
+    procedure Lock; inline;
     // "Unlock" unlocks the Thread's global "Critical Section"
     // (Public just in case you need to call it externally for some reason)
-    procedure Unlock;
+    procedure Unlock; inline;
 
     property NextTickTime: Double read GetNextTickTime;
     property ThreadState: TLKThreadState read GetThreadState write SetThreadState;
@@ -238,8 +240,11 @@ end;
 procedure TLKThread.Bump;
 begin
   Lock;
-  FNextTickTime := GetReferenceTime;
-  Unlock;
+  try
+    FNextTickTime := GetReferenceTime;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.CalculateExtraTime: Double;
@@ -275,8 +280,11 @@ var
 begin
   LCurrentTime := GetReferenceTime;
   Lock;
+  try
   FNextTickTime := LCurrentTime;
-  Unlock;
+  finally
+    Unlock;
+  end;
   LLastAverageCheckpoint := 0.00;
   LNextAverageCheckpoint := 0.00;
   LTickRate := 0.00;
@@ -285,9 +293,12 @@ begin
   begin
     // Read once so we don't have to keep Acquiring the Lock!
     Lock;
-    LTickRateLimit := FTickRateLimit;
-    LTickRateDesired := FTickRateDesired;
-    Unlock;
+    try
+      LTickRateLimit := FTickRateLimit;
+      LTickRateDesired := FTickRateDesired;
+    finally
+      Unlock;
+    end;
     LCurrentTime := GetReferenceTime;
     LDelta := (LCurrentTime - FNextTickTime);
 
@@ -340,8 +351,11 @@ begin
           SetTickRateAverage(LTickRate);
         end;
         Lock;
-        FNextTickTime := FNextTickTime + LDelta;
-        Unlock;
+        try
+          FNextTickTime := FNextTickTime + LDelta;
+        finally
+          Unlock;
+        end;
         Tick(LDelta, LCurrentTime);
       end else
       begin
@@ -393,85 +407,121 @@ end;
 function TLKThread.GetNextTickTime: Double;
 begin
   Lock;
-  Result := FNextTickTime;
-  Unlock;
+  try
+    Result := FNextTickTime;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetThreadState: TLKThreadState;
 begin
   Lock;
-  Result := FThreadState;
-  Unlock;
+  try
+    Result := FThreadState;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRate: Double;
 begin
   Lock;
-  Result := FTickRate;
-  Unlock;
+  try
+    Result := FTickRate;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateAverage: Double;
 begin
   Lock;
+  try
   Result := FTickRateAverage;
-  Unlock;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateAverageOver: Double;
 begin
   Lock;
-  Result := FTickRateAverageOver;
-  Unlock;
+  try
+    Result := FTickRateAverageOver;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateDesired: Double;
 begin
   Lock;
-  Result := FTickRateDesired;
-  Unlock;
+  try
+    Result := FTickRateDesired;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateExtraTicks: Double;
 begin
   Lock;
-  Result := FTickRateExtra;
-  Unlock;
+  try
+    Result := FTickRateExtra;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateExtraTicksAverage: Double;
 begin
   Lock;
-  Result := FTickRateExtraAverage;
-  Unlock;
+  try
+    Result := FTickRateExtraAverage;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateExtraTime: Double;
 begin
   Lock;
-  Result := FTickRateExtraTime;
-  Unlock;
+  try
+    Result := FTickRateExtraTime;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateExtraTimeAverage: Double;
 begin
   Lock;
-  Result := FTickRateExtraAverageTime;
-  Unlock;
+  try
+    Result := FTickRateExtraAverageTime;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetTickRateLimit: Double;
 begin
   Lock;
-  Result := FTickRateLimit;
-  Unlock;
+  try
+    Result := FTickRateLimit;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKThread.GetYieldAccumulatedTime: Boolean;
 begin
   Lock;
-  Result := FYieldAccumulatedTime;
-  Unlock;
+  try
+    Result := FYieldAccumulatedTime;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.Kill;
@@ -494,80 +544,107 @@ end;
 procedure TLKThread.SetThreadState(const AThreadState: TLKThreadState);
 begin
   Lock;
-  FThreadState := AThreadState;
-  Unlock;
+  try
+    FThreadState := AThreadState;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRate(const ATickRate: Double);
 begin
   Lock;
-  FTickRate := ATickRate;
-  Unlock;
+  try
+    FTickRate := ATickRate;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateAverage(const ATickRateAverage: Double);
 begin
   Lock;
-  FTickRateAverage := ATickRateAverage;
-  Unlock;
+  try
+    FTickRateAverage := ATickRateAverage;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateAverageOver(const AAverageOver: Double);
 begin
   Lock;
-  FTickRateAverageOver := AAverageOver;
-  Unlock;
+  try
+    FTickRateAverageOver := AAverageOver;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateDesired(const ADesiredRate: Double);
 begin
   Lock;
-  FTickRateDesired := ADesiredRate;
-  Unlock;
+  try
+    FTickRateDesired := ADesiredRate;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateExtraTicks(const AExtraTime: Double);
 begin
   Lock;
-  FTickRateExtra := AExtraTime;
-  if FTickRateExtra > 0.00 then
-    FTickRateExtraTime := (1 / FTickRate) * FTickRateExtra
-  else if FTickRateExtra < 0.00 then
-    FTickRateExtraTime := -((1 / -FTickRate) * FTickRateExtra)
-  else
-    FTickRateExtraTime := 0.00;
-  Unlock;
+  try
+    FTickRateExtra := AExtraTime;
+    if FTickRateExtra > 0.00 then
+      FTickRateExtraTime := (1 / FTickRate) * FTickRateExtra
+    else if FTickRateExtra < 0.00 then
+      FTickRateExtraTime := -((1 / -FTickRate) * FTickRateExtra)
+    else
+      FTickRateExtraTime := 0.00;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateExtraTicksAverage(const AExtraTimeAverage: Double);
 begin
   Lock;
-  FTickRateExtraAverage := AExtraTimeAverage;
-  if FTickRateExtraAverage > 0.00 then
-    FTickRateExtraAverageTime := (1 / FTickRateAverage) * FTickRateExtraAverage
-  else if FTickRateExtraAverage < 0.00 then
-    FTickRateExtraAverageTime := -((1 / -FTickRateAverage) * FTickRateExtraAverage)
-  else
-    FTickRateExtraAverageTime := 0.00;
-  Unlock;
+  try
+    FTickRateExtraAverage := AExtraTimeAverage;
+    if FTickRateExtraAverage > 0.00 then
+      FTickRateExtraAverageTime := (1 / FTickRateAverage) * FTickRateExtraAverage
+    else if FTickRateExtraAverage < 0.00 then
+      FTickRateExtraAverageTime := -((1 / -FTickRateAverage) * FTickRateExtraAverage)
+    else
+      FTickRateExtraAverageTime := 0.00;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetTickRateLimit(const ATickRateLimit: Double);
 begin
   Lock;
-  FTickRateLimit := ATickRateLimit;
-  // If the Limit is LOWER than the defined "Desired" Rate, then we cannot desire MORE than the limit,
-  // so we match the two.
-  if (FTickRateLimit > 0) and (FTickRateLimit < FTickRateDesired) then
-    FTickRateDesired := FTickRateLimit;
-  Unlock;
+  try
+    FTickRateLimit := ATickRateLimit;
+    // If the Limit is LOWER than the defined "Desired" Rate, then we cannot desire MORE than the limit,
+    // so we match the two.
+    if (FTickRateLimit > 0) and (FTickRateLimit < FTickRateDesired) then
+      FTickRateDesired := FTickRateLimit;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
 begin
   Lock;
-  FYieldAccumulatedTime := AYieldAccumulatedTime;
-  Unlock;
+  try
+    FYieldAccumulatedTime := AYieldAccumulatedTime;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKThread.Unlock;

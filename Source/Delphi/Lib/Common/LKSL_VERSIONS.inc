@@ -460,23 +460,4 @@
   {$ELSE}
     {$DEFINE LKSL}
   {$ENDIF DELPHI2010}
-
-  {$IFNDEF DELPHIXE2}
-    {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
-      {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
-      {$DEFINE LKSL_WARNING}
-    {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
-  {$ENDIF DELPHIXE2}
-
-  {$IFDEF DELPHIXE8}
-    {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
-      {$MESSAGE WARN 'Delphi XE8 is in Beta, problems may be bugs in Delphi itself! Please report any issues on https://github.com/LaKraven/LKSL'}
-      {$DEFINE LKSL_WARNING}
-    {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
-  {$ENDIF DELPHIXE8}
-
-  {$IFDEF LKSL_WARNING}
-    {$MESSAGE HINT 'Define "LKSL_SUPPRESS_VERSION_WARNING" in your project options to get rid of these messages'}
-    {$UNDEF LKSL_WARNING}
-  {$ENDIF LKSL_WARNING}
 {$ENDIF}

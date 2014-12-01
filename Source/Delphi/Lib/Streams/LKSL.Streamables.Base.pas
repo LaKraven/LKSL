@@ -49,6 +49,8 @@ unit LKSL.Streamables.Base;
       IN THE "FINALIZATION" SECTION OF YOUR DEFINING UNITS!
 
   Changelog (latest changes first):
+    30th November 2014:
+      - Put "try/finally" blocks around all Lock requests (so if the code fails, the Lock will be released)
     28th November 2014 (second commit):
       - Reverted some of the "for in" loops due to performance implications
     28th November 2014:
@@ -83,11 +85,11 @@ interface
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils,
+    System.Classes, System.SysUtils, System.SyncObjs,
   {$ELSE}
-    Classes, SysUtils,
+    Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  {$IFDEF LKSL_USE_GENERICS}Generics.Collections,{$ENDIF LKSL_USE_GENERICS}
+  Generics.Collections,
   LKSL.Common.Types,
   LKSL.Streams.System;
 
@@ -117,7 +119,6 @@ type
 
   { Array Types }
   TLKStreamableArray = Array of TLKStreamable;
-  TLKStreamableTypeArray = Array of TLKStreamableType;
 
   {
     TLKStreamable
@@ -224,20 +225,12 @@ type
   }
   TLKStreamables =  class(TLKPersistent)
   private
-    {$IFDEF LKSL_USE_GENERICS}
-      FStreamableTypes: TDictionary<TGUID, TLKStreamableType>;
-    {$ELSE}
-      FStreamableTypes: TLKStreamableTypeArray;
-    {$ENDIF LKSL_USE_GENERICS}
+    FStreamableTypes: TDictionary<TGUID, TLKStreamableType>;
 
     procedure Clear;
     function GetCount: Integer;
     function GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
     function GetStreamableTypeByGUID(const AGUID: TGUID): TLKStreamableType; overload;
-    {$IFNDEF LKSL_USE_GENERICS}
-      function GetStreamableTypeByGUID(const AGUID: String): TLKStreamableType; overload;
-      function GetStreamableTypeIndexByGUID(const AGUID: String): Integer;
-    {$ENDIF LKSL_USE_GENERICS}
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -259,9 +252,6 @@ type
     property Count: Integer read GetCount;
     property StreamableType[const AIndex: Integer]: TLKStreamableType read GetStreamableTypeByIndex; default;
     property StreamableType[const AGUID: TGUID]: TLKStreamableType read GetStreamableTypeByGUID; default;
-    {$IFNDEF LKSL_USE_GENERICS}
-      property StreamableType[const AGUID: String]: TLKStreamableType read GetStreamableTypeByGUID; default;
-    {$ENDIF LKSL_USE_GENERICS}
   end;
 
 var
@@ -407,39 +397,54 @@ end;
 function TLKStreamableNamed.GetName: String;
 begin
   Lock;
-  Result := FName;
-  Unlock;
+  try
+    Result := FName;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKStreamableNamed.InsertIntoStream(const AStream: TStream);
 begin
   Lock;
-  inherited;
-  StreamInsertString(AStream, FName); // Insert Name
-  Unlock;
+  try
+    inherited;
+    StreamInsertString(AStream, FName); // Insert Name
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKStreamableNamed.ReadFromStream(const AStream: TStream);
 begin
   Lock;
-  inherited;
-  FName := StreamReadString(AStream);
-  Unlock;
+  try
+    inherited;
+    FName := StreamReadString(AStream);
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKStreamableNamed.SetName(const AName: String);
 begin
   Lock;
-  FName := AName;
-  Unlock;
+  try
+    FName := AName;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKStreamableNamed.WriteToStream(const AStream: TStream);
 begin
   Lock;
-  inherited;
-  StreamWriteString(AStream, FName);
-  Unlock;
+  try
+    inherited;
+    StreamWriteString(AStream, FName);
+  finally
+    Unlock;
+  end;
 end;
 
 { TLKStreamables }
@@ -447,20 +452,17 @@ end;
 procedure TLKStreamables.Clear;
 begin
   Lock;
-  {$IFDEF LKSL_USE_GENERICS}
+  try
     FStreamableTypes.Clear;
-  {$ELSE}
-    SetLength(FStreamableTypes, 0);
-  {$ENDIF LKSL_USE_GENERICS}
-  Unlock;
+  finally
+    Unlock;
+  end;
 end;
 
 constructor TLKStreamables.Create;
 begin
   inherited;
-  {$IFDEF LKSL_USE_GENERICS}
-    FStreamableTypes := TDictionary<TGUID, TLKStreamableType>.Create;
-  {$ENDIF LKSL_USE_GENERICS}
+  FStreamableTypes := TDictionary<TGUID, TLKStreamableType>.Create;
 end;
 
 function TLKStreamables.CreateStreamableFromStream(const AStream: TStream): TLKStreamable;
@@ -495,89 +497,35 @@ end;
 destructor TLKStreamables.Destroy;
 begin
   Clear;
-  {$IFDEF LKSL_USE_GENERICS}
   FStreamableTypes.Free;
-  {$ENDIF LKSL_USE_GENERICS}
   inherited;
 end;
 
 function TLKStreamables.GetCount: Integer;
 begin
   Lock;
-  {$IFDEF LKSL_USE_GENERICS}
+  try
     Result := FStreamableTypes.Count;
-  {$ELSE}
-    Result := Length(FStreamableTypes);
-  {$ENDIF LKSL_USE_GENERICS}
-  Unlock;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKStreamables.GetStreamableTypeByGUID(const AGUID: TGUID): TLKStreamableType;
 begin
-  {$IFDEF LKSL_USE_GENERICS}
-    if not (FStreamableTypes.TryGetValue(AGUID, Result)) then
-      Result := nil;
-  {$ELSE}
-    Result := GetStreamableTypeByGUID(GUIDToString(AGUID));
-  {$ENDIF LKSL_USE_GENERICS}
+  if not (FStreamableTypes.TryGetValue(AGUID, Result)) then
+    Result := nil;
 end;
-
-{$IFNDEF LKSL_USE_GENERICS}
-  function TLKStreamables.GetStreamableTypeByGUID(const AGUID: String): TLKStreamableType;
-  var
-    LIndex: Integer;
-  begin
-    Lock;
-    LIndex := GetStreamableTypeIndexByGUID(AGUID);
-    if LIndex = -1 then
-      Result := nil
-    else
-      Result := FStreamableTypes[LIndex];
-    Unlock;
-  end;
-{$ENDIF LKSL_USE_GENERICS}
 
 function TLKStreamables.GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
 begin
   Lock;
-  {$IFDEF LKSL_USE_GENERICS}
+  try
     Result := FStreamableTypes.Values.ToArray[AIndex];
-  {$ELSE}
-    Result := FStreamableTypes[AIndex];
-  {$ENDIF LKSL_USE_GENERICS}
-  Unlock;
-end;
-
-{$IFNDEF LKSL_USE_GENERICS}
-  function TLKStreamables.GetStreamableTypeIndexByGUID(const AGUID: String): Integer;
-  var
-    LIndex, LLow, LHigh: Integer;
-  begin
-    Lock;
-    Result := -1;
-    LLow := 0;
-    LHigh := Length(FStreamableTypes) - 1;
-    if LHigh > -1 then
-    begin
-      if LLow < LHigh then
-      begin
-        while (LHigh - LLow > 1) do
-        begin
-          LIndex := (LHigh + LLow) div 2;
-          if AGUID <= GUIDToString(FStreamableTypes[LIndex].GetTypeGUID) then
-            LHigh := LIndex
-          else
-            LLow := LIndex;
-        end;
-      end;
-      if (GUIDToString(FStreamableTypes[LHigh].GetTypeGUID) = AGUID) then
-        Result := LHigh
-      else if (GUIDToString(FStreamableTypes[LLow].GetTypeGUID) = AGUID) then
-        Result := LLow;
-    end;
+  finally
     Unlock;
   end;
-{$ENDIF LKSL_USE_GENERICS}
+end;
 
 function TLKStreamables.GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
 var
@@ -586,11 +534,7 @@ var
 begin
   LPosition := AStream.Position;
   LSignature := StreamReadGUID(AStream);
-  {$IFDEF LKSL_USE_GENERICS}
-    Result := GetStreamableTypeByGUID(LSignature);
-  {$ELSE}
-    Result := GetStreamableTypeByGUID(GUIDToString(LSignature));
-  {$ENDIF LKSL_USE_GENERICS}
+  Result := GetStreamableTypeByGUID(LSignature);
   AStream.Position := LPosition;
 end;
 
@@ -620,64 +564,16 @@ begin
 end;
 
 procedure TLKStreamables.Register(const AStreamableType: TLKStreamableType);
-{$IFNDEF LKSL_USE_GENERICS}
-    function GetSortedPosition(const AGUID: String): Integer;
-    var
-      LIndex, LLow, LHigh: Integer;
-    begin
-      Result := 0;
-      LLow := 0;
-      LHigh := Length(FStreamableTypes) - 1;
-      if LHigh = - 1 then
-        Exit;
-      if LLow < LHigh then
-      begin
-        while (LHigh - LLow > 1) do
-        begin
-          LIndex := (LHigh + LLow) div 2;
-          if AGUID <= GUIDToString(FStreamableTypes[LIndex].GetTypeGUID) then
-            LHigh := LIndex
-          else
-            LLow := LIndex;
-        end;
-      end;
-      if (GUIDToString(FStreamableTypes[LHigh].GetTypeGUID) < AGUID) then
-        Result := LHigh + 1
-      else if (GUIDToString(FStreamableTypes[LLow].GetTypeGUID) < AGUID) then
-        Result := LLow + 1
-      else
-        Result := LLow;
-    end;
-  var
-    I, LIndex: Integer;
-{$ENDIF LKSL_USE_GENERICS}
 begin
   Lock;
-  {$IFDEF LKSL_USE_GENERICS}
+  try
     if not (FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID)) then
       FStreamableTypes.Add(AStreamableType.GetTypeGUID, AStreamableType)
     else
       raise ELKStreamableTypeAlreadyRegistered.CreateFmt('A Streamable Type with the GUID "%s" is already registered', [GUIDToString(AStreamableType.GetTypeGUID)]);
-  {$ELSE}
-    LIndex := GetStreamableTypeIndexByGUID(GUIDToString(AStreamableType.GetTypeGUID));
-    if LIndex = -1 then
-    begin
-      LIndex := GetSortedPosition(GUIDToString(AStreamableType.GetTypeGUID));
-      SetLength(FStreamableTypes, Length(FStreamableTypes) + 1);
-      // Shift elements RIGHT
-      if LIndex < Length(FStreamableTypes) - 1 then
-        for I := Length(FStreamableTypes) - 1 downto LIndex + 1 do
-        begin
-          FStreamableTypes[I] := FStreamableTypes[I - 1];
-        end;
-      // Insert new item now
-      FStreamableTypes[LIndex] := AStreamableType;
-    end else
-    begin
-      raise ELKStreamableTypeAlreadyRegistered.CreateFmt('A Streamable Type with the GUID "%s" is already registered', [GUIDToString(AStreamableType.GetTypeGUID)]);
-    end;
-  {$ENDIF LKSL_USE_GENERICS}
-  Unlock;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKStreamables.Unregister(const AStreamableTypes: array of TLKStreamableType);
@@ -698,37 +594,13 @@ begin
 end;
 
 procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);
-{$IFNDEF LKSL_USE_GENERICS}
-  var
-   LIndex: Integer;
-   LCount, I: Integer;
-{$ENDIF LKSL_USE_GENERICS}
 begin
   Lock;
   try
-    {$IFDEF LKSL_USE_GENERICS}
-      if FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID) then
-        FStreamableTypes.Remove(AStreamableType.GetTypeGUID)
-      else
-        raise ELKStreamableTypeNotRegistered.CreateFmt('A Streamable Type with the GUID "%s" has not yet been registered, therefore cannot be unregistered!', [GUIDToString(AStreamableType.GetTypeGUID)]);
-    {$ELSE}
-    LIndex := GetStreamableTypeIndexByGUID(GUIDToString(AStreamableType.GetTypeGUID));
-    if LIndex > -1 then
-    begin
-      LCount := Length(FStreamableTypes);
-      if (LIndex < 0) or (LIndex > LCount - 1) then
-        Exit;
-      if (LIndex < (LCount - 1)) then
-        for I := LIndex to LCount - 2 do
-        begin
-          FStreamableTypes[I] := FStreamableTypes[I + 1];
-        end;
-      SetLength(FStreamableTypes, LCount - 1);
-    end else
-    begin
+    if FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID) then
+      FStreamableTypes.Remove(AStreamableType.GetTypeGUID)
+    else
       raise ELKStreamableTypeNotRegistered.CreateFmt('A Streamable Type with the GUID "%s" has not yet been registered, therefore cannot be unregistered!', [GUIDToString(AStreamableType.GetTypeGUID)]);
-    end;
-    {$ENDIF LKSL_USE_GENERICS}
   finally
     Unlock;
   end;

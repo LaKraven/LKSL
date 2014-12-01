@@ -38,6 +38,7 @@
 
 {$I LKSL_VERSIONS.inc}
 
+// NOTE: The LKSL will REQUIRE Generics (without option) from December 6th 2014!
 {$IFDEF SUPPORTS_GENERICS}
   {$IFNDEF LKSL_NO_GENERICS}
     {$DEFINE LKSL_USE_GENERICS} // Define "LKSL_NO_GENERICS" in your project to disable Generics
