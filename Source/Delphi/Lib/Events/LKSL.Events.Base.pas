@@ -718,6 +718,7 @@ begin
   StreamDeleteDouble(AStream); // Delete FExpiresAfter
   StreamDeleteTLKEventDispatchMethod(AStream); // Delete FDispatchMethod
   StreamDeleteDouble(AStream); // Delete FProcessedTime
+  RemoveEventFromStream(AStream);
 end;
 
 function TLKEvent.GetDispatchModes: TLKEventDispatchModes;
@@ -830,6 +831,7 @@ begin
   StreamInsertDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
   StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Insert FDispatchMethod
   StreamInsertDouble(AStream, FProcessedTime); // Insert FProcessedTime
+  InsertEventIntoStream(AStream);
 end;
 
 procedure TLKEvent.Queue;
@@ -850,6 +852,7 @@ begin
   FExpiresAfter := StreamReadDouble(AStream); // Read FExpiresAfter
   FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream); // Read FDispatchMethod
   FProcessedTime := StreamReadDouble(AStream); // Read FProcessedTime
+  ReadEventFromStream(AStream);
 end;
 
 procedure TLKEvent.SetAllowRecording(const AAllowRecording: Boolean);
@@ -905,6 +908,7 @@ begin
   StreamWriteDouble(AStream, FExpiresAfter); // Append FExpiresAfter
   StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Append FDispatchMethod
   StreamWriteDouble(AStream, FProcessedTime); // Append FProcessedTime
+  WriteEventToStream(AStream);
 end;
 
 { TLKEventListener }
