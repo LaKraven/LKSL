@@ -50,6 +50,9 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    1st December 2014:
+      - Fixed issue where ALL events would be Recorded (regardless of their "AllowRecording" setting.
+      - Fixed some other silly little bugs.
     30th November 2014:
       - Generics are now mandatory (support for non-Generics versions of Delphi is not being considered)
       - "TDictionary" references replaced by "TLKDictionary" (which integrates the thread-safe Lock)
@@ -181,6 +184,13 @@ type
   TLKEventTransmitterManager = class;
   TLKEventReceiverBase = class;
   TLKEventRecorder = class;
+
+  { Exception Types }
+  ELKEventException = ELKException;
+    ELEventListenerException = ELKEventException;
+    ELEventListenerGroupException = ELKEventException;
+    ELEventRecorderException = ELKEventException;
+      ELEventRecorderSignatureMismatchException = ELEventRecorderException;
 
   { Enum Types }
   TLKEventDispatchMode = (edmQueue, edmStack, edmThreads);
@@ -1961,7 +1971,8 @@ end;
 
 procedure TLKEventEngine.AddEvent(const AEvent: TLKEvent; const AProcessingThread: TLKEventThreadBaseWithListeners);
 begin
-  QueueInRecorders(AEvent);
+  if (AEvent.AllowRecording) and (not AEvent.IsReplay) then
+    QueueInRecorders(AEvent);
   QueueInThreads(AEvent);
   if AEvent.AllowTransmit then
     FTransmitters.AddEvent(AEvent);

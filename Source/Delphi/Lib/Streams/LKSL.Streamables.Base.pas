@@ -49,6 +49,9 @@ unit LKSL.Streamables.Base;
       IN THE "FINALIZATION" SECTION OF YOUR DEFINING UNITS!
 
   Changelog (latest changes first):
+    1st December 2014:
+      - Fixed a bug in TLKStreamable.DeleteFromStream (forgot to change the Signature from a String to a TGUID)
+      - Added "BlockSize" data to TLKStreamable so you can skip over entire Streamable Items within a Stream.
     30th November 2014:
       - Put "try/finally" blocks around all Lock requests (so if the code fails, the Lock will be released)
     28th November 2014 (second commit):
@@ -126,6 +129,7 @@ type
   }
   TLKStreamable = class abstract(TLKPersistent)
   private
+    FBlockSize: Int64;
     FVersion: Double;
   protected
     // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
@@ -180,7 +184,7 @@ type
     // It is essentially an ALIAS of "ReadFromStream"
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     procedure LoadFromStream(const AStream: TStream); overload;
-    procedure LoadFromSTream(const AStream: TStream; const APosition: Int64); overload; inline;
+    procedure LoadFromStream(const AStream: TStream; const APosition: Int64); overload; inline;
     // "SaveToFile" saves the Member Data of your Streamable Instance to a File
     procedure SaveToFile(const AFileName: String);
     // "SaveToStream" WRITES the Member Data of your Streamable Instance to the END of the given Stream.
@@ -287,7 +291,8 @@ end;
 
 class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
 begin
-  StreamDeleteString(AStream); // Remove the GUID
+  StreamDeleteGUID(AStream); // Remove the GUID
+  StreamDeleteInt64(AStream); // Remove the Block Size
   StreamDeleteDouble(AStream); // Remove the Version
   RemoveFromStream(AStream); // Remove the descendant's custom members
 end;
@@ -324,6 +329,7 @@ begin
     LSignature := StreamReadGUID(AStream); // Read the GUID
     if LSignature = GetTypeGUID then // Check if the Signature matches the expected GUID
     begin
+      FBlockSize := StreamReadInt64(AStream);
       FVersion := StreamReadDouble(AStream); // Read the Version
       ReadFromStream(AStream); // Read this type's specific values
     end else
@@ -353,6 +359,10 @@ begin
 end;
 
 procedure TLKStreamable.SaveToStream(const AStream: TStream; const APosition: Int64);
+var
+  LBlockStart: Int64;
+  LBlockSizePos: Int64;
+  LBlockEnd: Int64;
 begin
   if APosition = AStream.Size then
     SaveToStream(AStream)
@@ -360,9 +370,17 @@ begin
   begin
     Lock;
     try
-      StreamInsertGUID(AStream, GetTypeGUID, APosition);
+      AStream.Position := APosition;
+      LBlockStart := AStream.Position;
+      StreamInsertGUID(AStream, GetTypeGUID);
+      LBlockSizePos := AStream.Position;
+      StreamInsertInt64(AStream, 0);
       StreamInsertDouble(AStream, GetTypeVersion);
       InsertIntoStream(AStream);
+      LBlockEnd := AStream.Position;
+      FBlockSize := AStream.Position - LBlockStart;
+      StreamWriteInt64(AStream, FBlockSize, LBlockSizePos);
+      AStream.Position := LBlockEnd;
     finally
       Unlock;
     end;
@@ -375,12 +393,23 @@ begin
 end;
 
 procedure TLKStreamable.SaveToStream(const AStream: TStream);
+var
+  LBlockStart: Int64;
+  LBlockSizePos: Int64;
+  LBlockEnd: Int64;
 begin
   Lock;
   try
+    LBlockStart := AStream.Position;
     StreamWriteGUID(AStream, GetTypeGUID); // Write the GUID
+    LBlockSizePos := AStream.Position;
+    StreamWriteInt64(AStream, 0);
     StreamWriteDouble(AStream, GetTypeVersion); // Write the Version
     WriteToStream(AStream);
+    LBlockEnd := AStream.Position;
+    FBlockSize := AStream.Position - LBlockStart;
+    StreamWriteInt64(AStream, FBlockSize, LBlockSizePos);
+    AStream.Position := LBlockEnd;
   finally
     Unlock;
   end;
