@@ -50,6 +50,11 @@ interface
     - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
   Changelog (latest changes first):
+    2nd December 2014:
+      - Added write-support to TLKEvent.IsReplay.
+        - Should only really be used by Event Recorders/Replayers to inform the Event Engine not to re-record the Event
+        - The "IsReplay" value can also be introspected by your Listeners, so that they can behave in a different way if
+          they are required to do so.
     1st December 2014:
       - Fixed issue where ALL events would be Recorded (regardless of their "AllowRecording" setting.
       - Fixed some other silly little bugs.
@@ -249,6 +254,7 @@ type
     procedure SetAllowRecording(const AAllowRecording: Boolean);
     procedure SetAllowTransmit(const AAllowTransmit: Boolean);
     procedure SetExpiresAfter(const AExpiresAfter: Double);
+    procedure SetIsReplay(const AIsReplay: Boolean);
   protected
     class procedure RemoveFromStream(const AStream: TStream); override; final;
     procedure ReadFromStream(const AStream: TStream); override; final;
@@ -302,7 +308,7 @@ type
     property DispatchMethod: TLKEventDispatchMethod read GetDispatchMethod;
     property DispatchTime: Double read GetDispatchTime;
     property ExpiresAfter: Double read GetExpiresAfter write SetExpiresAfter;
-    property IsReplay: Boolean read GetIsReplay;
+    property IsReplay: Boolean read GetIsReplay write SetIsReplay;
     property ProcessedTime: Double read GetProcessedTime;
   end;
 
@@ -880,6 +886,16 @@ begin
   Lock;
   try
     FExpiresAfter := AExpiresAfter;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEvent.SetIsReplay(const AIsReplay: Boolean);
+begin
+  Lock;
+  try
+    FIsReplay := AIsReplay;
   finally
     Unlock;
   end;

@@ -46,7 +46,14 @@ interface
     - This unit provides a File-outputting Event Recorder.
     - You can Stream Events to the nominated File, and play them back from the File.
 
+  THIS UNIT IS VERY-MUCH "WORK IN PROGRESS" AT THIS STAGE!
+  The interfaces may well change, right down to the name of the unit itself... so please only use
+  this unit in your projects if you understand that you will likely have to make some modifications
+  to your implementation(s) in the very near future!
+
   Changelog (latest changes first):
+    2nd December 2014:
+      - Added code to support replaying of entire Sessions (on a session-by-session basis)
     1st December 2014:
       - Prepared for Release
 }
@@ -77,6 +84,7 @@ type
     FCreated: TDateTime;
     FFileName: String;
     FFileStream: TFileStream;
+    FHeaderEndPosition: Int64;
     FSessionCount: Integer;
     FSessionCountPosition: Int64;
     FSessionBlockSizePosition: Int64;
@@ -93,6 +101,7 @@ type
     destructor Destroy; override;
 
     procedure NewSession;
+    procedure Replay(const ASession: Integer);
 
     property Created: TDateTime read FCreated;
     property FileName: String read FFileName;
@@ -144,6 +153,8 @@ begin
   begin
     FCreated := StreamReadDateTime(FFileStream); // Read Created Timestamp
     FSessionCountPosition := FFileStream.Position; // Store a reference to the Session Count Position
+    StreamReadInteger(FFileStream); // Read the Session Count (just to advance the Stream)
+    FHeaderEndPosition := FFileStream.Position;
   end else
     raise ELEventRecorderSignatureMismatchException.CreateFmt('Signature Mismatch! Expected "%s", got "%s"', [GUIDToString(RECORDER_FILE_GUID), GUIDToString(LSignature)]);
 end;
@@ -155,18 +166,19 @@ begin
   StreamWriteDateTime(FFileStream, Now); // Write Created Timestamp
   FSessionCountPosition := FFileStream.Position;
   StreamWriteInteger(FFileStream, 0); // Write Session Count (defaults to 0)
-  NewSession;
+  FHeaderEndPosition := FFileStream.Position;
 end;
 
 procedure TLKEventRecorderFile.NewSession;
 begin
   FSessionCount := GetSessionCount;
   Inc(FSessionCount);
+
   FSessionBlockSizePosition := FFileStream.Position; // Store a reference to the Session Block Size Position
   StreamWriteInt64(FFileStream, 0); // Write the Session Size (defaults to 0)
   StreamWriteDateTime(FFileStream, Now); // Write the Started Timestamp
   FSessionEventCountPosition := FFileStream.Position; // Store a reference to the current Session's Event Count
-  StreamWriteInt64(FFileStream, 0); // Write the Event Count (defaults to 0)
+  StreamWriteInteger(FFileStream, 0); // Write the Event Count (defaults to 0)
 
   StreamWriteInteger(FFileStream, FSessionCount, FSessionCountPosition); // Update the Session Count
 end;
@@ -182,6 +194,38 @@ begin
   Inc(LCount);
   StreamWriteInt64(FFileStream, LCount, FSessionEventCountPosition);
   FFileStream.Position := LPosition;
+end;
+
+procedure TLKEventRecorderFile.Replay(const ASession: Integer);
+var
+  I, LEventCount: Integer;
+  LSessionSize: Int64;
+  LEvent: TLKEvent;
+  LStreamableType: TLKStreamableType;
+begin
+  FFileStream.Position := FHeaderEndPosition;
+  for I := 0 to ASession do
+  begin
+    LSessionSize := StreamReadInt64(FFileStream);
+    FFileStream.Seek(-SizeOf(Int64), soCurrent);
+    FFileStream.Seek(LSessionSize, soCurrent);
+  end;
+  StreamReadInt64(FFileStream); // Read the size of the block for the current session
+  StreamReadDateTime(FFileStream); // Read the created timestamp
+  LEventCount := StreamReadInteger(FFileStream); // Read the number of Events in this session
+  for I := 0 to LEventcount - 1 do
+  begin
+    LStreamableType := Streamables.GetStreamableTypeFromStream(FFileStream);
+    if Streamables.StreamableTypeMatch(FFileStream, TLKEvent) then
+    begin
+      LEvent := TLKEvent(LStreamableType.CreateFromStream(FFileStream));
+      LEvent.IsReplay := True;
+      case LEvent.DispatchMethod of
+        edQueue: LEvent.Queue;
+        edStack: LEvent.Stack;
+      end;
+    end;
+  end;
 end;
 
 end.
