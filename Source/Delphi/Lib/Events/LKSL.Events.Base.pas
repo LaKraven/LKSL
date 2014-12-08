@@ -51,6 +51,8 @@ interface
       - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
     Changelog (latest changes first):
+      8th December 2014:
+        - Removed "RemoveEventFromStream" from TLKEvent as it is no longer required
       2nd December 2014:
         - Added write-support to TLKEvent.IsReplay.
           - Should only really be used by Event Recorders/Replayers to inform the Event Engine not to re-record the Event
@@ -258,16 +260,12 @@ type
     procedure SetExpiresAfter(const AExpiresAfter: Double);
     procedure SetIsReplay(const AIsReplay: Boolean);
   protected
-    class procedure RemoveFromStream(const AStream: TStream); override; final;
     procedure ReadFromStream(const AStream: TStream); override; final;
     procedure InsertIntoStream(const AStream: TStream); override; final;
     procedure WriteToStream(const AStream: TStream); override; final;
     // You MUST override "Clone"
     // (Remembering to type-cast "AFromEvent" to your Event Type) populate your Event Type's properties.
     procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
-    // You MUST override and implement "RemoveEventFromStream"
-    // This removes an Instance of your Event Type from a Stream
-    class procedure RemoveEventFromStream(const AStream: TStream); virtual; abstract;
     // You MUST override and implement "ReadEventFromStream"
     // This populates your Event Instance from a Stream
     procedure ReadEventFromStream(const AStream: TStream); virtual; abstract;
@@ -724,19 +722,6 @@ begin
   FProcessedTime := 0.00;
   FAllowTransmit := GetDefaultAllowTransmit;
   FDispatchModes := GetDispatchModes;
-end;
-
-class procedure TLKEvent.RemoveFromStream(const AStream: TStream);
-begin
-  inherited;
-  StreamDeleteBoolean(AStream); // Delete FAllowRecording
-  StreamDeleteBoolean(AStream); // Delete FIsReplay
-  StreamDeleteDouble(AStream); // Delete FDelta
-  StreamDeleteDouble(AStream); // Delete FDispatchTime
-  StreamDeleteDouble(AStream); // Delete FExpiresAfter
-  StreamDeleteTLKEventDispatchMethod(AStream); // Delete FDispatchMethod
-  StreamDeleteDouble(AStream); // Delete FProcessedTime
-  RemoveEventFromStream(AStream);
 end;
 
 function TLKEvent.GetDispatchModes: TLKEventDispatchModes;
