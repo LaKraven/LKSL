@@ -827,6 +827,7 @@ end;
 procedure TLKEvent.InsertIntoStream(const AStream: TStream);
 begin
   inherited;
+  StreamInsertBoolean(AStream, FAllowTransmit); // Insert FAllowTransmit
   StreamInsertBoolean(AStream, FAllowRecording); // Insert FAllowRecording
   StreamInsertBoolean(AStream, FIsReplay); // Insert FIsReplay
   StreamInsertDouble(AStream, FDelta); // Insert FDelta
@@ -848,6 +849,7 @@ end;
 procedure TLKEvent.ReadFromStream(const AStream: TStream);
 begin
   inherited;
+  FAllowTransmit := StreamReadBoolean(AStream); // Read FAllowTransmit
   FAllowRecording := StreamReadBoolean(AStream); // read FAllowRecording
   FIsReplay := StreamReadBoolean(AStream); // read FIsReplay
   FDelta := StreamReadDouble(AStream); // Read FDelta
@@ -914,6 +916,7 @@ end;
 procedure TLKEvent.WriteToStream(const AStream: TStream);
 begin
   inherited;
+  StreamWriteBoolean(AStream, FAllowTransmit); // Append FAllowTransmit
   StreamWriteBoolean(AStream, FAllowRecording); // Append FAllowRecording
   StreamWriteBoolean(AStream, FIsReplay); // Append FIsReplay
   StreamWriteDouble(AStream, FDelta); // Append FDelta

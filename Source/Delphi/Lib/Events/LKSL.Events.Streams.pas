@@ -90,7 +90,7 @@ end;
 
 procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64);
 begin
-  StreamClearSpace(AStream, APosition, SizeOf(TLKEventDispatchMethod));
+  StreamClearSpace(AStream, APosition, SizeOf(Integer));
 end;
 
 // Insert Methods
@@ -101,9 +101,11 @@ begin
 end;
 
 procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
+const
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1);
 begin
-  StreamMakeSpace(AStream, APosition, SizeOf(AValue));
-  AStream.Write(AValue, SizeOf(AValue));
+  StreamMakeSpace(AStream, APosition, SizeOf(TLKEventDispatchMethod));
+    AStream.Write(DISPATCH_METHODS[AValue], SizeOf(Integer));
 end;
 
 // Read Methods
@@ -114,9 +116,14 @@ begin
 end;
 
 function StreamReadTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64): TLKEventDispatchMethod;
+const
+  DISPATCH_METHODS: Array[0..1] of TLKEventDispatchMethod = (edQueue, edStack);
+var
+  LDispatchMethod: Integer;
 begin
   AStream.Position := APosition;
-  AStream.Read(Result, SizeOf(Result));
+  AStream.Read(LDispatchMethod, SizeOf(Integer));
+  Result := DISPATCH_METHODS[LDispatchMethod];
 end;
 
 // Write Methods
@@ -127,9 +134,11 @@ begin
 end;
 
 procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
+const
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1);
 begin
   AStream.Position := APosition;
-  AStream.Write(AValue, SizeOf(AValue));
+  AStream.Write(DISPATCH_METHODS[AValue], SizeOf(Integer));
 end;
 
 end.

@@ -41,22 +41,24 @@ interface
 
 {$I LKSL.inc}
 
-{
-  About this unit:
-    - This unit provides a File-outputting Event Recorder.
-    - You can Stream Events to the nominated File, and play them back from the File.
+{$REGION 'Unit About'}
+  {
+    About this unit:
+      - This unit provides a File-outputting Event Recorder.
+      - You can Stream Events to the nominated File, and play them back from the File.
 
-  THIS UNIT IS VERY-MUCH "WORK IN PROGRESS" AT THIS STAGE!
-  The interfaces may well change, right down to the name of the unit itself... so please only use
-  this unit in your projects if you understand that you will likely have to make some modifications
-  to your implementation(s) in the very near future!
+    THIS UNIT IS VERY-MUCH "WORK IN PROGRESS" AT THIS STAGE!
+    The interfaces may well change, right down to the name of the unit itself... so please only use
+    this unit in your projects if you understand that you will likely have to make some modifications
+    to your implementation(s) in the very near future!
 
-  Changelog (latest changes first):
-    2nd December 2014:
-      - Added code to support replaying of entire Sessions (on a session-by-session basis)
-    1st December 2014:
-      - Prepared for Release
-}
+    Changelog (latest changes first):
+      2nd December 2014:
+        - Added code to support replaying of entire Sessions (on a session-by-session basis)
+      1st December 2014:
+        - Prepared for Release
+  }
+{$ENDREGION}
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
