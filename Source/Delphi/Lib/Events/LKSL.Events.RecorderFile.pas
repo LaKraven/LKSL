@@ -41,6 +41,8 @@ interface
 
 {$I LKSL.inc}
 
+{$MESSAGE WARN 'This unit is not yet ready for real-world use!'}
+
 {$REGION 'Unit About'}
   {
     About this unit:
@@ -53,6 +55,10 @@ interface
     to your implementation(s) in the very near future!
 
     Changelog (latest changes first):
+      8th December 2014:
+        - Fixed some issues with Event Replay
+        - Added a compiler warning to let developers know that this unit is not year ready for real-world
+          use. Will of course remove the warning once the unit has reached an acceptable point of readiness.
       2nd December 2014:
         - Added code to support replaying of entire Sessions (on a session-by-session basis)
       1st December 2014:
