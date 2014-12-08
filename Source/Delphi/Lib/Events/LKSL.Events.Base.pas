@@ -39,6 +39,10 @@ unit LKSL.Events.Base;
 
 interface
 
+{$MESSAGE WARN 'Some interfaces within this unit will be changing one more time before Xmas 2014!'}
+// This is to accommodate a new "Event Scheduling" feature, and to provide TLKEventThread
+// descendants with both a Queue AND a Stack (presently they only have a Queue)
+
 {$I LKSL.inc}
 
 {$REGION 'Unit About'}
