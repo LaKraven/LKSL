@@ -39,19 +39,24 @@ unit LKSL.Common.Types;
 
 {$I LKSL.inc}
 
-{$IFNDEF DELPHIXE2}
-  {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
+{$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
+  {$IFNDEF DELPHIXE2}
     {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
     {$DEFINE LKSL_WARNING_VERSION}
-  {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
-{$ENDIF DELPHIXE2}
+  {$ENDIF DELPHIXE2}
 
-{$IFDEF DELPHIXE8}
-  {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
+  {$IFDEF DELPHIXE8}
     {$MESSAGE WARN 'Delphi XE8 is in Beta, problems may be bugs in Delphi itself! Please report any issues on https://github.com/LaKraven/LKSL'}
     {$DEFINE LKSL_WARNING_VERSION}
-  {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
-{$ENDIF DELPHIXE8}
+  {$ENDIF DELPHIXE8}
+{$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
+
+{$IFNDEF LKSL_SUPPRESS_DEPRECATION_WARNING}
+  {$IFNDEF LKSL_USE_LISTS}
+    {$MESSAGE WARN 'The use of Generic Lists is going to become mandatory by January 2015. If you object to this, please contact us through https://github.com/LaKraven/LKSL'}
+    {$DEFINE LKSL_WARNING_DEPRECATION}
+  {$ENDIF LKSL_USE_LISTS}
+{$ENDIF LKSL_SUPPRESS_DEPRECATION_WARNING}
 
 {$IFDEF LKSL_WARNING_VERSION}
   {$MESSAGE HINT 'Define "LKSL_SUPPRESS_VERSION_WARNING" in your project options to get rid of these messages'}

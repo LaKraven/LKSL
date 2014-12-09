@@ -55,6 +55,16 @@ interface
       - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
 
     Changelog (latest changes first):
+      9th December 2014:
+        - Begun replacing Dynamic Arrays with TLKList<T>
+          - TLKEventArray is now TLKEventList
+          - TLKEventListenerArray is now TLKEventListenerList
+          - TLKEventTypeArray is now TLKEventTypeList
+          - TLKEventThreadArray is now TLKEventThreadList
+        - Introduced define LKSL_USE_LISTS (a temporary switch between Lists and Arrays)
+        - Define LKSL_NO_LISTS in your project if you wish to go back to Arrays
+          - Be warned: the Arrays are now considered "Deprecated" and the intent is to remove them once a more "robust"
+            replacement for the standard TList<T> type has been completed (with thread-safe locks integrated internally).
       8th December 2014:
         - Removed "RemoveEventFromStream" from TLKEvent as it is no longer required
       2nd December 2014:
@@ -218,13 +228,23 @@ type
   TLKEventListenerType = class of TLKEventListener;
 
   { Array Types }
-  TLKEventArray = TArray<TLKEvent>;
-  TLKEventTypeArray = TArray<TLKEventType>;
-  TLKEventListenerArray = TArray<TLKEventListener>;
-  TLKEventThreadArray = TArray<TLKEventThread>;
   TLKEventTransmitterArray = TArray<TLKEventTransmitterBase>;
   TLKEventReceiverArray = TArray<TLKEventReceiverBase>;
   TLKEventRecorderArray = TArray<TLKEventRecorder>;
+
+  {$IFDEF LKSL_USE_LISTS}
+    { Generics Lists Type }
+    TLKEventList = TLKList<TLKEvent>;
+    TLKEventListenerList = TLKList<TLKEventListener>;
+    TLKEventTypeList = TLKList<TLKEventType>;
+    TLKEventThreadList = TLKList<TLKEventThread>;
+  {$ELSE}
+    { Array Types - DEPRECATED!}
+    TLKEventArray = TArray<TLKEvent>;
+    TLKEventListenerArray = TArray<TLKEventListener>;
+    TLKEventTypeArray = TArray<TLKEventType>;
+    TLKEventThreadArray = TArray<TLKEventThread>;
+  {$ENDIF LKSL_USE_LISTS}
 
   { Hashmap Types }
   TLKEventListenerGroupDictionary = TLKDictionary<TGUID, TLKEventListenerGroup>;
@@ -411,7 +431,11 @@ type
   private
     FEventThread: TLKEventThreadBaseWithListeners;
     FEventType: TLKEventType;
-    FListeners: TLKEventListenerArray;
+    {$IFDEF LKSL_USE_LISTS}
+      FListeners: TLKEventListenerList;
+    {$ELSE}
+      FListeners: TLKEventListenerArray;
+    {$ENDIF LKSL_USE_LISTS}
   public
     constructor Create(const AEventThread: TLKEventThreadBaseWithListeners; const AEventType: TLKEventType); reintroduce;
     destructor Destroy; override;
@@ -430,15 +454,21 @@ type
   TLKEventThreadBase = class abstract(TLKThread)
   private
     FEventLock: TCriticalSection;
-    FEvents: TLKEventArray;
+    {$IFDEF LKSL_USE_LISTS}
+      FEvents: TLKEventList;
+    {$ELSE}
+      FEvents: TLKEventArray;
+    {$ENDIF LKSL_USE_LISTS}
 
     FProcessMode: TLKEventProcessMode;
     function GetProcessMode: TLKEventProcessMode;
     procedure SetProcessMode(const AProcessMode: TLKEventProcessMode);
 
     procedure ClearEvents;
-    // Once we've executed an Event, "RemoveEvent" is called to manage the Event Array
-    procedure RemoveEvent(const AIndex: Integer);
+    {$IFNDEF LKSL_USE_LISTS}
+      // Once we've executed an Event, "RemoveEvent" is called to manage the Event Array
+      procedure RemoveEvent(const AIndex: Integer);
+    {$ENDIF LKSL_USE_LISTS}
     // We also use a separate Lock for Events
     procedure LockEvents; inline;
     procedure UnlockEvents; inline;
@@ -488,7 +518,9 @@ type
   }
   TLKEventThread = class abstract(TLKEventThreadBaseWithListeners)
   private
-    FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
+    {$IFNDEF LKSL_USE_LISTS}
+      FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
+    {$ENDIF LKSL_USE_LISTS}
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: Double); override;
@@ -507,12 +539,18 @@ type
   }
   TLKEventTransmitterBase = class abstract(TLKPersistent)
   private
-    FValidEventTypes: TLKEventTypeArray;
+    {$IFDEF LKSL_USE_LISTS}
+      FValidEventTypes: TLKEventTypeList;
+    {$ELSE}
+      FValidEventTypes: TLKEventTypeArray;
+    {$ENDIF LKSL_USE_LISTS}
     FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
     FUseEventTypeList: Boolean;
     function GetUseEventTypeList: Boolean;
     procedure SetUseEventTypeList(const AValue: Boolean);
-    function EventTypeValid(const AEventType: TLKEventType): Integer;
+    {$IFNDEF LKSL_USE_LISTS}
+      function EventTypeValid(const AEventType: TLKEventType): Integer;
+    {$ENDIF LKSL_USE_LISTS}
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -543,7 +581,11 @@ type
   }
   TLKEventTransmitterManager = class(TLKThread)
   private
-    FEvents: TLKEventArray;
+    {$IFDEF LKSL_USE_LISTS}
+      FEvents: TLKEventList;
+    {$ELSE}
+      FEvents: TLKEventArray;
+    {$ENDIF LKSL_USE_LISTS}
     FEventLock: TCriticalSection;
     FTransmitterLock: TCriticalSection;
     FTransmitters: TLKEventTransmitterArray;
@@ -646,7 +688,11 @@ type
   TLKEventEngine = class(TLKPersistent)
   private
     FEventThreadLock: TCriticalSection;
-    FEventThreads: TLKEventThreadArray;
+    {$IFDEF LKSL_USE_LISTS}
+      FEventThreads: TLKEventThreadList;
+    {$ELSE}
+      FEventThreads: TLKEventThreadArray;
+    {$ENDIF}
     FQueue: TLKEventThreadBaseWithListeners;
     FStack: TLKEventThreadBaseWithListeners;
     FTransmitters: TLKEventTransmitterManager;
@@ -1141,6 +1187,9 @@ end;
 constructor TLKEventListenerGroup.Create(const AEventThread: TLKEventThreadBaseWithListeners; const AEventType: TLKEventType);
 begin
   inherited Create;
+  {$IFDEF LKSL_USE_LISTS}
+    FListeners := TLKEventListenerList.Create;
+  {$ENDIF LKSL_USE_LISTS}
   FEventThread := AEventThread;
   FEventType := AEventType;
   FEventThread.AddEventListenerGroup(Self);
@@ -1149,6 +1198,9 @@ end;
 destructor TLKEventListenerGroup.Destroy;
 begin
   FEventThread.DeleteEventListenerGroup(Self);
+  {$IFDEF LKSL_USE_LISTS}
+    FListeners.Free;
+  {$ENDIF LKSL_USE_LISTS}
   inherited;
 end;
 
@@ -1158,7 +1210,11 @@ var
 begin
   Lock;
   try
+    {$IFDEF LKSL_USE_LISTS}
+    for I := 0 to FListeners.Count do
+    {$ELSE}
     for I := Low(FListeners) to High(FListeners) do
+    {$ENDIF LKSL_USE_LISTS}
     begin
       if AEvent.GetTypeGUID = FListeners[I].GetEventType.GetTypeGUID then
       begin
@@ -1183,34 +1239,49 @@ begin
 end;
 
 procedure TLKEventListenerGroup.RegisterListener(const AListener: TLKEventListener);
+{$IFNDEF LKSL_USE_LISTS}
 var
   LIndex: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   Lock;
   try
-    LIndex := Length(FListeners);
-    SetLength(FListeners, LIndex + 1);
-    FListeners[LIndex] := AListener;
-    FListeners[LIndex].FIndex := LIndex;
+    {$IFDEF LKSL_USE_LISTS}
+      FListeners.Add(AListener);
+      AListener.FIndex := 1;
+    {$ELSE}
+      LIndex := Length(FListeners);
+      SetLength(FListeners, LIndex + 1);
+      FListeners[LIndex] := AListener;
+      FListeners[LIndex].FIndex := LIndex;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     Unlock;
   end;
 end;
 
 procedure TLKEventListenerGroup.UnregisterListener(const AListener: TLKEventListener);
+{$IFNDEF LKSL_USE_LISTS}
 var
   I: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   Lock;
   try
-    for I := AListener.FIndex to Length(FListeners) - 2 do
-    begin
-      FListeners[I] := FListeners[I + 1];
-      FListeners[I].FIndex := I;
-    end;
-    SetLength(FListeners, Length(FListeners) - 1);
-    if Length(FListeners) = 0 then
-      Free;
+    {$IFDEF LKSL_USE_LISTS}
+      FListeners.Remove(AListener);
+      if FListeners.Count = 0 then
+        Free;
+    {$ELSE}
+      for I := AListener.FIndex to Length(FListeners) - 2 do
+      begin
+        FListeners[I] := FListeners[I + 1];
+        FListeners[I].FIndex := I;
+      end;
+      SetLength(FListeners, Length(FListeners) - 1);
+      if Length(FListeners) = 0 then
+        Free;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     Unlock;
   end;
@@ -1219,15 +1290,21 @@ end;
 { TLKEventThreadBase }
 
 procedure TLKEventThreadBase.AddEvent(const AEvent: TLKEvent);
+{$IFNDEF LKSL_USE_LISTS}
 var
   LIndex: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   LockEvents;
   try
     AEvent.FDispatchTime := GetReferenceTime;
-    LIndex := Length(FEvents);
-    SetLength(FEvents, LIndex + 1);
-    FEvents[LIndex] := AEvent;
+    {$IFDEF LKSL_USE_LISTS}
+      FEvents.Add(AEvent);
+    {$ELSE}
+      LIndex := Length(FEvents);
+      SetLength(FEvents, LIndex + 1);
+      FEvents[LIndex] := AEvent;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     UnlockEvents;
   end;
@@ -1239,7 +1316,7 @@ var
 begin
   LockEvents;
   try
-    for I := High(FEvents) downto Low(FEvents) do
+    {$IFDEF LKSL_USE_LISTS}for I := FEvents.Count - 1 downto 0 do{$ELSE}for I := High(FEvents) downto Low(FEvents) do{$ENDIF LKSL_USE_LISTS}
       FEvents[I].Free;
   finally
     UnlockEvents;
@@ -1249,6 +1326,7 @@ end;
 constructor TLKEventThreadBase.Create;
 begin
   inherited;
+  {$IFDEF LKSL_USE_LISTS}FEvents := TLKEventList.Create;{$ENDIF LKSL_USE_LISTS}
   FEventLock := TCriticalSection.Create;
   FProcessMode := epmAll;
 end;
@@ -1257,6 +1335,7 @@ destructor TLKEventThreadBase.Destroy;
 begin
   ClearEvents;
   FEventLock.Free;
+  {$IFDEF LKSL_USE_LISTS}FEvents.Free;{$ENDIF LKSL_USE_LISTS}
   inherited;
 end;
 
@@ -1275,19 +1354,21 @@ begin
   FEventLock.Acquire;
 end;
 
-procedure TLKEventThreadBase.RemoveEvent(const AIndex: Integer);
-var
-  I: Integer;
-begin
-  LockEvents;
-  try
-    for I := AIndex to High(FEvents) - 1 do
-      FEvents[I] := FEvents[I + 1];
-    SetLength(FEvents, Length(FEvents) - 1);
-  finally
-    UnlockEvents;
+{$IFNDEF LKSL_USE_LISTS}
+  procedure TLKEventThreadBase.RemoveEvent(const AIndex: Integer);
+  var
+    I: Integer;
+  begin
+    LockEvents;
+    try
+      for I := AIndex to High(FEvents) - 1 do
+        FEvents[I] := FEvents[I + 1];
+      SetLength(FEvents, Length(FEvents) - 1);
+    finally
+      UnlockEvents;
+    end;
   end;
-end;
+{$ENDIF LKSL_USE_LISTS}
 
 procedure TLKEventThreadBase.SetProcessMode(const AProcessMode: TLKEventProcessMode);
 begin
@@ -1455,17 +1536,30 @@ var
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
+  {$IFDEF LKSL_USE_LISTS}if FEvents.Count > 0 then{$ELSE}if Length(FEvents) > 0 then{$ENDIF LKSL_USE_LISTS}
   begin
     case FProcessMode of
       epmOneByOne: begin
                      ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
                      FEvents[0].Free; // Destroy the Event
-                     RemoveEvent(0); // Rebalance the Event Array
+                     {$IFDEF LKSL_USE_LISTS}
+                       LockEvents;
+                       try
+                         FEvents.Delete(0);
+                       finally
+                         UnlockEvents;
+                       end;
+                     {$ELSE}
+                       RemoveEvent(0); // Rebalance the Event Array
+                     {$ENDIF LKSL_USE_LISTS}
                    end;
       epmAll: begin
                 // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
+                {$IFDEF LKSL_USE_LISTS}
+                  LEnd := FEvents.Count - 1;
+                {$ELSE}
+                  LEnd := High(FEvents);
+                {$ENDIF LKSL_USE_LISTS}
                 // Iterate the Events up to the High Range and Process
                 for I := 0 to LEnd do
                 begin
@@ -1473,14 +1567,23 @@ begin
                   FEvents[I].Free;
                 end;
                 // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
+                {$IFDEF LKSL_USE_LISTS}
+                  LockEvents;
+                  try
+                    FEvents.DeleteRange(0, LEnd + 1);
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ELSE}
+                  LockEvents;
+                  try
+                    for I := 0 to High(FEvents) - LEnd do
+                      FEvents[I] := FEvents[I + 1 + LEnd];
+                    SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ENDIF LKSL_USE_LISTS}
               end;
     end;
   end;
@@ -1497,24 +1600,35 @@ function TLKEventTransmitterBase.AcceptEvent(const AEvent: TLKEvent): Boolean;
 begin
   Lock;
   try
-    Result := ((FUseEventTypeList) and (EventTypeValid(TLKEventType(AEvent)) > -1)) or (not FUseEventTypeList);
+    {$IFDEF LKSL_USE_LISTS}
+      Result := ((FUseEventTypeList) and (FValidEventTypes.Contains(TLKEventType(AEvent)))) or (not FUseEventTypeList);
+    {$ELSE}
+      Result := ((FUseEventTypeList) and (EventTypeValid(TLKEventType(AEvent)) > -1)) or (not FUseEventTypeList);
+    {$ENDIF LKSL_USE_LISTS}
   finally
     Unlock;
   end;
 end;
 
 procedure TLKEventTransmitterBase.AddValidEventType(const AEventType: TLKEventType);
-var
-  LIndex: Integer;
+{$IFNDEF LKSL_USE_LISTS}
+  var
+    LIndex: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   Lock;
   try
-    if EventTypeValid(AEventType) = -1 then
-    begin
-      LIndex := Length(FValidEventTypes);
-      SetLength(FValidEventTypes, LIndex + 1);
-      FValidEventTypes[LIndex] := AEventType;
-    end;
+    {$IFDEF LKSL_USE_LISTS}
+    if (not FValidEventTypes.Contains(AEventType)) then
+      FValidEventTypes.Add(AEventType);
+    {$ELSE}
+      if EventTypeValid(AEventType) = -1 then
+      begin
+        LIndex := Length(FValidEventTypes);
+        SetLength(FValidEventTypes, LIndex + 1);
+        FValidEventTypes[LIndex] := AEventType;
+      end;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     Unlock;
   end;
@@ -1523,6 +1637,9 @@ end;
 constructor TLKEventTransmitterBase.Create;
 begin
   inherited;
+  {$IFDEF LKSL_USE_LISTS}
+    FValidEventTypes := TLKEventTypeList.Create;
+  {$ENDIF LKSL_USE_LISTS}
   Events.FTransmitters.AddTransmitter(Self);
   FUseEventTypeList := False; // We don't want to limit outgoing Events by default
 end;
@@ -1530,7 +1647,11 @@ end;
 destructor TLKEventTransmitterBase.Destroy;
 begin
   Events.FTransmitters.DeleteTransmitter(Self);
-  SetLength(FValidEventTypes, 0);
+  {$IFDEF LKSL_USE_LISTS}
+    FValidEventTypes.Free;
+  {$ELSE}
+    SetLength(FValidEventTypes, 0);
+  {$ENDIF LKSL_USE_LISTS}
   inherited;
 end;
 
@@ -1545,18 +1666,24 @@ begin
 end;
 
 procedure TLKEventTransmitterBase.RemoveValidEventType(const AEventType: TLKEventType);
-var
-  I, LIndex: Integer;
+{$IFNDEF LKSL_USE_LISTS}
+  var
+    I, LIndex: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   Lock;
   try
-    LIndex := EventTypeValid(AEventType);
-    if LIndex > -1 then
-    begin
-      for I := LIndex to High(FValidEventTypes) - 1 do
-        FValidEventTypes[I] := FValidEventTypes[I + 1];
-      SetLength(FValidEventTypes, Length(FValidEventTypes) - 1);
-    end;
+    {$IFDEF LKSL_USE_LISTS}
+      FValidEventTypes.Remove(AEventType);
+    {$ELSE}
+      LIndex := EventTypeValid(AEventType);
+      if LIndex > -1 then
+      begin
+        for I := LIndex to High(FValidEventTypes) - 1 do
+          FValidEventTypes[I] := FValidEventTypes[I + 1];
+        SetLength(FValidEventTypes, Length(FValidEventTypes) - 1);
+      end;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     Unlock;
   end;
@@ -1572,30 +1699,32 @@ begin
   end;
 end;
 
-function TLKEventTransmitterBase.EventTypeValid(const AEventType: TLKEventType): Integer;
-var
-  I: Integer;
-begin
-  Result := -1;
-  Lock;
-  try
-    for I := Low(FValidEventTypes) to High(FValidEventTypes) do
-      if FValidEventTypes[I] = AEventType then
-      begin
-        Result := I;
-        Break;
-      end;
-  finally
-    Unlock;
+{$IFNDEF LKSL_USE_LISTS}
+  function TLKEventTransmitterBase.EventTypeValid(const AEventType: TLKEventType): Integer;
+  var
+    I: Integer;
+  begin
+    Result := -1;
+    Lock;
+    try
+      for I := Low(FValidEventTypes) to High(FValidEventTypes) do
+        if FValidEventTypes[I] = AEventType then
+        begin
+          Result := I;
+          Break;
+        end;
+    finally
+      Unlock;
+    end;
   end;
-end;
+{$ENDIF LKSL_USE_LISTS}
 
 { TLKEventTransmitterManager }
 
 procedure TLKEventTransmitterManager.AddEvent(const AEvent: TLKEvent);
 var
   LTransmitterExists: Boolean;
-  LIndex: Integer;
+  {$IFNDEF LKSL_USE_LISTS}LIndex: Integer;{$ENDIF LKSL_USE_LISTS}
   LClone: TLKEvent;
 begin
   // Check if there actually are any Transmitters first
@@ -1613,9 +1742,13 @@ begin
     // Add Clone to Event Queue
     LockEvents;
     try
-      LIndex := Length(FEvents);
-      SetLength(FEvents, LIndex + 1);
-      FEvents[LIndex] := LClone;
+      {$IFDEF LKSL_USE_LISTS}
+        FEvents.Add(LClone);
+      {$ELSE}
+        LIndex := Length(FEvents);
+        SetLength(FEvents, LIndex + 1);
+        FEvents[LIndex] := LClone;
+      {$ENDIF LKSL_USE_LISTS}
     finally
       UnlockEvents;
     end;
@@ -1644,8 +1777,9 @@ begin
   try
     for LEvent in FEvents do
       LEvent.Free;
-
-    SetLength(FEvents, 0);
+    {$IFNDEF LKSL_USE_LISTS}
+      SetLength(FEvents, 0);
+    {$ENDIF LKSL_USE_LISTS}
   finally
     UnlockEvents;
   end;
@@ -1654,6 +1788,7 @@ end;
 constructor TLKEventTransmitterManager.Create;
 begin
   inherited;
+  {$IFDEF LKSL_USE_LISTS}FEvents := TLKEventList.Create;{$ENDIF LKSL_USE_LISTS}
   FTransmitterLock := TCriticalSection.Create;
   FEventLock := TCriticalSection.Create;
 end;
@@ -1681,6 +1816,7 @@ begin
   ClearEvents;
   FTransmitterLock.Free;
   FEventLock.Free;
+  {$IFDEF LKSL_USE_LISTS}FEvents.Free;{$ENDIF LKSL_USE_LISTS}
   inherited;
 end;
 
@@ -1710,7 +1846,7 @@ var
   I: Integer;
   LEventStream: TMemoryStream;
 begin
-  if Length(FEvents) > 0 then
+  {$IFDEF LKSL_USE_LISTS}if FEvents.Count > 0 then{$ELSE}if Length(FEvents) > 0 then{$ENDIF LKSL_USE_LISTS}
   begin
     LEventStream := TMemoryStream.Create;
     try
@@ -1732,9 +1868,13 @@ begin
       // Remove the processed Event from the Event Array
       LockEvents;
       try
-        for I := Low(FEvents) to High(FEvents) - 1 do
-          FEvents[I] := FEvents[I + 1];
-        SetLength(FEvents, Length(FEvents) - 1);
+        {$IFDEF LKSL_USE_LISTS}
+          FEvents.Delete(0);
+        {$ELSE}
+          for I := Low(FEvents) to High(FEvents) - 1 do
+            FEvents[I] := FEvents[I + 1];
+          SetLength(FEvents, Length(FEvents) - 1);
+        {$ENDIF LKSL_USE_LISTS}
       finally
         UnlockEvents;
       end;
@@ -1791,7 +1931,7 @@ var
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
+  {$IFDEF LKSL_USE_LISTS}if FEvents.Count > 0 then{$ELSE}if Length(FEvents) > 0 then{$ENDIF LKSL_USE_LISTS}
   begin
     case FProcessMode of
       epmOneByOne: begin
@@ -1799,11 +1939,24 @@ begin
                      FEvents[0].FProcessedTime := AStartTime;
                      RecordEvent(FEvents[0]); // Process the first Event in the Queue
                      FEvents[0].Free; // Destroy the Event
-                     RemoveEvent(0); // Rebalance the Event Array
+                     {$IFDEF LKSL_USE_LISTS}
+                     LockEvents;
+                     try
+                       FEvents.Delete(0);
+                     finally
+                       UnlockEvents;
+                     end;
+                     {$ELSE}
+                       RemoveEvent(0); // Rebalance the Event Array
+                     {$ENDIF LKSL_USE_LISTS}
                    end;
       epmAll: begin
                 // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
+                {$IFDEF LKSL_USE_LISTS}
+                  LEnd := FEvents.Count - 1;
+                {$ELSE}
+                  LEnd := High(FEvents);
+                {$ENDIF LKSL_USE_LISTS}
                 // Iterate the Events up to the High Range and Process
                 for I := 0 to LEnd do
                 begin
@@ -1813,14 +1966,23 @@ begin
                   FEvents[I].Free;
                 end;
                 // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
+                {$IFDEF LKSL_USE_LISTS}
+                  LockEvents;
+                  try
+                    FEvents.DeleteRange(0, LEnd + 1);
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ELSE}
+                  LockEvents;
+                  try
+                    for I := 0 to High(FEvents) - LEnd do
+                      FEvents[I] := FEvents[I + 1 + LEnd];
+                    SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ENDIF LKSL_USE_LISTS}
               end;
     end;
   end;
@@ -1837,7 +1999,7 @@ begin
   ProcessEvents(ADelta, AStartTime);
   LockEvents;
   try
-    if Length(FEvents) = 0 then
+    {$IFDEF LKSL_USE_LISTS}if FEvents.Count = 0 then{$ELSE}if Length(FEvents) = 0 then{$ENDIF LKSL_USE_LISTS}
       ThreadState := tsPaused;
   finally
     UnlockEvents;
@@ -1869,17 +2031,30 @@ var
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
+  {$IFDEF LKSL_USE_LISTS}if FEvents.Count > 0 then{$ELSE}if Length(FEvents) > 0 then{$ENDIF LKSL_USE_LISTS}
   begin
     case FProcessMode of
       epmOneByOne: begin
                      ProcessListeners(FEvents[0], ADelta, AStartTime); // Process the first Event in the Queue
                      FEvents[0].Free; // Destroy the Event
-                     RemoveEvent(0); // Rebalance the Event Array
+                     {$IFDEF LKSL_USE_LISTS}
+                       LockEvents;
+                       try
+                         FEvents.Delete(0);
+                       finally
+                         UnlockEvents;
+                       end;
+                     {$ELSE}
+                       RemoveEvent(0); // Rebalance the Event Array
+                     {$ENDIF LKSL_USE_LISTS}
                    end;
       epmAll: begin
                 // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
+                {$IFDEF LKSL_USE_LISTS}
+                  LEnd := FEvents.Count - 1;
+                {$ELSE}
+                  LEnd := High(FEvents);
+                {$ENDIF LKSL_USE_LISTS}
                 // Iterate the Events up to the High Range and Process
                 for I := 0 to LEnd do
                 begin
@@ -1887,14 +2062,23 @@ begin
                   FEvents[I].Free;
                 end;
                 // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
+                {$IFDEF LKSL_USE_LISTS}
+                  LockEvents;
+                  try
+                    FEvents.DeleteRange(0, LEnd + 1);
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ELSE}
+                  LockEvents;
+                  try
+                    for I := 0 to High(FEvents) - LEnd do
+                      FEvents[I] := FEvents[I + 1 + LEnd];
+                    SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ENDIF LKSL_USE_LISTS}
               end;
     end;
   end;
@@ -1905,7 +2089,7 @@ begin
   ProcessEvents(ADelta, AStartTime);
   LockEvents;
   try
-    if Length(FEvents) = 0 then
+    {$IFDEF LKSL_USE_LISTS}if FEvents.Count = 0 then{$ELSE}if Length(FEvents) = 0 then{$ENDIF LKSL_USE_LISTS}
       ThreadState := tsPaused;
   finally
     UnlockEvents;
@@ -1933,18 +2117,35 @@ var
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
-  if Length(FEvents) > 0 then
+  {$IFDEF LKSL_USE_LISTS}if FEvents.Count > 0 then{$ELSE}if Length(FEvents) > 0 then{$ENDIF LKSL_USE_LISTS}
   begin
     case FProcessMode of
       epmOneByOne: begin
-                     LEnd := High(FEvents);
+                     {$IFDEF LKSL_USE_LISTS}
+                       LEnd := FEvents.Count - 1;
+                     {$ELSE}
+                       LEnd := High(FEvents);
+                     {$ENDIF LKSL_USE_LISTS}
                      ProcessListeners(FEvents[LEnd], ADelta, AStartTime); // Process the first Event in the Queue
                      FEvents[LEnd].Free; // Destroy the Event
-                     RemoveEvent(LEnd); // Rebalance the Event Array
+                     {$IFDEF LKSL_USE_LISTS}
+                       LockEvents;
+                       try
+                         FEvents.Delete(LEnd);
+                       finally
+                         UnlockEvents;
+                       end;
+                     {$ELSE}
+                       RemoveEvent(LEnd); // Rebalance the Event Array
+                     {$ENDIF LKSL_USE_LISTS}
                    end;
       epmAll: begin
                 // Set the High Range to the number of Events in  the Array right NOW.
-                LEnd := High(FEvents);
+                {$IFDEF LKSL_USE_LISTS}
+                  LEnd := FEvents.Count - 1;
+                {$ELSE}
+                  LEnd := High(FEvents);
+                {$ENDIF LKSL_USE_LISTS}
                 // Iterate the Events up to the High Range and Process
                 for I := LEnd downto 0 do
                 begin
@@ -1952,14 +2153,23 @@ begin
                   FEvents[I].Free;
                 end;
                 // Shift the positions of any new Events in the Array
-                LockEvents;
-                try
-                  for I := 0 to High(FEvents) - LEnd do
-                    FEvents[I] := FEvents[I + 1 + LEnd];
-                  SetLength(FEvents, Length(FEvents) - (LEnd + 1));
-                finally
-                  UnlockEvents;
-                end;
+                {$IFDEF LKSL_USE_LISTS}
+                  LockEvents;
+                  try
+                    FEvents.DeleteRange(0, LEnd + 1);
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ELSE}
+                  LockEvents;
+                  try
+                    for I := 0 to High(FEvents) - LEnd do
+                      FEvents[I] := FEvents[I + 1 + LEnd];
+                    SetLength(FEvents, Length(FEvents) - (LEnd + 1));
+                  finally
+                    UnlockEvents;
+                  end;
+                {$ENDIF LKSL_USE_LISTS}
               end;
     end;
   end;
@@ -1970,7 +2180,7 @@ begin
   ProcessEvents(ADelta, AStartTime);
   LockEvents;
   try
-    if Length(FEvents) = 0 then
+    {$IFDEF LKSL_USE_LISTS}if FEvents.Count = 1 then{$ELSE}if Length(FEvents) = 0 then{$ENDIF LKSL_USE_LISTS}
       ThreadState := tsPaused;
   finally
     UnlockEvents;
@@ -1992,6 +2202,9 @@ end;
 constructor TLKEventEngine.Create;
 begin
   inherited;
+  {$IFDEF LKSL_USE_LISTS}
+    FEventThreads := TLKEventThreadList.Create;
+  {$ENDIF LKSL_USE_LISTS}
   FEventThreadLock := TCriticalSection.Create;
   FQueue := TLKEventQueue.Create;
   FStack := TLKEventStack.Create;
@@ -2004,14 +2217,22 @@ var
   I: Integer;
 begin
   FTransmitters.Kill;
-  for I := High(FEventThreads) downto Low(FEventThreads) do
-    UnregisterEventThread(FEventThreads[I]);
+  {$IFDEF LKSL_USE_LISTS}
+    for I := 0 to FEventThreads.Count - 1 do
+      UnregisterEventThread(FEventThreads[I]);
+  {$ELSE}
+    for I := High(FEventThreads) downto Low(FEventThreads) do
+      UnregisterEventThread(FEventThreads[I]);
+  {$ENDIF LKSL_USE_LISTS}
   FEventThreadLock.Free;
   for I := High(FRecorders) downto Low(FRecorders) do
     FRecorders[I].Unsubscribe;
   FRecorderLock.Free;
   FQueue.Kill;
   FStack.Kill;
+  {$IFDEF LKSL_USE_LISTS}
+    FEventThreads.Free;;
+  {$ENDIF LKSL_USE_LISTS}
   inherited;
 end;
 
@@ -2056,7 +2277,7 @@ var
 begin
   LockThreads;
   try
-    for I := Low(FEventThreads) to High(FEventThreads) do
+    {$IFDEF LKSL_USE_LISTS}for I := 0 to FEventThreads.Count - 1 do{$ELSE}for I := Low(FEventThreads) to High(FEventThreads) do{$ENDIF LKSL_USE_LISTS}
     begin
       LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
       LClone.Assign(AEvent); // Copy the original data into the Clone
@@ -2068,15 +2289,21 @@ begin
 end;
 
 procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
-var
-  LIndex: Integer;
+{$IFNDEF LKSL_USE_LISTS}
+  var
+    LIndex: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   LockThreads;
   try
-    LIndex := Length(FEventThreads);
-    SetLength(FEventThreads, LIndex + 1);
-    FEventThreads[LIndex] := AEventThread;
-    AEventThread.FIndex := LIndex;
+    {$IFDEF LKSL_USE_LISTS}
+      FEventThreads.Add(AEventThread);
+    {$ELSE}
+      LIndex := Length(FEventThreads);
+      SetLength(FEventThreads, LIndex + 1);
+      FEventThreads[LIndex] := AEventThread;
+      AEventThread.FIndex := LIndex;
+    {$ENDIF LKSL_USE_LISTS}
   finally
     UnlockThreads;
   end;
@@ -2126,17 +2353,23 @@ begin
 end;
 
 procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThread);
-var
-  I: Integer;
+{$IFNDEF LKSL_USE_LISTS}
+  var
+    I: Integer;
+{$ENDIF LKSL_USE_LISTS}
 begin
   LockThreads;
   try
-    for I := AEventThread.FIndex to High(FEventThreads) - 1 do
-    begin
-      FEventThreads[I] := FEventThreads[I + 1];
-      FEventThreads[I].FIndex := I;
-    end;
-    SetLength(FEventThreads, Length(FEventThreads) - 1);
+    {$IFDEF LKSL_USE_LISTS}
+      FEventThreads.Remove(AEventThread);
+    {$ELSE}
+      for I := AEventThread.FIndex to High(FEventThreads) - 1 do
+      begin
+        FEventThreads[I] := FEventThreads[I + 1];
+        FEventThreads[I].FIndex := I;
+      end;
+      SetLength(FEventThreads, Length(FEventThreads) - 1);
+    {$ENDIF LKSL_USE_LISTS}
   finally
     UnlockThreads;
   end;
