@@ -110,7 +110,7 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  Generics.Collections,
+  Generics.Collections, LKSL.Generics.Collections,
   LKSL.Common.Types,
   LKSL.Streams.System;
 
@@ -139,8 +139,9 @@ type
   TLKStreamableType = class of TLKStreamable;
 
   { Array Types }
-  TLKStreamableArray = Array of TLKStreamable;
+  TLKStreamableArray = TArray<TLKStreamable>;
 
+  { Hashmap Types }
   TLKStreamableTypesDictionary = TDictionary<TGUID, TLKStreamableType>;
 
   {
