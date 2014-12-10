@@ -45,13 +45,6 @@ interface
   About this unit:
     - This unit provides a series of methods to Delete, Insert, Read and Write values to/from Streams
     - The Types covered are those defined in "System.Types.pas"
-
-
-  Changelog (latest changes first):
-    6th September 2014 (bug fix commit):
-      - Fixed a silly bug in every "Insert" method
-    6th September 2014:
-      - Prepared for Release
 }
 
 uses

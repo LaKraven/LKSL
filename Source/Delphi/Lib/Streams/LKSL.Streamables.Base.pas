@@ -50,57 +50,6 @@ interface
         BEFORE USING ANY OF YOUR STREAMABLE TYPES! THIS CAN BE EASILY DONE IN THE "INITIALIZATION" SECTION.
         YOU CAN THEN CALL "Streamables.Unregister(<type);" OR "Streamables.Unregister([<types]);"
         IN THE "FINALIZATION" SECTION OF YOUR DEFINING UNITS!
-
-    Changelog (latest changes first):
-      8th December 2014:
-        - Removed "RemoveFromStream" from TLKStreamable. This is no longer required as we now store the size
-          of each Streamable block within a Stream. This means we can remove the entire block without having to
-          iterate through each constituent there-of.
-        - Removed unnecessary Lock/Unlock instructions from the Read/Insert/Write methods of TLKStreamableNamed.
-      2nd December 2014:
-        - TLKStreamable types now include a single Byte for the current version of the Event Engine itself.
-          This is so that no further changes to the TLKStreamable type will invalidate existing stored serializations
-          of TLKStreamable objects.
-        - Fixed a bug in TLKStreamable.CreateFromStream (was calling "ReadFromStream" when the correct entry-point is
-          "LoadFromStream"
-        - Fixed a bug in TLKStreamables.StreamableTypeMatch so that it now returns TRUE when the determined Type is
-          a descendant of the nominated Type.
-        - Added TLKStreamable.CheckTypeInStream
-          - Class function, returns True if the signature at the current (or nominated) Position of the Stream
-            matches the current Type (or a descendant of the current Type)
-      1st December 2014:
-        - Fixed a bug in TLKStreamable.DeleteFromStream (forgot to change the Signature from a String to a TGUID)
-        - Added "BlockSize" data to TLKStreamable so you can skip over entire Streamable Items within a Stream.
-      30th November 2014:
-        - Put "try/finally" blocks around all Lock requests (so if the code fails, the Lock will be released)
-      28th November 2014 (second commit):
-        - Reverted some of the "for in" loops due to performance implications
-      28th November 2014:
-        - Added integration for Generic Containers (TDictionary) for Streamable Types in TLKStreamables.
-        - Made some trivial syntactic changes to certain "for" loops because it looks cleaner.
-      27th November 2014:
-        - Added Class Procedure "Register" to TLKStreamable
-          - It's basically an alias of "Streamables.Register(Self);"
-        - Added Constructor "CreateFromStream" to TLKStreamable
-          - Takes a TStream reference, and initialzies the object using the serialization in the Stream
-        - Added Constructor "CreateFromFile" to TLKStreamable
-          - Takes a Filename and initializes the object using the serialization in that File
-        - Added function "CreateStreamableFromStream" Params: (AStream: TStream; APosition: Int64 [optional])
-          - Returns a new instance of the appropriate Streamable Type populated from the Stream
-          - Returns a "nil" if the signature does not match a registered Streamable Type
-        - TLKStreamable significant INTERFACE-BREAKING changes:
-          > For the sake of implementation overrides:
-            - (Public) "DeleteFromStream" became (Protected) "RemoveFromStream"
-            - (Public) "ReadFromStream" became (Protected) "ReadFromStream"
-            - (Public) "InsertIntoStream" became (Protected) "InsertIntoStream"
-            - (Public) "WriteToStream" became (Protected) "WriteToStream"
-          > For the sake of external calls to TLKStreamable descendents:
-            - "DeleteFromStream" remains the same (only the implementation has been relocated)
-            - "LoadFromStream" replaces "ReadFromStream" for external reference
-            - "SaveToStream" replaces "WriteToStream" and "InsertIntoSTream" for external reference
-          - TLKStreamable.GetTypeGUID now MUST return an actual TGUID (not a String anymore!)
-      6th September 2014:
-        - Prepared for Release
   }
 {$ENDREGION}
 

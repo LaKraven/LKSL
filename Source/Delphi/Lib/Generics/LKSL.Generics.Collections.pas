@@ -44,9 +44,6 @@ interface
 {
   About this unit:
     - This unit provides useful enhancements for Generics types used in the LKSL.
-
-    30th November 2014:
-      - Prepared for Release
 }
 
 uses

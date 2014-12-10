@@ -53,16 +53,6 @@ interface
     The interfaces may well change, right down to the name of the unit itself... so please only use
     this unit in your projects if you understand that you will likely have to make some modifications
     to your implementation(s) in the very near future!
-
-    Changelog (latest changes first):
-      8th December 2014:
-        - Fixed some issues with Event Replay
-        - Added a compiler warning to let developers know that this unit is not year ready for real-world
-          use. Will of course remove the warning once the unit has reached an acceptable point of readiness.
-      2nd December 2014:
-        - Added code to support replaying of entire Sessions (on a session-by-session basis)
-      1st December 2014:
-        - Prepared for Release
   }
 {$ENDREGION}
 

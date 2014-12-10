@@ -45,26 +45,6 @@ interface
   About this unit:
     - This unit provides a series of methods to Delete, Insert, Read and Write values to/from Streams
     - The Types covered are those defined in "System.pas"
-
-  Changelog (latest changes first):
-    2nd December 2014:
-      - Removed the IFDEF check for GENERICS (as GENERICS is now always-on in the LKSL)
-    26th October 2014:
-      - Added explicit "Cardinal" support (Delete, Insert, Read, Write)
-      - Added "StreamManager" class
-        - Delete = StreamManager.Delete<Integer>(MyStream);
-        - Insert = StreamManager.Insert<Integer>(MyStream, MyInteger);
-        - Read = MyInteger := StreamManager<Integer>(MyStream);
-        - Write = StreamManager.Write<Integer>(MyStream, MyInteger);
-      - Added GENERIC HELPER "TLKStreamHelper" for TStream
-        - Delete = MyStream.DeleteValue<Integer>;
-        - Insert = MyStream.InsertValue<Integer>(MyInteger);
-        - Read = MyInteger := MyStream.ReadValue<Integer>;
-        - Write = MyStream.WriteValue<Integer>(MyInteger);
-    6th September 2014 (bug fix commit):
-      - Fixed a silly bug in every "Insert" method
-    6th September 2014:
-      - Prepared for Release
 }
 
 uses

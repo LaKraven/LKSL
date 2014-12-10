@@ -70,10 +70,6 @@ unit LKSL.Common.Types;
 {
   About this unit:
     - This unit provides fundamental abstract base types used throughout the LKSL
-
-  Changelog (latest changes first):
-    3rd September 2014:
-      - Prepared for Release
 }
 
 interface

@@ -44,12 +44,6 @@ unit LKSL.Events.Streams;
     - This unit is used internally by the "Event Engine"
     - This unit provides methods for Deleting, Inserting, Reading and Writing Event-specific Types
       to/from Streams.
-
-  Changelog (latest changes first):
-    27th November 2014:
-      - "TLKPriority" became "TLKDispatchMethod" (see LKSL.Events.Base.pas changelog for details)
-    6th September 2014:
-      - Prepared for Release
 }
 
 interface

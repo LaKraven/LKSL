@@ -47,44 +47,6 @@ unit LKSL.Threads.Base;
   Included Usage Demos:
     - "LKSL_Demo_HighPrecisionThreads" in the "\Demos\Delphi\<version>\High Precision Threading (HPT)"
       folder
-
-  Changelog (latest changes first):
-    30th November 2014:
-      - Put "try/finally" blocks around all Lock requests (so if the code fails, the Lock will be released)
-    19th September 2014:
-      - Added Protected Function "CalculateExtraTime" which returns the number of seconds
-        (double-precision) available between the time at which you place the call, and the time at which
-        the next Tick is scheduled to occur.
-    16th September 2014:
-      - Added Property "TickRateDesired" which is used to define the rate you want the Thread to run at.
-        This is NOT the same as "TickRateLimit"... it is used to calculate how much EXTRA time is
-        available over the "desired rate" (or how far BELOW the "Desired Rate", in the event of negative
-        values). The value should represent Ticks Per Second!
-      - Added Property "TickRateExtraTicks" which (if "TickRateDesired > 0.00") returns the INSTANT number of
-        Ticks Per Second in EXCESS of the Desired Rate.
-      - Added Property "TickRateExtraTicksAverage" which (if "TickRateDesired > 0.00") returns the AVERAGE
-        number of Ticks Per Second in EXCESS of the Desired Rate.
-      - Added Property "TickRateExtraTime" which returns the number of SECONDS between the INSTANT Tick
-        Rate and the DESIRED Tick Rate
-      - Added Property "TickRateExtraTimeAverage" which is the same as "TickRateExtraTime" but Averaged
-    8th September 2014:
-      - Fixed a bug related to non-Windows platforms
-    4th September 2014 (Second Commit):
-      - Decenteralized "GetReferenceTime" so that all Threads share a common Reference Timer.
-        This is good for synchronizing process timing between separate Threads.
-      - Added new Method "PreTick", which is executed on EVERY cycle, ignoring the Tick Rate Limit.
-        This is required for the "TLKEventThread" type defined in "LKSL.Events.Base.pas"
-    4th September 2014 (First Commit):
-      - Added new Method "GetDefaultYieldAccumulatedTime" to define whether all accumulated (excess) time
-        should be yielded in a single block by default.
-      - Added new Property "YieldAccumulatedTime" to control ad-hoc whether all accumulated (excess) time
-        should be yielded in a single block.
-      - Add new Property "NextTickTime", which is the Reference Time at (or after) which the next Tick
-        will occur.
-      - Added new Method "Bump", which (if "YieldAccumulatedTime" = False) forces the next Tick to occur
-        immediately.
-    3rd September 2014:
-      - Prepared for Release.
 }
 
 interface
