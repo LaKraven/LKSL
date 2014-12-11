@@ -168,6 +168,11 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	11th December 2014:
+		- Added TLKCenteredList<T>
+			- A magic (and efficient) managed List capable of taking both Negative and Positive indices.
+			- You can basically Queue AND Stack items within the Array (Queue with Positive index, Stack with
+			  a Negative index).
 	10th December 2014:
 		- Changelog removed from unit
 	30th November 2014:
