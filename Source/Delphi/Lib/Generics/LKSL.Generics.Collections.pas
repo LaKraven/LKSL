@@ -260,6 +260,8 @@ type
     procedure UnlockLeft; inline;
     procedure UnlockRight; inline;
 
+    procedure Swap(const AFrom, ATo: Integer);
+
     // Capacity Properties
     property Capacity: Integer read GetCapacity;
     property CapacityLeft: Integer read GetCapacityLeft;
@@ -1064,6 +1066,30 @@ begin
   finally
     UnlockRight;
   end;
+end;
+
+procedure TLKCenteredList<T>.Swap(const AFrom, ATo: Integer);
+var
+  LTemp: T;
+  LFrom, LTo: ^T;
+begin
+  if AFrom = 0 then
+    LFrom := @FCenter
+  else if AFrom < 0 then
+    LFrom := @FArrayLeft[-(AFrom) - 1]
+  else
+    LFrom := @FArrayRight[AFrom - 1];
+
+  if ATo = 0 then
+    LTo := @FCenter
+  else if ATo < 0 then
+    LTo := @FArrayLeft[-(ATo) - 1]
+  else
+    LTo := @FArrayRight[ATo - 1];
+
+    LTemp := LFrom^;
+    LFrom^ := LTo^;
+    LTo^ := LTemp;
 end;
 
 function TLKCenteredList<T>.TryCenterAvailable(const AItem: T): Boolean;
