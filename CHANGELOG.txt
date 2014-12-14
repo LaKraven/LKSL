@@ -169,6 +169,8 @@ LKSL.Events.Streams.pas
 LKSL.Generics.Collections.pas
 -----------------------------
 	14th December 2014:
+		- Added Range Checking to TLKCenteredList<T>'s "Insert" methods
+	14th December 2014:
 		- Further improved performance of TLKCenteredList<T> by making it use System.Move() instead of iteration
 		- Added "Insert" methods
 		- Overloaded "AddLeft" and "AddRight" functions with procedures to add an Array of T accordingly.

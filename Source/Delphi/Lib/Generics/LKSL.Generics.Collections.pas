@@ -882,71 +882,81 @@ end;
 
 procedure TLKCenteredList<T>.InsertLeft(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
 begin
-  case AShiftDirection of
-    ldLeft: begin
-              LockLeft;
-              try
-                // We're actually shifting to the RIGHT (remember, it's inverted)
-                Move(FArrayLeft, AIndex, AIndex + 1, FCountLeft - AIndex);
-                FArrayLeft[AIndex] := AItem;
-                Inc(FCountLeft);
-                CheckCapacityLeft;
-              finally
-                UnlockLeft;
+  if AIndex > FCountLeft then
+    raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [-(AIndex + 1)])
+  else
+  begin
+    case AShiftDirection of
+      ldLeft: begin
+                LockLeft;
+                try
+                  // We're actually shifting to the RIGHT (remember, it's inverted)
+                  Move(FArrayLeft, AIndex, AIndex + 1, FCountLeft - AIndex);
+                  FArrayLeft[AIndex] := AItem;
+                  Inc(FCountLeft);
+                  CheckCapacityLeft;
+                finally
+                  UnlockLeft;
+                end;
               end;
-            end;
-    ldRight: begin
-               LockRight;
-               try
-                 // We're actually shifting to the LEFT (remember, it's inverted)
-                 LockCenter;
+      ldRight: begin
+                 LockRight;
                  try
-                   InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
-                   FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
+                   // We're actually shifting to the LEFT (remember, it's inverted)
+                   LockCenter;
+                   try
+                     InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
+                     FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
+                   finally
+                     UnlockCenter;
+                   end;
+                   Move(FArrayLeft, 1, 0, AIndex);
+                   FArrayLeft[AIndex] := AItem; // Assign the Item to the index
+                   CheckCapacityRight;
                  finally
-                   UnlockCenter;
+                   UnlockRight;
                  end;
-                 Move(FArrayLeft, 1, 0, AIndex);
-                 FArrayLeft[AIndex] := AItem; // Assign the Item to the index
-                 CheckCapacityRight;
-               finally
-                 UnlockRight;
                end;
-             end;
+    end;
   end;
 end;
 
 procedure TLKCenteredList<T>.InsertRight(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
 begin
-  case AShiftDirection of
-    ldLeft: begin
-              LockLeft;
-              try
-                LockCenter;
+  if AIndex > FCountRight then
+    raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [AIndex + 1])
+  else
+  begin
+    case AShiftDirection of
+      ldLeft: begin
+                LockLeft;
                 try
-                  InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
-                  FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
+                  LockCenter;
+                  try
+                    InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
+                    FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
+                  finally
+                    UnlockCenter;
+                  end;
+                  Move(FArrayRight, 1, 0, AIndex);
+                  FArrayRight[AIndex] := AItem;
+                  CheckCapacityLeft;
                 finally
-                  UnlockCenter;
+                  UnlockLeft;
                 end;
-                Move(FArrayRight, 1, 0, AIndex);
-                FArrayRight[AIndex] := AItem;
-                CheckCapacityLeft;
-              finally
-                UnlockLeft;
               end;
-            end;
-    ldRight: begin
-               LockRight;
-               try
-                 Move(FArrayRight, AIndex, AIndex + 1, FCountRight - AIndex);
-                 FArrayRight[AIndex] := AItem;
-                 Inc(FCountRight);
-                 CheckCapacityRight;
-               finally
-                 UnlockRight;
+      ldRight: begin
+                 LockRight;
+                 try
+                   Move(FArrayRight, AIndex, AIndex + 1, FCountRight - AIndex);
+                   FArrayRight[AIndex] := AItem;
+                   Inc(FCountRight);
+                   CheckCapacityRight;
+                 finally
+                   UnlockRight;
+                 end;
                end;
-             end;
+    end;
   end;
 end;
 
