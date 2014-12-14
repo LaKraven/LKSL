@@ -212,26 +212,43 @@ type
     // Range Getters
     function GetRangeLow: Integer;
     function GetRangeHigh: Integer;
+    // Insert Methods
+    procedure InsertCenter(const AItem: T; const AShiftDirection: TLKListDirection = ldRight);
+    procedure InsertLeft(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+    procedure InsertRight(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
     // General
     function TryCenterAvailable(const AItem: T): Boolean;
 
     // Capacity Setters
     procedure SetCapacityMultiplier(const AMultiplier: Single);
     procedure SetCapacityThreshold(const AThreshold: Integer);
+    // Item Setters
+    procedure SetItemByIndex(const AIndex: Integer; const AItem: T);
+    procedure SetItemCenter(const AItem: T);
+    procedure SetItemLeft(const AIndex: Integer; const AItem: T);
+    procedure SetItemRight(const AIndex: Integer; const AItem: T);
+  protected
+    procedure Finalize(var AArray: TArrayOfT; const AIndex, ACount: Integer);
+    procedure Move(var AArray: TArrayOfT; const AFromIndex, AToIndex, ACount: Integer);
   public
     constructor Create; virtual;
     destructor Destroy; override;
 
     function Add(const AItem: T; const ADirection: TLKListDirection = ldRight): Integer; overload; virtual;
     procedure Add(const AItems: TArrayOfT; const ADirection: TLKListDirection = ldRight); overload; virtual;
-    function AddLeft(const AItem: T): Integer; virtual;
-    function AddRight(const AItem: T): Integer; virtual;
+    function AddLeft(const AItem: T): Integer; overload; virtual;
+    procedure AddLeft(const AItems: TArrayOfT); overload;
+    function AddRight(const AItem: T): Integer; overload; virtual;
+    procedure AddRight(const AItems: TArrayOfT); overload;
+
 
     procedure Compact;
 
     procedure Delete(const AIndex: Integer); overload; virtual;
     procedure Delete(const AIndices: Array of Integer); overload; virtual;
     procedure DeleteRange(const ALow, AHigh: Integer); virtual;
+
+    procedure Insert(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
 
     procedure Lock; inline;
     procedure LockCenter; inline;
@@ -254,7 +271,7 @@ type
     property CountLeft: Integer read GetCountLeft;
     property CountRight: Integer read GetCountRight;
     // Item Properties
-    property Items[const AIndex: Integer]: T read GetItemByIndex; default;
+    property Items[const AIndex: Integer]: T read GetItemByIndex write SetItemByIndex; default;
     // Range Properties
     property Low: Integer read GetRangeLow;
     property High: Integer read GetRangeHigh;
@@ -465,6 +482,14 @@ begin
   end;
 end;
 
+procedure TLKCenteredList<T>.AddLeft(const AItems: TArrayOfT);
+var
+  I: Integer;
+begin
+  for I := System.Low(AItems) to System.High(AItems) do
+    AddLeft(AItems[I]);
+end;
+
 function TLKCenteredList<T>.AddRight(const AItem: T): Integer;
 begin
   if (TryCenterAvailable(AItem)) then
@@ -481,6 +506,14 @@ begin
       UnlockRight;
     end;
   end;
+end;
+
+procedure TLKCenteredList<T>.AddRight(const AItems: TArrayOfT);
+var
+  I: Integer;
+begin
+  for I := System.Low(AItems) to System.High(AItems) do
+    AddRight(AItems[I]);
 end;
 
 procedure TLKCenteredList<T>.CheckCapacityLeft;
@@ -569,9 +602,12 @@ begin
       if FCountRight > 0 then
       begin
         FCenter := FArrayRight[0];
-        for I := 1 to System.High(FArrayRight) do
-          FArrayRight[I - 1] := FArrayright[I];
-        Dec(FCountRight);
+        if FCountRight > 1 then
+        begin
+          Dec(FCountRight);
+          Move(FArrayRight, 1, 0, FCountRight);
+          Finalize(FArrayRight, FCountRight, 1);
+        end;
       end else
         FCenterAssigned := False;
     end;
@@ -589,9 +625,9 @@ begin
   try
     if AIndex < FCountLeft then
     begin
-      for I := AIndex to FCountLeft - 1 do
-        FArrayLeft[I] := FArrayLeft[I + 1];
       Dec(FCountLeft);
+      Move(FArrayLeft, AIndex + 1, AIndex, FCountLeft - AIndex);
+      Finalize(FArrayLeft, FCountLeft, 1);
     end else
       raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
   finally
@@ -620,9 +656,9 @@ begin
   try
     if AIndex < FCountRight then
     begin
-      for I := AIndex to FCountRight - 1 do
-        FArrayRight[I] := FArrayRight[I + 1];
       Dec(FCountRight);
+      Move(FArrayRight, AIndex + 1, AIndex, FCountRight - AIndex);
+      Finalize(FArrayRight, FCountRight, 1);
     end else
       raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex + 1]);
   finally
@@ -636,6 +672,11 @@ begin
   FLockRight.Free;
   FLockCenter.Free;
   inherited;
+end;
+
+procedure TLKCenteredList<T>.Finalize(var AArray: TArrayOfT; const AIndex, ACount: Integer);
+begin
+  System.FillChar(AArray[AIndex], ACount * SizeOf(T), 0);
 end;
 
 function TLKCenteredList<T>.GetCapacity: Integer;
@@ -786,6 +827,129 @@ begin
   end;
 end;
 
+procedure TLKCenteredList<T>.Insert(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+begin
+  if AIndex = 0 then
+    InsertCenter(AItem, AShiftDirection)
+  else if AIndex < 0 then
+    InsertLeft(AItem, (-AIndex) - 1, AShiftDirection)
+  else
+    InsertRight(AItem, AIndex - 1, AShiftDirection);
+end;
+
+procedure TLKCenteredList<T>.InsertCenter(const AItem: T; const AShiftDirection: TLKListDirection = ldRight);
+begin
+  LockCenter;
+  try
+    if not (TryCenterAvailable(AItem)) then
+    begin
+      case AShiftDirection of
+        ldLeft: begin
+                  LockLeft;
+                  try
+                    if FCountLeft > 0 then
+                    begin
+                      Move(FArrayLeft, 0, 1, FCountLeft);
+                      FArrayLeft[0] := FCenter;
+                      Inc(FCountLeft);
+                      CheckCapacityLeft;
+                    end;
+                  finally
+                    UnlockLeft;
+                  end;
+                end;
+        ldRight: begin
+                   LockRight;
+                   try
+                     if FCountRight > 0 then
+                     begin
+                       Move(FArrayRight, 0, 1, FCountRight);
+                       FArrayRight[0] := FCenter;
+                       Inc(FCountRight);
+                       CheckCapacityRight;
+                     end;
+                   finally
+                     UnlockRight;
+                   end;
+                 end;
+      end;
+      FCenter := AItem;
+    end;
+  finally
+    UnlockCenter;
+  end;
+end;
+
+procedure TLKCenteredList<T>.InsertLeft(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+begin
+  case AShiftDirection of
+    ldLeft: begin
+              LockLeft;
+              try
+                // We're actually shifting to the RIGHT (remember, it's inverted)
+                Move(FArrayLeft, AIndex, AIndex + 1, FCountLeft - AIndex);
+                FArrayLeft[AIndex] := AItem;
+                Inc(FCountLeft);
+                CheckCapacityLeft;
+              finally
+                UnlockLeft;
+              end;
+            end;
+    ldRight: begin
+               LockRight;
+               try
+                 // We're actually shifting to the LEFT (remember, it's inverted)
+                 LockCenter;
+                 try
+                   InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
+                   FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
+                 finally
+                   UnlockCenter;
+                 end;
+                 Move(FArrayLeft, 1, 0, AIndex);
+                 FArrayLeft[AIndex] := AItem; // Assign the Item to the index
+                 CheckCapacityRight;
+               finally
+                 UnlockRight;
+               end;
+             end;
+  end;
+end;
+
+procedure TLKCenteredList<T>.InsertRight(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+begin
+  case AShiftDirection of
+    ldLeft: begin
+              LockLeft;
+              try
+                LockCenter;
+                try
+                  InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
+                  FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
+                finally
+                  UnlockCenter;
+                end;
+                Move(FArrayRight, 1, 0, AIndex);
+                FArrayRight[AIndex] := AItem;
+                CheckCapacityLeft;
+              finally
+                UnlockLeft;
+              end;
+            end;
+    ldRight: begin
+               LockRight;
+               try
+                 Move(FArrayRight, AIndex, AIndex + 1, FCountRight - AIndex);
+                 FArrayRight[AIndex] := AItem;
+                 Inc(FCountRight);
+                 CheckCapacityRight;
+               finally
+                 UnlockRight;
+               end;
+             end;
+  end;
+end;
+
 procedure TLKCenteredList<T>.Lock;
 begin
   LockCenter;
@@ -806,6 +970,11 @@ end;
 procedure TLKCenteredList<T>.LockRight;
 begin
   FLockRight.Acquire;
+end;
+
+procedure TLKCenteredList<T>.Move(var AArray: TArrayOfT; const AFromIndex, AToIndex, ACount: Integer);
+begin
+  System.Move(AArray[AFromIndex], AArray[AToIndex], ACount * SizeOf(T));
 end;
 
 procedure TLKCenteredList<T>.SetCapacityMultiplier(const AMultiplier: Single);
@@ -837,6 +1006,53 @@ begin
     CheckCapacityRight; // Adjust the Right Array Capacity if necessary
   finally
     Unlock;
+  end;
+end;
+
+procedure TLKCenteredList<T>.SetItemByIndex(const AIndex: Integer; const AItem: T);
+begin
+  if AIndex = 0 then
+    SetItemCenter(AItem)
+  else if AIndex < 0 then
+    SetItemLeft((-AIndex) - 1, AItem)
+  else
+    SetItemRight(AIndex - 1, AItem);
+end;
+
+procedure TLKCenteredList<T>.SetItemCenter(const AItem: T);
+begin
+  LockCenter;
+  try
+    FCenter := AItem;
+    FCenterAssigned := True;
+  finally
+    UnlockCenter;
+  end;
+end;
+
+procedure TLKCenteredList<T>.SetItemLeft(const AIndex: Integer; const AItem: T);
+begin
+  LockLeft;
+  try
+    if AIndex < FCountLeft then
+      FArrayLeft[AIndex] := AItem
+    else
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Range: %d', [-(AIndex + 1)]);
+  finally
+    UnlockLeft;
+  end;
+end;
+
+procedure TLKCenteredList<T>.SetItemRight(const AIndex: Integer; const AItem: T);
+begin
+  LockRight;
+  try
+    if AIndex < FCountRight then
+      FArrayRight[AIndex] := AItem
+    else
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
+  finally
+    UnlockRight;
   end;
 end;
 

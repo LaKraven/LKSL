@@ -168,6 +168,12 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	14th December 2014:
+		- Further improved performance of TLKCenteredList<T> by making it use System.Move() instead of iteration
+		- Added "Insert" methods
+		- Overloaded "AddLeft" and "AddRight" functions with procedures to add an Array of T accordingly.
+	11th December 2014 (2nd commit):
+		- Added Setters to TLKCenteredList<T>.Items
 	11th December 2014:
 		- Added TLKCenteredList<T>
 			- A magic (and efficient) managed List capable of taking both Negative and Positive indices.
