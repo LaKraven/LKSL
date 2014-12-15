@@ -67,6 +67,8 @@ uses
   LKSL.Threads.Base,
   LKSL.Streamables.Base;
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declarations }
   TLKEvent = class;
@@ -520,6 +522,8 @@ implementation
 uses
   LKSL.Streams.System,
   LKSL.Events.Streams;
+
+  {$I LKSL_RTTI.inc}
 
 type
   { Forward Declarations }

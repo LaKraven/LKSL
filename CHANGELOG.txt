@@ -13,6 +13,7 @@ LKSL.Events.Base.pas
 --------------------
 	15th December 2014:
 		- Fixed an off-by-one error in TLKEventListenerGroup.ProcessEvent
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	9th December 2014 (Another Update):
@@ -148,6 +149,8 @@ LKSL.Events.Base.pas
 
 LKSL.Events.RecorderFile.pas
 ----------------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	8th December 2014:
@@ -161,6 +164,8 @@ LKSL.Events.RecorderFile.pas
 
 LKSL.Events.Streams.pas
 -----------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	8th December 2014:
@@ -172,6 +177,8 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	15th December 2014:
 		- Added TLKTreeNode
 	14th December 2014:
@@ -196,6 +203,8 @@ LKSL.Generics.Collections.pas
 
 LKSL.Streamables.pas
 --------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	8th December 2014:
@@ -250,6 +259,8 @@ LKSL.Streamables.pas
 
 LKSL.Streams.System.pas
 -----------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	2nd December 2014:
@@ -273,6 +284,8 @@ LKSL.Streams.System.pas
 
 LKSL.Streams.Types.pas
 ----------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	6th September 2014 (bug fix commit):
@@ -282,6 +295,8 @@ LKSL.Streams.Types.pas
 
 LKSL.Threads.Base.pas
 ---------------------
+	15th December 2014:
+		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
 		- Changelog removed from unit
 	30th November 2014:

@@ -68,6 +68,8 @@ uses
   LKSL.Streamables.Base,
   LKSL.Events.Base;
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declarations }
   TLKEventRecorderFile = class;
@@ -110,6 +112,8 @@ implementation
 
 uses
   LKSL.Streams.System;
+
+  {$I LKSL_RTTI.inc}
 
 const
   RECORDER_FILE_GUID: TGUID = '{F617BBA0-0BB4-4A08-A937-F184DBC9EB62}';

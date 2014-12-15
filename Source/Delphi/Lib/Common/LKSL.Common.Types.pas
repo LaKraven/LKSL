@@ -81,6 +81,8 @@ uses
     Classes, SysUtils, SyncObjs;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declarations }
   TLKPersistent = class;

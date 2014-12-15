@@ -54,6 +54,8 @@ uses
     Classes, SysUtils, Types;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
+  {$I LKSL_RTTI.inc}
+
 // Delete Methods
 procedure StreamDeleteTPoint(const AStream: TStream); overload;
 procedure StreamDeleteTPoint(const AStream: TStream; const APosition: Int64); overload;
@@ -119,6 +121,8 @@ implementation
 
 uses
   LKSL.Streams.System;
+
+  {$I LKSL_RTTI.inc}
 
 // Delete Methods
 

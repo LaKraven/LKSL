@@ -63,6 +63,8 @@ uses
   LKSL.Common.Types,
   LKSL.Streams.System;
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declarations }
   TLKStreamable = class;

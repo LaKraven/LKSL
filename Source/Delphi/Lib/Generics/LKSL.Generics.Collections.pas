@@ -56,6 +56,8 @@ uses
   Generics.Collections,
   LKSL.Common.Types;
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declaration }
   TLKArray<T> = class;

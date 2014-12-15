@@ -57,6 +57,8 @@ uses
   LKSL.Common.Types,
   LKSL.Events.Base;
 
+  {$I LKSL_RTTI.inc}
+
 // Delete Methods
 procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream); overload;
 procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64); overload;
@@ -74,6 +76,8 @@ implementation
 
 uses
   LKSL.Streams.System;
+
+  {$I LKSL_RTTI.inc}
 
 // Delete Methods
 

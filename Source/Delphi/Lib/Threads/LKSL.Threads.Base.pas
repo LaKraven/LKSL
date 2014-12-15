@@ -59,6 +59,8 @@ uses
     Classes, SysUtils, Diagnostics, Math, SyncObjs;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
+  {$I LKSL_RTTI.inc}
+
 type
   { Forward Declarations }
   TLKThread = class;
