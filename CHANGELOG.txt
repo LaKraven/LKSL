@@ -9,6 +9,8 @@ LKSL.Common.Types.pas
 
 LKSL.Events.Base.pas
 --------------------
+	15th December 2014:
+		- Fixed an off-by-one error in TLKEventListenerGroup.ProcessEvent
 	10th December 2014:
 		- Changelog removed from unit
 	9th December 2014 (Another Update):

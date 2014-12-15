@@ -118,7 +118,7 @@ type
   {$ENDIF LKSL_USE_LISTS}
 
   { Hashmap Types }
-  TLKEventListenerGroupDictionary = TLKDictionary<TGUID, TLKEventListenerGroup>;
+  TLKEventListenerGroupDictionary =  TLKDictionary<TGUID, TLKEventListenerGroup>;
 
   {
     TLKEvent
@@ -1084,7 +1084,7 @@ begin
   Lock;
   try
     {$IFDEF LKSL_USE_LISTS}
-    for I := 0 to FListeners.Count do
+    for I := 0 to FListeners.Count - 1 do
     {$ELSE}
     for I := Low(FListeners) to High(FListeners) do
     {$ENDIF LKSL_USE_LISTS}
@@ -1318,8 +1318,7 @@ function TLKEventThreadBaseWithListeners.GetEventListenerGroup(const AEventType:
 begin
   FEventListenerGroups.Lock;
   try
-    if not (FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result)) then
-      Result := nil
+    FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result);
   finally
     FEventListenerGroups.Unlock;
   end;
