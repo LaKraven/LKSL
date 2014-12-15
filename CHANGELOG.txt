@@ -2,6 +2,8 @@ Search for a unit name to find its corresponding Changelog.
 
 LKSL.Common.Types.pas
 ---------------------
+	15th December 2014:
+		- Added TLKObject
 	10th September 2014:
 		- Changelog removed from unit
 	3rd September 2014:
@@ -170,6 +172,8 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	15th December 2014:
+		- Added TLKTreeNode
 	14th December 2014:
 		- Added TLKCenteredList<T>.Swap
 	14th December 2014:

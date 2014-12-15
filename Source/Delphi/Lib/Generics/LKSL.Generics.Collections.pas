@@ -63,6 +63,7 @@ type
   TLKList<T> = class;
   TLKObjectList<T: class> = class;
   TLKCenteredList<T> = class;
+  TLKTreeNode<T> = class;
 
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
@@ -277,6 +278,79 @@ type
     // Range Properties
     property Low: Integer read GetRangeLow;
     property High: Integer read GetRangeHigh;
+  end;
+
+
+  {
+    TLKTreeNode<T>
+      - A special Generic Tree Object with thread-safe Locks
+      - Acts as both the Root and Child node (dependant on whether or not it contains a Parent)
+  }
+  TLKTreeNode<T> = class(TLKObject)
+  private type
+    TLKValueCallback<V> = reference to procedure(const Value: V);
+  private
+    FParent: TLKTreeNode<T>;
+    FChildren: TLKObjectList<TLKTreeNode<T>>;
+    FValue: T;
+
+    FDestroying: Boolean;
+
+    procedure DoAncestorChanged;
+
+    function GetRootNode: TLKTreeNode<T>;
+    function GetChildCount: Integer; inline;
+    function GetChildren(const AIndex: Integer): TLKTreeNode<T>; inline;
+    function GetIndexAsChild: Integer; inline;
+
+    function GetIsBranch: Boolean; inline;
+    function GetIsRoot: Boolean; inline;
+    function GetIsLeaf: Boolean; inline;
+    function GetDepth: Integer;
+  protected
+    procedure AncestorChanged; virtual;
+    procedure Destroying; virtual;
+
+    procedure AddChild(const AIndex: Integer; const AChild: TLKTreeNode<T>); virtual;
+    procedure RemoveChild(const AChild: TLKTreeNode<T>); virtual;
+
+    procedure SetValue(const AValue: T); virtual;
+
+    property IsDestroying: Boolean read FDestroying;
+  public
+    constructor Create(const AParent: TLKTreeNode<T>; const AValue: T); reintroduce; overload;
+    constructor Create(const AParent: TLKTreeNode<T>); reintroduce; overload;
+    constructor Create(const AValue: T); reintroduce; overload;
+    constructor Create; overload; override;
+    destructor Destroy; override;
+
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
+
+    procedure MoveTo(const ANewParent: TLKTreeNode<T>; const AIndex: Integer = -1); overload;
+    procedure MoveTo(const AIndex: Integer); overload; inline;
+
+    function IndexOf(const AChild: TLKTreeNode<T>): Integer; inline;
+
+    procedure PreOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>); overload;
+    procedure PreOrderWalk(const AAction: TLKValueCallback<T>); overload;
+
+    procedure PostOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>); overload;
+    procedure PostOrderWalk(const AAction: TLKValueCallback<T>); overload;
+
+    property Depth: Integer read GetDepth;
+
+    property Parent: TLKTreeNode<T> read FParent;
+    property RootNode: TLKTreeNode<T> read GetRootNode;
+    property ChildCount: Integer read GetChildCount;
+    property Children[const AIndex: Integer]: TLKTreeNode<T> read GetChildren; default;
+    property IndexAsChild: Integer read GetIndexAsChild;
+
+    property IsBranch: Boolean read GetIsBranch;
+    property IsRoot: Boolean read GetIsRoot;
+    property IsLeaf: Boolean read GetIsLeaf;
+
+    property Value: T read FValue write SetValue;
   end;
 
 implementation
@@ -1128,6 +1202,304 @@ end;
 procedure TLKCenteredList<T>.UnlockRight;
 begin
   FLockRight.Release;
+end;
+
+{ TLKTreeNode<T> }
+
+constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
+begin
+  inherited Create;
+
+  FParent := AParent;
+  FChildren := TLKObjectList<TLKTreeNode<T>>.Create;
+  FValue := AValue;
+end;
+
+constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>);
+begin
+  Create(AParent, Default(T));
+end;
+
+constructor TLKTreeNode<T>.Create(const AValue: T);
+begin
+  Create(nil, AValue);
+end;
+
+constructor TLKTreeNode<T>.Create;
+begin
+  Create(nil, Default(T));
+end;
+
+destructor TLKTreeNode<T>.Destroy;
+begin
+  FChildren.Free;
+
+  inherited;
+end;
+
+procedure TLKTreeNode<T>.DoAncestorChanged;
+begin
+  PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+               begin
+                 Node.AncestorChanged;
+               end);
+end;
+
+function TLKTreeNode<T>.GetRootNode: TLKTreeNode<T>;
+begin
+  Lock;
+  try
+    if IsRoot then
+      Result := Self
+    else
+      Result := Parent.RootNode;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetChildCount: Integer;
+begin
+  Lock;
+  try
+    Result := FChildren.Count;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetChildren(const AIndex: Integer): TLKTreeNode<T>;
+begin
+  Lock;
+  try
+    Result := FChildren[AIndex];
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetIndexAsChild: Integer;
+begin
+  if Parent = nil then
+    Result := -1
+  else
+  begin
+    Lock;
+    try
+      Result := Parent.IndexOf(Self);
+    finally
+      Unlock;
+    end;
+  end;
+end;
+
+function TLKTreeNode<T>.GetIsRoot: Boolean;
+begin
+  Lock;
+  try
+    Result := Parent = nil;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetIsBranch: Boolean;
+begin
+  Lock;
+  try
+    Result := (not GetIsRoot) and (not GetIsLeaf);
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetIsLeaf: Boolean;
+begin
+  Lock;
+  try
+    Result := FChildren.Count = 0;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKTreeNode<T>.GetDepth: Integer;
+var
+  Ancestor: TLKTreeNode<T>;
+begin
+  Lock;
+  try
+    Ancestor := Parent;
+    Result := 0;
+
+    while Ancestor <> nil do
+    begin
+      Inc(Result);
+      Ancestor := Ancestor.Parent;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.Destroying;
+begin
+  FDestroying := True;
+end;
+
+procedure TLKTreeNode<T>.AddChild(const AIndex: Integer; const AChild: TLKTreeNode<T>);
+begin
+  if AIndex < 0 then
+    FChildren.Add(AChild)
+  else
+    FChildren.Insert(AIndex, AChild);
+end;
+
+procedure TLKTreeNode<T>.RemoveChild(const AChild: TLKTreeNode<T>);
+begin
+  FChildren.Remove(AChild);
+end;
+
+procedure TLKTreeNode<T>.SetValue(const AValue: T);
+begin
+  Lock;
+  try
+    FValue := AValue;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.AfterConstruction;
+begin
+  inherited;
+
+  if Parent <> nil then
+    Parent.AddChild(-1, Self);
+
+  DoAncestorChanged;
+end;
+
+procedure TLKTreeNode<T>.AncestorChanged;
+begin
+  // Do nothing (yet)
+end;
+
+procedure TLKTreeNode<T>.BeforeDestruction;
+begin
+  inherited;
+
+  if not IsDestroying then
+    PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                 begin
+                   Node.Destroying;
+                 end);
+
+  if (Parent <> nil) and (not Parent.IsDestroying) then
+    Parent.RemoveChild(Self);
+end;
+
+procedure TLKTreeNode<T>.MoveTo(const ANewParent: TLKTreeNode<T>; const AIndex: Integer = -1);
+begin
+  if (Parent = nil) and (ANewParent = nil) then
+    Exit;
+
+  Lock;
+  try
+    if Parent = ANewParent then
+    begin
+      if AIndex <> IndexAsChild then
+      begin
+        Parent.FChildren.Remove(Self);
+        if AIndex < 0 then
+          Parent.FChildren.Add(Self)
+        else
+          Parent.FChildren.Insert(AIndex, Self);
+      end;
+    end else
+    begin
+      if Parent <> nil then
+        Parent.RemoveChild(Self);
+
+      FParent := ANewParent;
+
+      if Parent <> nil then
+        Parent.AddChild(AIndex, Self);
+
+      DoAncestorChanged;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.MoveTo(const AIndex: Integer);
+begin
+  MoveTo(Parent, AIndex);
+end;
+
+function TLKTreeNode<T>.IndexOf(const AChild: TLKTreeNode<T>): Integer;
+begin
+  Lock;
+  try
+    Result := FChildren.IndexOf(AChild);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
+var
+  Index: Integer;
+begin
+  Lock;
+  try
+    AAction(Self);
+    for Index := 0 to ChildCount-1 do
+      Children[Index].PreOrderWalk(AAction);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<T>);
+begin
+  Lock;
+  try
+    PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                 begin
+                   AAction(Node.Value);
+                 end);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
+var
+  LIndex: Integer;
+begin
+  Lock;
+  try
+    for LIndex := 0 to ChildCount-1 do
+      Children[LIndex].PostOrderWalk(AAction);
+    AAction(Self);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<T>);
+begin
+  Lock;
+  try
+    PostOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                  begin
+                    AAction(Node.Value);
+                  end);
+  finally
+    Unlock;
+  end;
 end;
 
 end.

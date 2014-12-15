@@ -84,6 +84,7 @@ uses
 type
   { Forward Declarations }
   TLKPersistent = class;
+  TLKObject = class;
 
   { Exception Types }
   ELKException = class(Exception);
@@ -93,6 +94,21 @@ type
       - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
   }
   TLKPersistent = class(TPersistent)
+  private
+    FLock: TCriticalSection;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+
+    procedure Lock; inline;
+    procedure Unlock; inline;
+  end;
+
+  {
+    TLKObject
+      - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
+  }
+  TLKObject = class(TObject)
   private
     FLock: TCriticalSection;
   public
@@ -125,6 +141,30 @@ begin
 end;
 
 procedure TLKPersistent.Unlock;
+begin
+  FLock.Release;
+end;
+
+{ TLKObject }
+
+constructor TLKObject.Create;
+begin
+  inherited Create;
+  FLock := TCriticalSection.Create;
+end;
+
+destructor TLKObject.Destroy;
+begin
+  FLock.Free;
+  inherited;
+end;
+
+procedure TLKObject.Lock;
+begin
+  FLock.Acquire;
+end;
+
+procedure TLKObject.Unlock;
 begin
   FLock.Release;
 end;

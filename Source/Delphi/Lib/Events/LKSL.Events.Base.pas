@@ -278,7 +278,7 @@ type
         - Now includes overloaded Constructors so you can assign "OnEvent" inline on creation
   }
   TLKEventListener<T: TLKEvent> = class(TLKEventListener)
-  type
+  private type
     TEventCallback = procedure(const AEvent: T) of object;
   private
     FOnEvent: TEventCallback;
@@ -1099,8 +1099,8 @@ begin
           if FListeners[I].CallUIThread then
           begin
             FEventThread.Synchronize(procedure begin
-                                        FListeners[I].EventCall(AEvent);
-                                      end);
+                                       FListeners[I].EventCall(AEvent);
+                                     end);
           end else
             FListeners[I].EventCall(AEvent);
         end;
