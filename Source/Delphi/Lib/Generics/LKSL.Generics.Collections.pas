@@ -690,10 +690,12 @@ begin
         begin
           Dec(FCountRight);
           Finalize(FArrayRight, 0, 1); // Finalize the Right Array
-          System.FillChar(FCenter, SizeOf(T), 0); // Finalize the Center
         end;
       end else
+      begin
+        System.FillChar(FCenter, SizeOf(T), 0); // Finalize the Center
         FCenterAssigned := False;
+      end;
     end;
   finally
     UnlockCenter;
