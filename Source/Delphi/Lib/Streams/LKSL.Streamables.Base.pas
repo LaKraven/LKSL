@@ -161,6 +161,7 @@ type
     // Position in the given Stream.
     procedure SaveToStream(const AStream: TStream; const APosition: Int64); overload;
 
+    property TypeGUID: TGUID read GetTypeGUID;
     property Version: Double read FVersion;
   end;
 
