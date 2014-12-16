@@ -185,6 +185,15 @@ LKSL.Events.Streams.pas
 LKSL.Generics.Collections.pas
 -----------------------------
 	16th December 2014:
+		- Several bug fixes
+		- Made TLKCenteredList<T>.Delete[Center/Left/Right] Virtual methods and moved them into the Protected area
+		- Added TLKCenteredList<T>.ValidateDelete[Center/Left/Right] methods, which are called before
+		  Delete[Center/Left/Right]
+		- Added TLKCenteredObjectList<T: class>, which has the ability to OWN its items (meaning they are destroyed
+		  with the list)
+		- Added TLKTreeObjectNode<T: class>, which has teh ability to OWN its Value (meaning it is destroyed with the
+		  node)
+	16th December 2014:
 		- Fixed off-by-one in TLKCenteredList.GetHigh.
 	15th December 2014:
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)

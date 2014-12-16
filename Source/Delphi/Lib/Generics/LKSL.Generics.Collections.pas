@@ -65,7 +65,9 @@ type
   TLKList<T> = class;
   TLKObjectList<T: class> = class;
   TLKCenteredList<T> = class;
+  TLKCenteredObjectList<T: class> = class;
   TLKTreeNode<T> = class;
+  TLKTreeObjectNode<T: class> = class;
 
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
@@ -193,10 +195,6 @@ type
     // Capacity Checks
     procedure CheckCapacityLeft;
     procedure CheckCapacityRight;
-    // Deletes
-    procedure DeleteCenter;
-    procedure DeleteLeft(const AIndex: Integer);
-    procedure DeleteRight(const AIndex: Integer);
     // Capacity Getters
     function GetCapacity: Integer; // GetCapacityLeft + GetCapacityRight + 1
     function GetCapacityLeft: Integer; // Size of FArrayLeft
@@ -231,8 +229,17 @@ type
     procedure SetItemLeft(const AIndex: Integer; const AItem: T);
     procedure SetItemRight(const AIndex: Integer; const AItem: T);
   protected
+    // Deletes
+    procedure DeleteCenter; virtual;
+    procedure DeleteLeft(const AIndex: Integer); virtual;
+    procedure DeleteRight(const AIndex: Integer); virtual;
+    // Array Management
     procedure Finalize(var AArray: TArrayOfT; const AIndex, ACount: Integer);
     procedure Move(var AArray: TArrayOfT; const AFromIndex, AToIndex, ACount: Integer);
+    // Validations
+    function ValidateDeleteCenter: Boolean;
+    function ValidateDeleteLeft(const AIndex: Integer): Boolean;
+    function ValidateDeleteRight(const AIndex: Integer): Boolean;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -280,6 +287,25 @@ type
     // Range Properties
     property Low: Integer read GetRangeLow;
     property High: Integer read GetRangeHigh;
+  end;
+
+  {
+    TLKCenteredObjectList<T: class>
+      - A special version of TLKCenteredList<T> for Objects
+      - Has the ability to OWN its Items (so they are destroyed with the List)
+  }
+  TLKCenteredObjectList<T: class> = class(TLKCenteredList<T>)
+  private
+    FOwnsObjects: Boolean;
+  protected
+    // Deletes
+    procedure DeleteCenter; override;
+    procedure DeleteLeft(const AIndex: Integer); override;
+    procedure DeleteRight(const AIndex: Integer); override;
+  public
+    constructor Create(const AOwnsObjects: Boolean = True); reintroduce;
+
+    property OwnsObjects: Boolean read FOwnsObjects write FOwnsObjects;
   end;
 
 
@@ -353,6 +379,24 @@ type
     property IsLeaf: Boolean read GetIsLeaf;
 
     property Value: T read FValue write SetValue;
+  end;
+
+  {
+    TLKTreeObjectNode<T: class>
+      - Special variant of TLKTreeNode<T> for Objects
+      - Has the ability to OWN its Values (so they are destroyed with the Node)
+  }
+  TLKTreeObjectNode<T: class> = class(TLKTreeNode<T>)
+  private
+    FOwnsObject: Boolean;
+  public
+    constructor Create(const AParent: TLKTreeNode<T>; const AValue: T); reintroduce; overload;
+    constructor Create(const AParent: TLKTreeNode<T>); reintroduce; overload;
+    constructor Create(const AValue: T); reintroduce; overload;
+    constructor Create; reintroduce; overload;
+    destructor Destroy; override;
+
+    property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
   end;
 
 implementation
@@ -647,21 +691,34 @@ end;
 procedure TLKCenteredList<T>.Delete(const AIndex: Integer);
 begin
   if AIndex = 0 then
-    DeleteCenter
+  begin
+    if ValidateDeleteCenter then
+      DeleteCenter
+  end
   else if AIndex < 0 then
-    DeleteLeft((-AIndex) - 1) // Invert AIndex to provide a positive index
+  begin
+    if ValidateDeleteLeft((-AIndex) - 1) then
+      DeleteLeft((-AIndex) - 1) // Invert AIndex to provide a positive index
+  end
   else
-    DeleteRight(AIndex - 1);
+  begin
+    if ValidateDeleteRight(AIndex - 1) then
+      DeleteRight(AIndex - 1);
+  end;
 end;
 
 procedure TLKCenteredList<T>.Delete(const AIndices: array of Integer);
 var
-  I: Integer;
+  I, LOffset: Integer;
 begin
+  LOffset := 0;
   Lock;
   try
     for I := System.Low(AIndices) to System.High(AIndices) do
-      Delete(AIndices[I]);
+    begin
+      Delete(AIndices[I - LOffset]);
+      Inc(LOffset);
+    end;
   finally
     Unlock;
   end;
@@ -672,11 +729,9 @@ var
   I: Integer;
 begin
   LockCenter;
-  LockRight;
   try
-    if not (FCenterAssigned) then
-      raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0')
-    else begin
+    LockRight;
+    try
       if FCountRight > 0 then
       begin
         FCenter := FArrayRight[0];
@@ -696,10 +751,11 @@ begin
         System.FillChar(FCenter, SizeOf(T), 0); // Finalize the Center
         FCenterAssigned := False;
       end;
+    finally
+      UnlockRight;
     end;
   finally
     UnlockCenter;
-    UnlockRight;
   end;
 end;
 
@@ -709,13 +765,9 @@ var
 begin
   LockLeft;
   try
-    if AIndex < FCountLeft then
-    begin
-      Dec(FCountLeft);
-      Move(FArrayLeft, AIndex + 1, AIndex, FCountLeft - AIndex);
-      Finalize(FArrayLeft, FCountLeft, 1);
-    end else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
+    Dec(FCountLeft);
+    Move(FArrayLeft, AIndex + 1, AIndex, FCountLeft - AIndex);
+    Finalize(FArrayLeft, FCountLeft, 1);
   finally
     UnlockLeft;
   end;
@@ -744,13 +796,9 @@ var
 begin
   LockRight;
   try
-    if AIndex < FCountRight then
-    begin
-      Dec(FCountRight);
-      Move(FArrayRight, AIndex + 1, AIndex, FCountRight - AIndex);
-      Finalize(FArrayRight, FCountRight, 1);
-    end else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex + 1]);
+    Dec(FCountRight);
+    Move(FArrayRight, AIndex + 1, AIndex, FCountRight - AIndex);
+    Finalize(FArrayRight, FCountRight, 1);
   finally
     UnlockRight;
   end;
@@ -1223,6 +1271,56 @@ begin
   FLockRight.Release;
 end;
 
+function TLKCenteredList<T>.ValidateDeleteCenter: Boolean;
+begin
+  Result := FCenterAssigned;
+  if not (Result) then
+    raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0')
+end;
+
+function TLKCenteredList<T>.ValidateDeleteLeft(const AIndex: Integer): Boolean;
+begin
+  Result := (AIndex < FCountLeft);
+  if (not Result) then
+    raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
+end;
+
+function TLKCenteredList<T>.ValidateDeleteRight(const AIndex: Integer): Boolean;
+begin
+  Result := (AIndex < FCountRight);
+  if (not Result) then
+    raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex + 1]);
+end;
+
+{ TLKCenteredObjectList<T> }
+
+constructor TLKCenteredObjectList<T>.Create(const AOwnsObjects: Boolean);
+begin
+  inherited Create;
+  FOwnsObjects := AOwnsObjects;
+end;
+
+procedure TLKCenteredObjectList<T>.DeleteCenter;
+begin
+  if FOwnsObjects then
+    FCenter.DisposeOf;
+  inherited;
+end;
+
+procedure TLKCenteredObjectList<T>.DeleteLeft(const AIndex: Integer);
+begin
+  if FOwnsObjects then
+    FArrayLeft[AIndex].DisposeOf;
+  inherited;
+end;
+
+procedure TLKCenteredObjectList<T>.DeleteRight(const AIndex: Integer);
+begin
+  if FOwnsObjects then
+    FArrayRight[AIndex].DisposeOf;
+  inherited;
+end;
+
 { TLKTreeNode<T> }
 
 constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
@@ -1519,6 +1617,39 @@ begin
   finally
     Unlock;
   end;
+end;
+
+{ TLKTreeObjectNode<T> }
+
+constructor TLKTreeObjectNode<T>.Create;
+begin
+  inherited;
+  FOwnsObject := True;
+end;
+
+constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
+begin
+  inherited;
+  FOwnsObject := True;
+end;
+
+constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>);
+begin
+  inherited;
+  FOwnsObject := True;
+end;
+
+constructor TLKTreeObjectNode<T>.Create(const AValue: T);
+begin
+  inherited;
+  FOwnsObject := True;
+end;
+
+destructor TLKTreeObjectNode<T>.Destroy;
+begin
+  if FOwnsObject then
+    FValue.DisposeOf;
+  inherited;
 end;
 
 end.
