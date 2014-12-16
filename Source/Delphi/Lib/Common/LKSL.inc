@@ -38,6 +38,13 @@
 
 {$I LKSL_VERSIONS.inc}
 
+// MINIMUM SUPPORTED VERSION
+{$IFNDEF DELPHI2010}
+  {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2010, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
+{$ELSE}
+  {$DEFINE LKSL}
+{$ENDIF DELPHI2010}
+
 {$IFDEF SUPPORTS_RECORDHELPERS}
   {$IFNDEF LKSL_NO_HELPERS}
     {$DEFINE LKSL_USE_HELPERS} // Define "LKSL_NO_HELPERS" in your project to disable Helpers
