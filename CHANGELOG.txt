@@ -11,6 +11,13 @@ LKSL.Common.Types.pas
 
 LKSL.Events.Base.pas
 --------------------
+	16th December 2014:
+		- Removed deprecated Arrays.
+		- Removed TLKEventProcessMode (no longer required)
+			- Also removed all properties and methods of type TLKEventProcessMode
+		- Fixed bug in TLKEventRecorder which forgot to add the Processed Time when recording each Event
+		- Removed TLKEventStack
+		- TLKEventQueue becomes TLKEventProcessor, combining the Stack AND the Queue into a single Thread
 	15th December 2014:
 		- Fixed an off-by-one error in TLKEventListenerGroup.ProcessEvent
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
@@ -177,6 +184,8 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	16th December 2014:
+		- Fixed off-by-one in TLKCenteredList.GetHigh.
 	15th December 2014:
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	15th December 2014:

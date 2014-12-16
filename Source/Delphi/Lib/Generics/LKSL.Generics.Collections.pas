@@ -680,6 +680,7 @@ begin
       if FCountRight > 0 then
       begin
         FCenter := FArrayRight[0];
+        FCenterAssigned := True;
         if FCountRight > 1 then
         begin
           Dec(FCountRight);
@@ -715,12 +716,16 @@ end;
 
 procedure TLKCenteredList<T>.DeleteRange(const ALow, AHigh: Integer);
 var
-  I: Integer;
+  I, LOffset: Integer;
 begin
+  LOffset := 0;
   Lock;
   try
     for I := ALow to AHigh do
-      Delete(I);
+    begin
+      Delete(I - LOffset);
+      Inc(LOffset);
+    end;
   finally
     Unlock;
   end;
@@ -890,6 +895,8 @@ begin
   LockRight;
   try
     Result := FCountRight;
+    if (not FCenterAssigned) then
+      Dec(Result);
   finally
     UnlockRight;
   end;
@@ -952,6 +959,7 @@ begin
                  end;
       end;
       FCenter := AItem;
+      FCenterAssigned := True;
     end;
   finally
     UnlockCenter;
@@ -985,6 +993,7 @@ begin
                    try
                      InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
                      FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
+                     FCenterAssigned := True;
                    finally
                      UnlockCenter;
                    end;
@@ -1013,6 +1022,7 @@ begin
                   try
                     InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
                     FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
+                    FCenterAssigned := True;
                   finally
                     UnlockCenter;
                   end;
