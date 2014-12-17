@@ -716,6 +716,8 @@ begin
   try
     for I := System.Low(AIndices) to System.High(AIndices) do
     begin
+      if I = 0 then
+        LOffset := 0;
       Delete(AIndices[I - LOffset]);
       Inc(LOffset);
     end;
@@ -782,6 +784,8 @@ begin
   try
     for I := ALow to AHigh do
     begin
+      if I = 0 then
+        LOffset := 0;
       Delete(I - LOffset);
       Inc(LOffset);
     end;
