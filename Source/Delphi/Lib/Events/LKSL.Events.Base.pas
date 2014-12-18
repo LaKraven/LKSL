@@ -488,17 +488,30 @@ uses
 
 type
   { Forward Declarations }
-  TLKEventQueue = class;
+  TLKEventProcessor = class;
+  TLKEventScheduler = class;
   TLKEventEngine = class;
 
   {
-    TLKEventQueue
-      - Processes Events "first in, first out"
+    TLKEventProcessor
+      - Provides both the Queue and Stack
   }
-  TLKEventQueue = class(TLKEventThreadBaseWithListeners)
+  TLKEventProcessor = class(TLKEventThreadBaseWithListeners)
   protected
     function GetInitialThreadState: TLKThreadState; override;
     procedure Tick(const ADelta, AStartTime: Double); override;
+  public
+    procedure QueueEvent(const AEvent: TLKEvent); override;
+    procedure StackEvent(const AEvent: TLKEvent); override;
+  end;
+
+  {
+    TLKEventScheduler
+      -
+  }
+  TLKEventScheduler = class(TLKEventThreadBase)
+  protected
+    procedure ProcessEvents(const ADelta, AStartTime: Double); override;
   public
     procedure QueueEvent(const AEvent: TLKEvent); override;
     procedure StackEvent(const AEvent: TLKEvent); override;
@@ -514,6 +527,7 @@ type
     FEventThreads: TLKEventThreadList;
     FRecorders: TLKEventRecorderList;
     FEventProcessor: TLKEventThreadBaseWithListeners;
+//    FEventScheduler: TLKEventScheduler;
     FTransmitters: TLKEventTransmitterManager;
     FRecorderLock: TCriticalSection;
 
@@ -1623,26 +1637,45 @@ begin
     Events.UnregisterRecorder(Self);
 end;
 
-{ TLKEventQueue }
+{ TLKEventScheduler }
 
-function TLKEventQueue.GetInitialThreadState: TLKThreadState;
+procedure TLKEventScheduler.ProcessEvents(const ADelta, AStartTime: Double);
+begin
+
+end;
+
+procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent);
+begin
+  inherited;
+
+end;
+
+procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent);
+begin
+  inherited;
+
+end;
+
+{ TLKEventProcessor }
+
+function TLKEventProcessor.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
 end;
 
-procedure TLKEventQueue.QueueEvent(const AEvent: TLKEvent);
+procedure TLKEventProcessor.QueueEvent(const AEvent: TLKEvent);
 begin
   inherited;
   ThreadState := tsRunning;
 end;
 
-procedure TLKEventQueue.StackEvent(const AEvent: TLKEvent);
+procedure TLKEventProcessor.StackEvent(const AEvent: TLKEvent);
 begin
   inherited;
   ThreadState := tsRunning;
 end;
 
-procedure TLKEventQueue.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventProcessor.Tick(const ADelta, AStartTime: Double);
 begin
   ProcessEvents(ADelta, AStartTime);
   LockEvents;
@@ -1660,15 +1693,17 @@ begin
   FEventThreads := TLKEventThreadList.Create;
   FRecorders := TLKEventRecorderList.Create;
   FEventThreadLock := TCriticalSection.Create;
-  FEventProcessor := TLKEventQueue.Create;
+  FEventProcessor := TLKEventProcessor.Create;
   FTransmitters := TLKEventTransmitterManager.Create;
   FRecorderLock := TCriticalSection.Create;
+//  FEventScheduler := TLKEventScheduler.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 var
   I: Integer;
 begin
+//  FEventScheduler.Kill;
   FTransmitters.Kill;
   for I := FEventThreads.Count - 1 downto 0 do
     UnregisterEventThread(FEventThreads[I]);
