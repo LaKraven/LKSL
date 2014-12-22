@@ -11,6 +11,10 @@ LKSL.Common.Types.pas
 
 LKSL.Events.Base.pas
 --------------------
+	22nd December 2014:
+		- Event Scheduler (first stage) implemented and seems to be working!
+			- Call .Queue(<delay in seconds, Double-precision) to Schedule for the Queue
+			- Call .Stack(<delay in seconds, Double-precision) to Schedule for the Stack
 	18th December 2014:
 		- "TLKEventList" renamed to "TLKEventQueueStack" to make room for a NEW TLKEventList (more appropriate naming)
 	16th December 2014:

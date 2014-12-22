@@ -39,10 +39,6 @@ unit LKSL.Events.Base;
 
 interface
 
-{$MESSAGE WARN 'Some interfaces within this unit will be changing one more time before Xmas 2014!'}
-// This is to accommodate a new "Event Scheduling" feature, and to provide TLKEventThread
-// descendants with both a Queue AND a Stack (presently they only have a Queue)
-
 {$I LKSL.inc}
 
 {$REGION 'Unit About'}
@@ -101,7 +97,7 @@ type
   TLKEventListenerType = class of TLKEventListener;
 
   { Generics Lists Types }
-  TLKEventList = TLKList<TLKEvent>; // Used for in-order Lists of Events (such as in the Scheduler)
+  TLKEventList = TLKList<TLKEvent>; // Used for in-order Lists of Events (such as in the Recorder)
   TLKEventQueueStack = TLKCenteredList<TLKEvent>; // Used for the combined Stack & Queue
   TLKEventListenerList = TLKList<TLKEventListener>;
   TLKEventTransmitterList = TLKList<TLKEventTransmitterBase>;
@@ -185,8 +181,10 @@ type
 
     procedure Assign(AFromEvent: TPersistent); override; final;
 
-    procedure Queue; // Add this Event to the Event Queue
-    procedure Stack; // Add this Event to the Event Stack
+    procedure Queue; overload; // Add this Event to the Event Queue
+    procedure Queue(const ASecondsFromNow: Double); overload;
+    procedure Stack; overload; // Add this Event to the Event Stack
+    procedure Stack(const ASecondsFromNow: Double); overload;
     procedure TransmitOnly; // DOESN'T Queue OR Stack the Event for internal processing, just Transmits it
 
     property AllowRecording: Boolean read GetAllowRecording write SetAllowRecording;
@@ -490,6 +488,8 @@ uses
 type
   { Forward Declarations }
   TLKEventProcessor = class;
+  TLKEventScheduled = class;
+  TLKEventScheduleList = class;
   TLKEventScheduler = class;
   TLKEventEngine = class;
 
@@ -507,20 +507,54 @@ type
   end;
 
   {
+    TLKEventScheduled
+      - Pairs a TLKEvent with its Scheduled Time
+  }
+  TLKEventScheduled = class(TLKPersistent)
+  private
+    FEvent: TLKEvent;
+    FScheduledFor: Double;
+  public
+    constructor Create(const AEvent: TLKEvent; const AScheduledFor: Double); reintroduce;
+    destructor Destroy; override;
+
+    property Event: TLKEvent read FEvent;
+    property ScheduledFor: Double read FScheduledFor;
+  end;
+
+  {
+    TLKEventScheduleList
+      - A List of Events sorted by Scheduled Time
+  }
+  TLKEventScheduleList = class(TLKSortedList<TLKEventScheduled>)
+  protected
+    // Parity Checks
+    function AEqualToB(const A, B: TLKEventScheduled): Boolean; override;
+    function AGreaterThanB(const A, B: TLKEventScheduled): Boolean; override;
+    function AGreaterThanOrEqualB(const A, B: TLKEventScheduled): Boolean; override;
+    function ALessThanB(const A, B: TLKEventScheduled): Boolean; override;
+    function ALessThanOrEqualB(const A, B: TLKEventScheduled): Boolean; override;
+  public
+    destructor Destroy; override;
+  end;
+
+  {
     TLKEventScheduler
       -
   }
   TLKEventScheduler = class(TLKThread)
   private
-    FEvents: TLKEventList;
+    FEvents: TLKEventScheduleList;
     FNextEventTime: Double;
   protected
     function GetInitialThreadState: TLKThreadState; override;
+    procedure ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+    procedure Tick(const ADelta, AStartTime: Double); override;
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure QueueEvent(const AEvent: TLKEvent);
-    procedure StackEvent(const AEvent: TLKEvent);
+    procedure QueueEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+    procedure StackEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
   end;
 
   {
@@ -533,7 +567,7 @@ type
     FEventThreads: TLKEventThreadList;
     FRecorders: TLKEventRecorderList;
     FEventProcessor: TLKEventThreadBaseWithListeners;
-//    FEventScheduler: TLKEventScheduler;
+    FEventScheduler: TLKEventScheduler;
     FTransmitters: TLKEventTransmitterManager;
     FRecorderLock: TCriticalSection;
 
@@ -736,6 +770,11 @@ begin
     Events.StackEvent(Self);
 end;
 
+procedure TLKEvent.Queue(const ASecondsFromNow: Double);
+begin
+  Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow);
+end;
+
 procedure TLKEvent.ReadFromStream(const AStream: TStream);
 begin
   inherited;
@@ -796,6 +835,11 @@ begin
     Events.StackEvent(Self)
   else if (edmQueue in FDispatchModes) then
     Events.QueueEvent(Self);
+end;
+
+procedure TLKEvent.Stack(const ASecondsFromNow: Double);
+begin
+  Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow);
 end;
 
 procedure TLKEvent.TransmitOnly;
@@ -1643,36 +1687,6 @@ begin
     Events.UnregisterRecorder(Self);
 end;
 
-{ TLKEventScheduler }
-
-constructor TLKEventScheduler.Create;
-begin
-  inherited;
-  FNextEventTime := 0;
-  FEvents := TLKEventList.Create;
-end;
-
-destructor TLKEventScheduler.Destroy;
-begin
-  FEvents.Free;
-  inherited;
-end;
-
-function TLKEventScheduler.GetInitialThreadState: TLKThreadState;
-begin
-  Result := tsPaused;
-end;
-
-procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent);
-begin
-  AEvent.FDispatchMethod := edQueue;
-end;
-
-procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent);
-begin
-  AEvent.FDispatchMethod := edStack;
-end;
-
 { TLKEventProcessor }
 
 function TLKEventProcessor.GetInitialThreadState: TLKThreadState;
@@ -1704,6 +1718,130 @@ begin
   end;
 end;
 
+{ TLKEventScheduled }
+
+constructor TLKEventScheduled.Create(const AEvent: TLKEvent; const AScheduledFor: Double);
+begin
+  inherited Create;
+  FEvent := AEvent;
+  FScheduledFor := AScheduledFor;
+end;
+
+destructor TLKEventScheduled.Destroy;
+begin
+  inherited;
+end;
+
+{ TLKEventScheduleList }
+
+function TLKEventScheduleList.AEqualToB(const A, B: TLKEventScheduled): Boolean;
+begin
+  Result := A.ScheduledFor = B.ScheduledFor;
+end;
+
+function TLKEventScheduleList.AGreaterThanB(const A, B: TLKEventScheduled): Boolean;
+begin
+  Result := A.ScheduledFor > B.ScheduledFor;
+end;
+
+function TLKEventScheduleList.AGreaterThanOrEqualB(const A, B: TLKEventScheduled): Boolean;
+begin
+  Result := A.ScheduledFor >= B.ScheduledFor;
+end;
+
+function TLKEventScheduleList.ALessThanB(const A, B: TLKEventScheduled): Boolean;
+begin
+  Result := A.ScheduledFor < B.ScheduledFor;
+end;
+
+function TLKEventScheduleList.ALessThanOrEqualB(const A, B: TLKEventScheduled): Boolean;
+begin
+  Result := A.ScheduledFor <= B.ScheduledFor;
+end;
+
+destructor TLKEventScheduleList.Destroy;
+var
+  I: Integer;
+begin
+  for I := Count - 1 downto 0 do
+  begin
+    Items[I].FEvent.Free;
+    Items[I].Free;
+  end;
+
+  Clear(True);
+  inherited;
+end;
+
+{ TLKEventScheduler }
+
+constructor TLKEventScheduler.Create;
+begin
+  inherited;
+  FNextEventTime := 0;
+  FEvents := TLKEventScheduleList.Create;
+end;
+
+destructor TLKEventScheduler.Destroy;
+begin
+  FEvents.Free;
+  inherited;
+end;
+
+function TLKEventScheduler.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
+end;
+
+procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+begin
+  AEvent.FDispatchMethod := edQueue;
+  ScheduleEvent(AEvent, AScheduleFor);
+end;
+
+procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+var
+  LSchedule: TLKEventScheduled;
+begin
+  LSchedule := TLKEventScheduled.Create(AEvent, AScheduleFor);
+  FEvents.Add(LSchedule);
+  ThreadState := tsRunning;
+end;
+
+procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+begin
+  AEvent.FDispatchMethod := edStack;
+  ScheduleEvent(AEvent, AScheduleFor);
+end;
+
+procedure TLKEventScheduler.Tick(const ADelta, AStartTime: Double);
+begin
+  FEvents.Lock;
+  try
+    if FEvents.Count > 0 then
+    begin
+      if FEvents[0].ScheduledFor <= GetReferenceTime then // Is it time to dispatch this Event yet?
+      begin
+        case FEvents[0].Event.DispatchMethod of // If so...
+          edQueue: FEvents[0].Event.Queue; // ... send Dispatch to the queue...
+          edStack: FEvents[0].Event.Stack; // ... or the Stack...
+        end;
+        FEvents[0].Free; // ... then remove the container...
+        FEvents.Delete(0); // ... and delete the entry from the Schedule
+      end else // If it ISN'T time to dispatch...
+      begin
+        if FEvents[0].ScheduledFor - GetReferenceTime > 0.1 then // ...if there's more than 0.1 seconds to wait...
+          Sleep(10); // ... yield some precious cycles
+      end;
+    end else
+      ThreadState := tsPaused;
+  finally
+    FEvents.Unlock;
+  end;
+end;
+
+{ TLKEventEngine }
+
 constructor TLKEventEngine.Create;
 begin
   inherited;
@@ -1713,14 +1851,14 @@ begin
   FEventProcessor := TLKEventProcessor.Create;
   FTransmitters := TLKEventTransmitterManager.Create;
   FRecorderLock := TCriticalSection.Create;
-//  FEventScheduler := TLKEventScheduler.Create;
+  FEventScheduler := TLKEventScheduler.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 var
   I: Integer;
 begin
-//  FEventScheduler.Kill;
+  FEventScheduler.Kill;
   FTransmitters.Kill;
   for I := FEventThreads.Count - 1 downto 0 do
     UnregisterEventThread(FEventThreads[I]);
