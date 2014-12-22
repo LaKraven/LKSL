@@ -53,6 +53,7 @@ interface
 {$ENDREGION}
 
 uses
+  {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.SyncObjs,
   {$ELSE}
@@ -97,8 +98,7 @@ type
   TLKEventListenerType = class of TLKEventListener;
 
   { Generics Lists Types }
-  TLKEventList = TLKList<TLKEvent>; // Used for in-order Lists of Events (such as in the Recorder)
-  TLKEventQueueStack = TLKCenteredList<TLKEvent>; // Used for the combined Stack & Queue
+  TLKEventList = TLKObjectList<TLKEvent>; // Used for in-order Lists of Events (such as in the Recorder)
   TLKEventListenerList = TLKList<TLKEventListener>;
   TLKEventTransmitterList = TLKList<TLKEventTransmitterBase>;
   TLKEventTypeList = TLKList<TLKEventType>;
@@ -310,13 +310,8 @@ type
   }
   TLKEventThreadBase = class abstract(TLKThread)
   private
-    FEventLock: TCriticalSection;
-    FEvents: TLKEventQueueStack;
-
-    procedure ClearEvents;
-    // We also use a separate Lock for Events
-    procedure LockEvents; inline;
-    procedure UnlockEvents; inline;
+    FQueue: TLKEventList;
+    FStack: TLKEventList;
   protected
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
@@ -419,14 +414,9 @@ type
   }
   TLKEventTransmitterManager = class(TLKThread)
   private
-    FEventLock: TCriticalSection;
     FTransmitterLock: TCriticalSection;
-    FEvents: TLKEventQueueStack;
     FTransmitters: TLKEventTransmitterList;
-
-    procedure ClearEvents;
-    procedure LockEvents;
-    procedure UnlockEvents;
+    FEvents: TLKEventList;
 
     procedure AddTransmitter(const ATransmitter: TLKEventTransmitterBase);
     procedure DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
@@ -567,7 +557,7 @@ type
     FEventThreadLock: TCriticalSection;
     FEventThreads: TLKEventThreadList;
     FRecorders: TLKEventRecorderList;
-    FEventProcessor: TLKEventThreadBaseWithListeners;
+    FEventProcessor: TLKEventProcessor;
     FEventScheduler: TLKEventScheduler;
     FTransmitters: TLKEventTransmitterManager;
     FRecorderLock: TCriticalSection;
@@ -578,23 +568,23 @@ type
     // "QueueInRecorders" iterates through all Event Recorders and adds the Event to them
     procedure QueueInRecorders(const AEvent: TLKEvent);
     // "QueueEvent" adds an Event to the Processing Queue (first in, first out)
-    procedure QueueEvent(const AEvent: TLKEvent); inline;
+    procedure QueueEvent(const AEvent: TLKEvent);
     // "StackEvent" adds an Event to the Processing Stack (last in, first out)
-    procedure StackEvent(const AEvent: TLKEvent); inline;
+    procedure StackEvent(const AEvent: TLKEvent);
     // "StackInThreads" iterates through all Event Threads and (if there's a relevant
     // Listener for the Event Type) adds the Event to the Thread's internal Event Stack
     procedure StackInThreads(const AEvent: TLKEvent);
     // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
     procedure TransmitEvent(const AEvent: TLKEvent);
 
-    procedure LockThreads; inline;
-    procedure UnlockThreads; inline;
+    procedure LockThreads;
+    procedure UnlockThreads;
 
     procedure RegisterEventThread(const AEventThread: TLKEventThread);
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
 
-    procedure LockRecorders; inline;
-    procedure UnlockRecorders; inline;
+    procedure LockRecorders;
+    procedure UnlockRecorders;
 
     procedure RegisterRecorder(const ARecorder: TLKEventRecorder);
     procedure UnregisterRecorder(const ARecorder: TLKEventRecorder);
@@ -605,6 +595,9 @@ type
     constructor Create; override;
     destructor Destroy; override;
   end;
+
+const
+  LKSL_EVENTS_SCHEDULER_MINLEADTIME = 0.0001;
 
 var
   Events: TLKEventEngine;
@@ -773,7 +766,10 @@ end;
 
 procedure TLKEvent.Queue(const ASecondsFromNow: Double);
 begin
-  Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow);
+  if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
+    Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow)
+  else
+    Queue;
 end;
 
 procedure TLKEvent.ReadFromStream(const AStream: TStream);
@@ -840,7 +836,10 @@ end;
 
 procedure TLKEvent.Stack(const ASecondsFromNow: Double);
 begin
-  Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow);
+  if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
+    Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow)
+  else
+    Stack;
 end;
 
 procedure TLKEvent.TransmitOnly;
@@ -1139,31 +1138,19 @@ end;
 
 { TLKEventThreadBase }
 
-procedure TLKEventThreadBase.ClearEvents;
-var
-  I: Integer;
-begin
-  LockEvents;
-  try
-    for I := FEvents.Count - 1 downto 0 do
-      FEvents[I].Free;
-  finally
-    UnlockEvents;
-  end;
-end;
-
 constructor TLKEventThreadBase.Create;
 begin
   inherited;
-  FEvents := TLKEventQueueStack.Create;
-  FEventLock := TCriticalSection.Create;
+  FQueue := TLKEventList.Create(False);
+  FStack := TLKEventList.Create(False);
 end;
 
 destructor TLKEventThreadBase.Destroy;
 begin
-  ClearEvents;
-  FEventLock.Free;
-  FEvents.Free;
+  FQueue.OwnsObjects := True;
+  FStack.OwnsObjects := True;
+  FQueue.Free;
+  FStack.Free;
   inherited;
 end;
 
@@ -1172,36 +1159,16 @@ begin
   Result := tsPaused;
 end;
 
-procedure TLKEventThreadBase.LockEvents;
-begin
-  FEventLock.Acquire;
-end;
-
 procedure TLKEventThreadBase.QueueEvent(const AEvent: TLKEvent);
 begin
-  LockEvents;
-  try
-    AEvent.FDispatchTime := GetReferenceTime;
-    FEvents.AddRight(AEvent);
-  finally
-    UnlockEvents;
-  end;
+  AEvent.FDispatchTime := GetReferenceTime;
+  FQueue.Add(AEvent);
 end;
 
 procedure TLKEventThreadBase.StackEvent(const AEvent: TLKEvent);
 begin
-  LockEvents;
-  try
-    AEvent.FDispatchTime := GetReferenceTime;
-    FEvents.AddLeft(AEvent);
-  finally
-    UnlockEvents;
-  end;
-end;
-
-procedure TLKEventThreadBase.UnlockEvents;
-begin
-  FEventLock.Release;
+  AEvent.FDispatchTime := GetReferenceTime;
+  FStack.Add(AEvent);
 end;
 
 { TLKEventThreadBaseWithListeners }
@@ -1267,25 +1234,29 @@ procedure TLKEventThreadBaseWithListeners.ProcessEvents(const ADelta, AStartTime
 var
   I, LStart, LEnd: Integer;
 begin
-  // We don't Lock the Event Array at this point, as doing so would prevent additional
-  // events from being added to the Queue (and could cause a Thread to freeze)
-  if FEvents.Count > 0 then
+  // Process Stack
+  if FStack.Count > 0 then
   begin
-    LStart := FEvents.Low;
-    LEnd := FEvents.High;
-    // Process Events
+    LStart := 0;
+    LEnd := FStack.Count - 1;
     for I := LStart to LEnd do
     begin
-      ProcessListeners(FEvents[I], ADelta, AStartTime);
-      FEvents[I].Free;
+      ProcessListeners(FStack[I], ADelta, AStartTime);
+      FStack[I].Free;
     end;
-    // Remove Events
-    LockEvents;
-    try
-      FEvents.DeleteRange(LStart, LEnd);
-    finally
-      UnlockEvents;
+    FStack.DeleteRange(LStart, LEnd);
+  end;
+  // Process Queue
+  if FQueue.Count > 0 then
+  begin
+    LStart := 0;
+    LEnd := FQueue.Count - 1;
+    for I := LStart to LEnd do
+    begin
+      ProcessListeners(FQueue[I], ADelta, AStartTime);
+      FQueue[I].Free;
     end;
+    FQueue.DeleteRange(LStart, LEnd);
   end;
 end;
 
@@ -1475,12 +1446,7 @@ begin
     LClone := TLKEventType(AEvent.ClassType).Create;
     LClone.Assign(AEvent);
     // Add Clone to Event Queue
-    LockEvents;
-    try
-      FEvents.Add(LClone);
-    finally
-      UnlockEvents;
-    end;
+    FEvents.Add(AEvent);
   end;
 end;
 
@@ -1494,26 +1460,12 @@ begin
   end;
 end;
 
-procedure TLKEventTransmitterManager.ClearEvents;
-var
-  I: Integer;
-begin
-  LockEvents;
-  try
-    for I := FEvents.Low to FEvents.High do
-      FEvents[I].Free;
-  finally
-    UnlockEvents;
-  end;
-end;
-
 constructor TLKEventTransmitterManager.Create;
 begin
   inherited;
-  FEvents := TLKEventQueueStack.Create;
   FTransmitters := TLKEventTransmitterList.Create;
   FTransmitterLock := TCriticalSection.Create;
-  FEventLock := TCriticalSection.Create;
+  FEvents := TLKEventList.Create(False);
 end;
 
 procedure TLKEventTransmitterManager.DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
@@ -1528,11 +1480,10 @@ end;
 
 destructor TLKEventTransmitterManager.Destroy;
 begin
-  ClearEvents;
   FTransmitterLock.Free;
-  FEventLock.Free;
-  FEvents.Free;
   FTransmitters.Free;
+  FEvents.OwnsObjects := True;
+  FEvents.Free;
   inherited;
 end;
 
@@ -1545,11 +1496,6 @@ end;
 function TLKEventTransmitterManager.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
-end;
-
-procedure TLKEventTransmitterManager.LockEvents;
-begin
-  FEventLock.Acquire;
 end;
 
 procedure TLKEventTransmitterManager.LockTransmitters;
@@ -1582,12 +1528,7 @@ begin
       end;
       FEvents[0].Free; // Destroy the Event
       // Remove the processed Event from the Event Array
-      LockEvents;
-      try
-        FEvents.Delete(0);
-      finally
-        UnlockEvents;
-      end;
+      FEvents.Delete(0);
     finally
       LEventStream.Free;
     end;
@@ -1597,11 +1538,6 @@ end;
 procedure TLKEventTransmitterManager.Tick(const ADelta, AStartTime: Double);
 begin
   // Do Nothing (Yet, but probably never will either)
-end;
-
-procedure TLKEventTransmitterManager.UnlockEvents;
-begin
-  FEventLock.Release;
 end;
 
 procedure TLKEventTransmitterManager.UnlockTransmitters;
@@ -1635,25 +1571,33 @@ var
 begin
   // We don't Lock the Event Array at this point, as doing so would prevent additional
   // events from being added to the Queue (and could cause a Thread to freeze)
-  if FEvents.Count > 0 then
+  // Process Stack
+  if FStack.Count > 0 then
   begin
-    LStart := FEvents.Low;
-    LEnd := FEvents.High;
-    // Process Events
+    LStart := 0;
+    LEnd := FStack.Count - 1;
     for I := LStart to LEnd do
     begin
-      FEvents[I].FDelta := ADelta;
-      FEvents[I].FProcessedTime := AStartTime;
-      RecordEvent(FEvents[I]);
-      FEvents[I].Free;
+      FStack[I].FDelta := ADelta;
+      FStack[I].FProcessedTime := AStartTime;
+      RecordEvent(FStack[I]);
+      FStack[I].Free;
     end;
-    // Remove Events
-    LockEvents;
-    try
-      FEvents.DeleteRange(LStart, LEnd);
-    finally
-      UnlockEvents;
+    FStack.DeleteRange(LStart, LEnd);
+  end;
+  // Process Queue
+  if FQueue.Count > 0 then
+  begin
+    LStart := 0;
+    LEnd := FQueue.Count - 1;
+    for I := LStart to LEnd do
+    begin
+      FQueue[I].FDelta := ADelta;
+      FQueue[I].FProcessedTime := AStartTime;
+      RecordEvent(FQueue[I]);
+      FQueue[I].Free;
     end;
+    FQueue.DeleteRange(LStart, LEnd);
   end;
 end;
 
@@ -1678,13 +1622,8 @@ end;
 procedure TLKEventRecorder.Tick(const ADelta, AStartTime: Double);
 begin
   ProcessEvents(ADelta, AStartTime);
-  LockEvents;
-  try
-    if FEvents.Count = 0 then
-      ThreadState := tsPaused;
-  finally
-    UnlockEvents;
-  end;
+  if (FStack.Count = 0) and (FQueue.Count = 0) then
+    ThreadState := tsPaused;
 end;
 
 procedure TLKEventRecorder.Unsubscribe;
@@ -1715,13 +1654,8 @@ end;
 procedure TLKEventProcessor.Tick(const ADelta, AStartTime: Double);
 begin
   ProcessEvents(ADelta, AStartTime);
-  LockEvents;
-  try
-    if FEvents.Count = 0 then
-      ThreadState := tsPaused;
-  finally
-    UnlockEvents;
-  end;
+  if (FStack.Count = 0) and (FQueue.Count = 0) then
+    ThreadState := tsPaused;
 end;
 
 { TLKEventScheduled }
@@ -1822,8 +1756,6 @@ end;
 
 procedure TLKEventScheduler.Tick(const ADelta, AStartTime: Double);
 begin
-  FEvents.Lock;
-  try
     if FEvents.Count > 0 then
     begin
       if FEvents[0].ScheduledFor <= GetReferenceTime then // Is it time to dispatch this Event yet?
@@ -1832,18 +1764,21 @@ begin
           edQueue: FEvents[0].Event.Queue; // ... send Dispatch to the queue...
           edStack: FEvents[0].Event.Stack; // ... or the Stack...
         end;
-        FEvents[0].Free; // ... then remove the container...
-        FEvents.Delete(0); // ... and delete the entry from the Schedule
-      end else // If it ISN'T time to dispatch...
-      begin
-        if FEvents[0].ScheduledFor - GetReferenceTime > 0.1 then // ...if there's more than 0.1 seconds to wait...
-          Sleep(10); // ... yield some precious cycles
-      end;
+        FEvents.Lock;
+        try
+          FEvents[0].Free; // ... then remove the container...
+          FEvents.Delete(0); // ... and delete the entry from the Schedule
+        finally
+          FEvents.Unlock;
+        end;
+      end else
+        {$IFDEF POSIX}
+          usleep(1);
+        {$ELSE}
+          Sleep(1);
+        {$ENDIF POSIX}
     end else
       ThreadState := tsPaused;
-  finally
-    FEvents.Unlock;
-  end;
 end;
 
 { TLKEventEngine }

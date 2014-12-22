@@ -802,8 +802,16 @@ begin
 end;
 
 procedure TLKListBase<T>.DeleteRange(const AIndex, ACount: Integer);
+var
+  I: Integer;
 begin
-
+  Lock;
+  try
+    for I := AIndex + ACount downto AIndex do
+      Delete(I);
+  finally
+    Unlock;
+  end;
 end;
 
 destructor TLKListBase<T>.Destroy;
