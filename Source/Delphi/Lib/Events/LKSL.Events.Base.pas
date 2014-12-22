@@ -321,6 +321,7 @@ type
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
     procedure ProcessEvents(const ADelta, AStartTime: Double); virtual; abstract;
+    function GetInitialThreadState: TLKThreadState; override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -1164,6 +1165,11 @@ begin
   FEventLock.Free;
   FEvents.Free;
   inherited;
+end;
+
+function TLKEventThreadBase.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
 end;
 
 procedure TLKEventThreadBase.LockEvents;
