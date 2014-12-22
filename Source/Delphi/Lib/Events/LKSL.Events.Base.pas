@@ -100,8 +100,9 @@ type
   TLKEventType = class of TLKEvent;
   TLKEventListenerType = class of TLKEventListener;
 
-  { Generics Lists Type }
-  TLKEventList = TLKCenteredList<TLKEvent>;
+  { Generics Lists Types }
+  TLKEventList = TLKList<TLKEvent>; // Used for in-order Lists of Events (such as in the Scheduler)
+  TLKEventQueueStack = TLKCenteredList<TLKEvent>; // Used for the combined Stack & Queue
   TLKEventListenerList = TLKList<TLKEventListener>;
   TLKEventTransmitterList = TLKList<TLKEventTransmitterBase>;
   TLKEventTypeList = TLKList<TLKEventType>;
@@ -312,7 +313,7 @@ type
   TLKEventThreadBase = class abstract(TLKThread)
   private
     FEventLock: TCriticalSection;
-    FEvents: TLKEventList;
+    FEvents: TLKEventQueueStack;
 
     procedure ClearEvents;
     // We also use a separate Lock for Events
@@ -421,7 +422,7 @@ type
   private
     FEventLock: TCriticalSection;
     FTransmitterLock: TCriticalSection;
-    FEvents: TLKEventList;
+    FEvents: TLKEventQueueStack;
     FTransmitters: TLKEventTransmitterList;
 
     procedure ClearEvents;
@@ -509,12 +510,17 @@ type
     TLKEventScheduler
       -
   }
-  TLKEventScheduler = class(TLKEventThreadBase)
+  TLKEventScheduler = class(TLKThread)
+  private
+    FEvents: TLKEventList;
+    FNextEventTime: Double;
   protected
-    procedure ProcessEvents(const ADelta, AStartTime: Double); override;
+    function GetInitialThreadState: TLKThreadState; override;
   public
-    procedure QueueEvent(const AEvent: TLKEvent); override;
-    procedure StackEvent(const AEvent: TLKEvent); override;
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure QueueEvent(const AEvent: TLKEvent);
+    procedure StackEvent(const AEvent: TLKEvent);
   end;
 
   {
@@ -1104,7 +1110,7 @@ end;
 constructor TLKEventThreadBase.Create;
 begin
   inherited;
-  FEvents := TLKEventList.Create;
+  FEvents := TLKEventQueueStack.Create;
   FEventLock := TCriticalSection.Create;
 end;
 
@@ -1454,7 +1460,7 @@ end;
 constructor TLKEventTransmitterManager.Create;
 begin
   inherited;
-  FEvents := TLKEventList.Create;
+  FEvents := TLKEventQueueStack.Create;
   FTransmitters := TLKEventTransmitterList.Create;
   FTransmitterLock := TCriticalSection.Create;
   FEventLock := TCriticalSection.Create;
@@ -1639,21 +1645,32 @@ end;
 
 { TLKEventScheduler }
 
-procedure TLKEventScheduler.ProcessEvents(const ADelta, AStartTime: Double);
+constructor TLKEventScheduler.Create;
 begin
+  inherited;
+  FNextEventTime := 0;
+  FEvents := TLKEventList.Create;
+end;
 
+destructor TLKEventScheduler.Destroy;
+begin
+  FEvents.Free;
+  inherited;
+end;
+
+function TLKEventScheduler.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
 end;
 
 procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent);
 begin
-  inherited;
-
+  AEvent.FDispatchMethod := edQueue;
 end;
 
 procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent);
 begin
-  inherited;
-
+  AEvent.FDispatchMethod := edStack;
 end;
 
 { TLKEventProcessor }

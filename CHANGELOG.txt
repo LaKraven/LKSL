@@ -11,8 +11,10 @@ LKSL.Common.Types.pas
 
 LKSL.Events.Base.pas
 --------------------
+	18th December 2014:
+		- "TLKEventList" renamed to "TLKEventQueueStack" to make room for a NEW TLKEventList (more appropriate naming)
 	16th December 2014:
-		- Removed deprecated Arrays.
+		- Removed deprecated Arrays. ("LKSL_NO_LISTS" define no logner has any effect)
 		- Removed TLKEventProcessMode (no longer required)
 			- Also removed all properties and methods of type TLKEventProcessMode
 		- Fixed bug in TLKEventRecorder which forgot to add the Processed Time when recording each Event
@@ -184,6 +186,20 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	22nd December 2014:
+		- Added TLKListBase<T> (ABSTRACT class)
+			- Contains common members and functionality for Generic Lists (NOT including TLKCenteredList<T>, which works very differently)
+		- Added TLKList<T>
+			- The simplest (and most light-weight) implementation of TLKListBase<T>
+		- Added TLKObjectList<T>
+			- A version of TLKList<T> with support of Object Ownership (releases Objects automatically if owned)
+		- Added TLKSortedListBase<T>
+			- Abstract Base Type for all Sorted Lists (provides Parity Check and Sorted Position Lookups)
+		- Added TLKSortedList<T>
+			- A version of TLKSortedListBase<T> which doesn't care about duplicate Sorted Indexes
+		- Added TLKSortedObjectList<T>
+			- A version of TLKSortedList<T> with support of Object Ownership (releases Objects automatically if owned)
+		- Begun work on TLKSortedListUnique<T, TKey> (INCOMPLETE, COMMENTED OUT)
 	16th December 2014:
 		- Several bug fixes
 		- Made TLKCenteredList<T>.Delete[Center/Left/Right] Virtual methods and moved them into the Protected area

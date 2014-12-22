@@ -62,8 +62,13 @@ type
   { Forward Declaration }
   TLKArray<T> = class;
   TLKDictionary<TKey, TValue> = class;
+  TLKListBase<T> = class;
   TLKList<T> = class;
   TLKObjectList<T: class> = class;
+  TLKSortedListBase<T> = class;
+  TLKSortedList<T> = class;
+//  TLKSortedListUnique<T, TKey> = class;
+  TLKSortedObjectList<T: class> = class;
   TLKCenteredList<T> = class;
   TLKCenteredObjectList<T: class> = class;
   TLKTreeNode<T> = class;
@@ -76,6 +81,8 @@ type
   ELKGenericCollectionsException = class(ELKException);
     ELKGenericCollectionsLimitException = class(ELKGenericCollectionsException);
     ELKGenericCollectionsRangeException = class(ELKGenericCollectionsException);
+    ELKGenericCollectionsKeyAlreadyExists = class(ELKGenericCollectionsException);
+    ELKGenericCollectionsKeyNotFound = class(ELKGenericCollectionsException);
 
   {
     TLKArray<T>
@@ -133,33 +140,179 @@ type
   end;
 
   {
-    TLKList<T>
-      - Provides a Thread-Safe Lock (TCriticalSection)
+    TLKListBase<T>
+      - Abstract Base Type for TLKList[variation]<T> types
   }
-  TLKList<T> = class(TList<T>)
+  TLKListBase<T> = class abstract(TLKPersistent)
   private
-    FLock: TCriticalSection;
+    type
+      TArrayOfT = Array of T;
+      TIterateCallbackAnon = reference to procedure(const AIndex: Integer; const AItem: T);
+      TIterateCallbackOfObject = procedure(const AIndex: Integer; const AItem: T) of object;
+      TIterateCallbackUnbound = procedure(const AIndex: Integer; const AItem: T);
+  private
+    FArray: TArrayOfT;
+    FCapacityMultiplier: Single;
+    FCapacityThreshold: Integer;
+    FComparer: IComparer<T>;
+    FCount: Integer;
+    // Getters - Capacity
+    function GetCapacity: Integer;
+    function GetCapacityMultiplier: Single;
+    function GetCapacityThreshold: Integer;
+    // Getters - Other
+    function GetCount: Integer;
+    function GetItemByIndex(const AIndex: Integer): T;
+
+    // Setters - Capacity
+    procedure SetCapacityMultiplier(const AMultiplier: Single);
+    procedure SetCapacityThreshold(const AThreshold: Integer);
+
+    procedure InitializeArray;
+  protected
+    // Capacity Management
+    procedure CheckCapacity; overload;
+    procedure CheckCapacity(const ATotalRequiredCapacity: Integer); overload;
+    // Array Management
+    procedure Finalize(const AIndex, ACount: Integer);
+    procedure Move(const AFromIndex, AToIndex, ACount: Integer);
+    // Insert
+    procedure InsertActual(const AItem: T; const AIndex: Integer); inline;
+    // Validation Methods
+    function ValidateIndexInRange(const AIndex: Integer): Boolean;
+    function ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
   public
-    constructor Create; reintroduce;
+    constructor Create; overload; override;
+    constructor Create(const AComparer: IComparer<T>); reintroduce; overload; virtual;
     destructor Destroy; override;
 
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    function Add(const AItem: T): Integer; overload; virtual;
+    procedure Add(const AItems: TArrayOfT); overload;
+
+    procedure Clear(const ACompact: Boolean = True); virtual;
+
+    procedure Delete(const AIndex: Integer); overload; virtual;
+    procedure Delete(const AIndices: Array of Integer); overload;
+    procedure DeleteRange(const AIndex, ACount: Integer); virtual;
+
+    function Remove(const AItem: T): Integer; overload;
+    procedure Remove(const AItems: TArrayOfT); overload;
+
+    procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer); overload;
+
+    function Contains(const AItem: T): Boolean; overload; inline;
+    function Contains(const AItems: TArrayOfT): Boolean; overload;
+    function IndexOf(const AItem: T): Integer;
+
+    property Capacity: Integer read GetCapacity;
+    property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
+    property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
+    property Count: Integer read GetCount;
+    property Items[const AIndex: Integer]: T read GetItemByIndex; default;
+  end;
+
+  {
+    TLKList<T>
+      - A simple Generic List Type (light-weight)
+  }
+  TLKList<T> = class(TLKListBase<T>)
+  public
+    procedure Insert(const AItem: T; const AIndex: Integer);
   end;
 
   {
     TLKObjectList<T: class>
-      - Provides a Thread-Safe Lock (TCriticalSection)
+      - A version of TLKList<T> capable of handling ownership of Class Instances
   }
-  TLKObjectList<T: class> = class(TObjectList<T>)
+  TLKObjectList<T: class> = class(TLKList<T>)
   private
-    FLock: TCriticalSection;
+    FOwnsObjects: Boolean;
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
   public
-    constructor Create; reintroduce;
+    constructor Create(const AOwnsObjects: Boolean = True); overload;
+    constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); overload;
     destructor Destroy; override;
 
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure Clear(const ACompact: Boolean = True); override;
+    procedure Delete(const AIndex: Integer); override;
+
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+  {
+    TLKSortedListBase<T>
+      - A TLKListBase<T> with Sorted Insertion
+      - Abstract methods need to be implemented on type-specific descendants
+  }
+  TLKSortedListBase<T> = class abstract(TLKListBase<T>)
+  protected
+    // Parity Checks
+    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    // Critical Utility Methods
+    function GetSortedPosition(const AItem: T): Integer;
+  end;
+
+  {
+    TLKSortedList<T>
+      - An implementation of TLKSortedListBase<T> supporting Duplicate Sorted Keys
+      - Abstract methods need to be implemented on type-specific descendants
+  }
+  TLKSortedList<T> = class abstract(TLKSortedListBase<T>)
+  public
+    function Add(const AItem: T): Integer; reintroduce; overload;
+  end;
+
+  {
+    TLKSortedListUnique<T, TKey>
+      - An implementation of TLKSortedListBase<T> requiring UNIQUE Sorted Keys
+      - Abstract methods need to be implemented on type-specific descendants
+  }
+{
+  TLKSortedListUnique<T, TKey> = class abstract(TLKSortedListBase<T>)
+  private type
+    TKeyValueMap = class(TLKDictionary<TKey, T>);
+  private
+    FMap: TKeyValueMap;
+    function GetItemByKey(const AKey: TKey): T;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    function Add(const AKey: TKey; const AItem: T): Integer; reintroduce;
+    procedure Delete(const AIndex: Integer); override;
+
+    property Items[const AKey: TKey]: T read GetItemByKey; default;
+  end;
+}
+  {
+    TLKSortedObjectList<T: class; TKey>
+      - A version of TLKSortedList<T> capable of handling ownership of Class Instances
+      - Abstract methods need to be implemented on type-specific descendants
+  }
+  TLKSortedObjectList<T: class> = class abstract(TLKSortedListBase<T>)
+  private
+    FOwnsObjects: Boolean;
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const AOwnsObjects: Boolean = True); reintroduce; overload;
+    constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); reintroduce; overload;
+    destructor Destroy; override;
+
+    procedure Clear(const ACompact: Boolean = True); override;
+    procedure Delete(const AIndex: Integer); override;
+
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
   {
@@ -169,6 +322,7 @@ type
         - Any LEFT (negative) assignment goes on the end of the LEFT Array, any RIGHT (positive)
           assignment goes on the end of the RIGHT Array.
         - In a sense, this means you have a combined Queue AND Stack acting like a singular Array.
+      - NOT RELATED TO TLKListBase<T> IN ANY WAY! ENTIRELY DISTINCT IMPLEMENTATION!
   }
   TLKCenteredList<T> = class(TPersistent)
   private
@@ -399,6 +553,14 @@ type
     property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
   end;
 
+const
+  LKSL_LIST_CAPACITY_DEFAULT = 10;
+  LKSL_LIST_MULTIPLIER_DEFAULT = 1.5;
+  LKSL_LIST_MULTIPLIER_MINIMUM = 1.10;
+  LKSL_LIST_MULTIPLIER_MAXIMUM = 3.00;
+  LKSL_LIST_THRESHOLD_DEFAULT = 5;
+  LKSL_LIST_THRESHOLD_MINIMUM = 5;
+
 implementation
 
 { TLKArray<T> }
@@ -520,52 +682,660 @@ begin
   FLock.Release;
 end;
 
-{ TLKList<T> }
+{ TLKListBase<T> }
 
-constructor TLKList<T>.Create;
+function TLKListBase<T>.Add(const AItem: T): Integer;
 begin
-  inherited Create;
-  FLock := TCriticalSection.Create;
+  Lock;
+  try
+    CheckCapacity(FCount + 1);
+    Result := FCount;
+    FArray[Result] := AItem;
+    Inc(FCount);
+  finally
+    Unlock;
+  end;
 end;
 
-destructor TLKList<T>.Destroy;
+procedure TLKListBase<T>.CheckCapacity;
 begin
-  FLock.Free;
+  Lock;
+  try
+    CheckCapacity(FCount);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Add(const AItems: TArrayOfT);
+var
+  I: Integer;
+begin
+  for I := Low(AItems) to High(AItems) do
+    Add(AItems[I]);
+end;
+
+procedure TLKListBase<T>.CheckCapacity(const ATotalRequiredCapacity: Integer);
+begin
+  Lock;
+  try
+    if ((Length(FArray) - ATotalRequiredCapacity) < FCapacityThreshold) then
+    begin
+      if (Round(Length(FArray) * FCapacityMultiplier)) > (ATotalRequiredCapacity + FCapacityThreshold) then
+        SetLength(FArray, Round(Length(FArray) * FCapacityMultiplier)) // Expand using the Multiplier
+      else
+        SetLength(FArray, ATotalRequiredCapacity + FCapacityThreshold); // Expand to ensure everything fits
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Clear(const ACompact: Boolean = True);
+begin
+  Finalize(0, FCount);
+  FCount := 0;
+  if ACompact then
+    SetLength(FArray, LKSL_LIST_CAPACITY_DEFAULT);
+end;
+
+function TLKListBase<T>.Contains(const AItems: TArrayOfT): Boolean;
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    Result := True; // Optimistic
+    for I := Low(AItems) to High(AItems) do
+    begin
+      Result := Contains(AItems[I]);
+      if (not Result) then
+        Break; // No point looking further if one of the items isn't present
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+constructor TLKListBase<T>.Create;
+begin
+  Create(nil);
+end;
+
+constructor TLKListBase<T>.Create(const AComparer: IComparer<T>);
+begin
+  inherited Create;
+  FComparer := AComparer;
+  if FComparer = nil then
+    FComparer := TComparer<T>.Default;
+  InitializeArray;
+end;
+
+function TLKListBase<T>.Contains(const AItem: T): Boolean;
+begin
+  Result := IndexOf(AItem) >= 0;
+end;
+
+procedure TLKListBase<T>.Delete(const AIndex: Integer);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if ValidateIndexInRange(AIndex) then
+    begin
+      Dec(FCount);
+      Move(AIndex + 1, AIndex, FCount - AIndex);
+      Finalize(FCount, 1);
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Delete(const AIndices: array of Integer);
+var
+  I: Integer;
+begin
+  for I := Low(AIndices) to High(AIndices) do
+    Delete(AIndices[I]);
+end;
+
+procedure TLKListBase<T>.DeleteRange(const AIndex, ACount: Integer);
+begin
+
+end;
+
+destructor TLKListBase<T>.Destroy;
+begin
+
   inherited;
 end;
 
-procedure TLKList<T>.Lock;
+procedure TLKListBase<T>.Finalize(const AIndex, ACount: Integer);
 begin
-  FLock.Acquire;
+  System.FillChar(FArray[AIndex], ACount * SizeOf(T), 0);
 end;
 
-procedure TLKList<T>.Unlock;
+function TLKListBase<T>.GetCapacity: Integer;
 begin
-  FLock.Release;
+  Lock;
+  try
+    Result := Length(FArray);
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.GetCapacityMultiplier: Single;
+begin
+  Lock;
+  try
+    Result := FCapacityMultiplier;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.GetCapacityThreshold: Integer;
+begin
+  Lock;
+  try
+    Result := FCapacityThreshold;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.GetCount: Integer;
+begin
+  Lock;
+  try
+    Result := FCount;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.GetItemByIndex(const AIndex: Integer): T;
+begin
+  Lock;
+  try
+    if (AIndex > -1) and (AIndex <= FCount) then
+      Result := FArray[AIndex]
+    else
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Range.', [AIndex]);
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.IndexOf(const AItem: T): Integer;
+var
+  I: Integer;
+begin
+  Result := -1; // Pessimistic
+  Lock;
+  try
+    for I := 0 to FCount - 1 do
+      if FComparer.Compare(FArray[I], AItem) = 0 then
+      begin
+        Result := I;
+        Break; // No point going further if we've already found it
+      end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.InitializeArray;
+begin
+  FCount := 0;
+  SetLength(FArray, LKSL_LIST_CAPACITY_DEFAULT);
+  FCapacityThreshold := LKSL_LIST_THRESHOLD_DEFAULT;
+  FCapacityMultiplier := LKSL_LIST_MULTIPLIER_DEFAULT;
+end;
+
+procedure TLKListBase<T>.InsertActual(const AItem: T; const AIndex: Integer);
+begin
+  CheckCapacity(FCount + 1); // Ensure we have enough free slots in the Array to shift into
+  Move(AIndex, AIndex + 1, FCount - AIndex); // Shift everything Right
+  FArray[AIndex] := AItem; // Assign our Item to its Index
+  Inc(FCount); // Incrememnt the Count
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    case AIterateDirection of
+      ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
+      ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if ValidateRangeInArray(AFrom, ATo) then
+    begin
+      if AFrom < ATo then
+      begin
+        for I := AFrom to ATo do
+          AIterateCallback(I, FArray[I]);
+      end else
+      begin
+        for I := ATo downto AFrom do
+          AIterateCallback(I, FArray[I]);
+      end;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    case AIterateDirection of
+      ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
+      ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if ValidateRangeInArray(AFrom, ATo) then
+    begin
+      if AFrom < ATo then
+      begin
+        for I := AFrom to ATo do
+          AIterateCallback(I, FArray[I]);
+      end else
+      begin
+        for I := ATo downto AFrom do
+          AIterateCallback(I, FArray[I]);
+      end;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if ValidateRangeInArray(AFrom, ATo) then
+    begin
+      if AFrom < ATo then
+      begin
+        for I := AFrom to ATo do
+          AIterateCallback(I, FArray[I]);
+      end else
+      begin
+        for I := ATo downto AFrom do
+          AIterateCallback(I, FArray[I]);
+      end;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    case AIterateDirection of
+      ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
+      ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
+begin
+  System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
+end;
+
+procedure TLKListBase<T>.Remove(const AItems: TArrayOfT);
+var
+  I: Integer;
+begin
+  for I := Low(AItems) to High(AItems) do
+    Remove(AItems[I]);
+end;
+
+function TLKListBase<T>.Remove(const AItem: T): Integer;
+begin
+  Result := IndexOf(AItem);
+  if Result >= 0 then
+    Delete(Result);
+end;
+
+procedure TLKListBase<T>.SetCapacityMultiplier(const AMultiplier: Single);
+begin
+  // Sanity Check on Multiplier
+  if AMultiplier < LKSL_LIST_MULTIPLIER_MINIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MINIMUM])
+  else if AMultiplier > LKSL_LIST_MULTIPLIER_MAXIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Maximum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MAXIMUM]);
+  // If we got this far, we're ready to change our Multiplier
+  Lock;
+  try
+    FCapacityMultiplier := AMultiplier;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.SetCapacityThreshold(const AThreshold: Integer);
+begin
+  // Sanity Check on Threshold
+  if AThreshold < LKSL_LIST_THRESHOLD_MINIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Threshold is %d', [LKSL_LIST_THRESHOLD_MINIMUM]);
+  // If we got this far, we're ready to change our Threshold
+  Lock;
+  try
+    FCapacityThreshold := AThreshold;
+    CheckCapacity; // Adjust the Array Capacity if necessary
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKListBase<T>.ValidateIndexInRange(const AIndex: Integer): Boolean;
+begin
+  Result := (AIndex < FCount);
+  if (not Result) then
+    raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
+end;
+
+function TLKListBase<T>.ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
+begin
+  Result := False;
+  Lock;
+  try
+    if (AFrom < 0) or (AFrom >= FCount) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('"From" Index Out of Range: %d', [AFrom]);
+    if (ATo < 0) or (ATo >= FCount) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('"To" Index Out of Range: %d', [AFrom]);
+  finally
+    Unlock;
+  end;
+  Result := True;
+end;
+
+{ TLKList<T> }
+
+procedure TLKList<T>.Insert(const AItem: T; const AIndex: Integer);
+begin
+  Lock;
+  try
+    if ValidateIndexInRange(AIndex) then
+      InsertActual(AItem, AIndex);
+  finally
+    Unlock;
+  end;
 end;
 
 { TLKObjectList<T> }
 
-constructor TLKObjectList<T>.Create;
+procedure TLKObjectList<T>.Clear(const ACompact: Boolean);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if FOwnsObjects then
+    begin
+      for I := 0 to FCount - 1 do
+        FArray[I].DisposeOf;
+    end;
+    inherited;
+  finally
+    Unlock;
+  end;
+end;
+
+constructor TLKObjectList<T>.Create(const AOwnsObjects: Boolean = True);
 begin
   inherited Create;
-  FLock := TCriticalSection.Create;
+  FOwnsObjects := AOwnsObjects;
+end;
+
+constructor TLKObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
+begin
+  inherited Create(AComparer);
+  FOwnsObjects := True;
+end;
+
+procedure TLKObjectList<T>.Delete(const AIndex: Integer);
+begin
+  Lock;
+  try
+    if FOwnsObjects then
+      FArray[AIndex].DisposeOf;
+    inherited;
+  finally
+    Unlock;
+  end;
 end;
 
 destructor TLKObjectList<T>.Destroy;
 begin
-  FLock.Free;
+  Clear;
   inherited;
 end;
 
-procedure TLKObjectList<T>.Lock;
+function TLKObjectList<T>.GetOwnsObjects: Boolean;
 begin
-  FLock.Acquire;
+  Lock;
+  try
+    Result := FOwnsObjects;
+  finally
+    Unlock;
+  end;
 end;
 
-procedure TLKObjectList<T>.Unlock;
+procedure TLKObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
-  FLock.Release;
+  Lock;
+  try
+    FOwnsObjects := AOwnsObjects;
+  finally
+    Unlock;
+  end;
+end;
+
+{ TLKSortedListBase<T> }
+
+function TLKSortedListBase<T>.GetSortedPosition(const AItem: T): Integer;
+var
+  LIndex, LLow, LHigh: Integer;
+begin
+  Result := 0;
+  LLow := 0;
+  LHigh := FCount - 1;
+  if LHigh = - 1 then
+    Exit;
+  if LLow < LHigh then
+  begin
+    while (LHigh - LLow > 1) do
+    begin
+      LIndex := (LHigh + LLow) div 2;
+      if ALessThanOrEqualB(AItem, FArray[LIndex]) then
+        LHigh := LIndex
+      else
+        LLow := LIndex;
+    end;
+  end;
+  if ALessThanB(FArray[LHigh], AItem) then
+    Result := LHigh + 1
+  else if ALessThanB(FArray[LLow], AItem) then
+    Result := LLow + 1
+  else
+    Result := LLow;
+end;
+
+{ TLKSortedList<T> }
+
+function TLKSortedList<T>.Add(const AItem: T): Integer;
+begin
+  Lock;
+  try
+    CheckCapacity(FCount + 1);
+    Result := GetSortedPosition(AItem);
+    if Result = FCount then
+      inherited Add(AItem)
+    else
+      InsertActual(AItem, Result);
+  finally
+    Unlock;
+  end;
+end;
+
+{ TLKSortedListUnique<T, TKey> }
+{
+function TLKSortedListUnique<T, TKey>.Add(const AKey: TKey; const AItem: T): Integer;
+begin
+  Result := -1;
+  Lock;
+  try
+    // Check if this Key exists in the Map
+    if FMap.ContainsKey(AKey) then
+      raise ELKGenericCollectionsKeyAlreadyExists.Create('Key Already In Use!')
+    else
+    begin
+      CheckCapacity(FCount + 1); // Ensure there's room for the new item
+      FMap.Add(AKey, AItem); // Add the new item to the Map
+      Result := GetSortedPosition(AItem);
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+constructor TLKSortedListUnique<T, TKey>.Create;
+begin
+  inherited;
+  FMap := TKeyValueMap.Create;
+end;
+
+procedure TLKSortedListUnique<T, TKey>.Delete(const AIndex: Integer);
+begin
+
+  inherited;
+end;
+
+destructor TLKSortedListUnique<T, TKey>.Destroy;
+begin
+  FMap.Free;
+  inherited;
+end;
+
+function TLKSortedListUnique<T, TKey>.GetItemByKey(const AKey: TKey): T;
+begin
+  Lock;
+  try
+    FMap.TryGetValue(AKey, Result);
+  finally
+    Unlock;
+  end;
+end;
+}
+{ TLKSortedObjectList<T> }
+
+procedure TLKSortedObjectList<T>.Clear(const ACompact: Boolean);
+var
+  I: Integer;
+begin
+  Lock;
+  try
+    if FOwnsObjects then
+    begin
+      for I := 0 to FCount - 1 do
+        FArray[I].DisposeOf;
+    end;
+    inherited;
+  finally
+    Unlock;
+  end;
+end;
+
+constructor TLKSortedObjectList<T>.Create(const AOwnsObjects: Boolean);
+begin
+  inherited Create;
+  FOwnsObjects := AOwnsObjects;
+end;
+
+constructor TLKSortedObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
+begin
+  inherited Create(AComparer);
+  FOwnsObjects := AOwnsObjects;
+end;
+
+procedure TLKSortedObjectList<T>.Delete(const AIndex: Integer);
+begin
+  Lock;
+  try
+    if FOwnsObjects then
+      FArray[AIndex].DisposeOf;
+    inherited;
+  finally
+    Unlock;
+  end;
+end;
+
+destructor TLKSortedObjectList<T>.Destroy;
+begin
+  Clear;
+  inherited;
+end;
+
+function TLKSortedObjectList<T>.GetOwnsObjects: Boolean;
+begin
+  Lock;
+  try
+    Result := FOwnsObjects;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKSortedObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  Lock;
+  try
+    FOwnsObjects := AOwnsObjects;
+  finally
+    Unlock;
+  end;
 end;
 
 { TLKCenteredList<T> }
@@ -682,10 +1452,10 @@ begin
   FLockCenter := TCriticalSection.Create;
   // We default the Capacity of the Left and Right Arrays to 10 each.
   // This equates to 21 default Capacity (including Center)
-  SetLength(FArrayLeft, 10);
-  SetLength(FArrayRight, 10);
-  FCapacityThreshold := 5;
-  FCapacityMultiplier := 1.5;
+  SetLength(FArrayLeft, LKSL_LIST_CAPACITY_DEFAULT);
+  SetLength(FArrayRight, LKSL_LIST_CAPACITY_DEFAULT);
+  FCapacityThreshold := LKSL_LIST_THRESHOLD_DEFAULT;
+  FCapacityMultiplier := LKSL_LIST_MULTIPLIER_DEFAULT;
 end;
 
 procedure TLKCenteredList<T>.Delete(const AIndex: Integer);
@@ -1137,10 +1907,10 @@ end;
 procedure TLKCenteredList<T>.SetCapacityMultiplier(const AMultiplier: Single);
 begin
   // Sanity Check on Multiplier
-  if AMultiplier < 1.10 then
-    raise ELKGenericCollectionsLimitException.Create('Minimum Capacity Multiplier is 1.10')
-  else if AMultiplier > 3.00 then
-    raise ELKGenericCollectionsLimitException.Create('Maximum Capacity Multiplier is 3.00');
+  if AMultiplier < LKSL_LIST_MULTIPLIER_MINIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MINIMUM])
+  else if AMultiplier > LKSL_LIST_MULTIPLIER_MAXIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Maximum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MAXIMUM]);
   // If we got this far, we're ready to change our Multiplier
   Lock;
   try
@@ -1153,8 +1923,8 @@ end;
 procedure TLKCenteredList<T>.SetCapacityThreshold(const AThreshold: Integer);
 begin
   // Sanity Check on Threshold
-  if AThreshold < 5 then
-    raise ELKGenericCollectionsLimitException.Create('Minimum Capacity Threshold is 5');
+  if AThreshold < LKSL_LIST_THRESHOLD_MINIMUM then
+    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Threshold is %d', [LKSL_LIST_THRESHOLD_MINIMUM]);
   // If we got this far, we're ready to change our Threshold
   Lock;
   try
@@ -1473,7 +2243,7 @@ begin
   if AIndex < 0 then
     FChildren.Add(AChild)
   else
-    FChildren.Insert(AIndex, AChild);
+    FChildren.Insert(AChild, AIndex);
 end;
 
 procedure TLKTreeNode<T>.RemoveChild(const AChild: TLKTreeNode<T>);
@@ -1535,7 +2305,7 @@ begin
         if AIndex < 0 then
           Parent.FChildren.Add(Self)
         else
-          Parent.FChildren.Insert(AIndex, Self);
+          Parent.FChildren.Insert(Self, AIndex);
       end;
     end else
     begin
