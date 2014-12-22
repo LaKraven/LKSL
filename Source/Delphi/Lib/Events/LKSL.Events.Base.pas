@@ -1251,17 +1251,12 @@ var
 begin
   AEvent.FDelta := ADelta;
   AEvent.FProcessedTime := AStartTime;
-//  FEventListenerGroups.Lock;
-//  try
   LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
   if LEventListenerGroup <> nil then
   begin
     if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
       LEventListenerGroup.ProcessEvent(AEvent);
   end;
-//  finally
-//    FEventListenerGroups.Unlock;
-//  end;
 end;
 
 procedure TLKEventThreadBaseWithListeners.QueueEvent(const AEvent: TLKEvent);
