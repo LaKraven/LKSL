@@ -253,6 +253,11 @@ LKSL.Generics.Collections.pas
 	30th November 2014:
 		- Prepared for Release
 
+LKSL.Math.Time.pas
+------------------
+	28th December 2014:
+		- Prepared for Release
+
 LKSL.Streamables.pas
 --------------------
 	15th December 2014:
