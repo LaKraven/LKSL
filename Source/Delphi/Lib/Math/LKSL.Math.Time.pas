@@ -406,52 +406,52 @@ end;
 
 function YoctosecondsToMilliseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 7);
+  Result := AYoctoseconds / IntPower(1000, 7);
 end;
 
 function YoctosecondsToSeconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 8);
+  Result := AYoctoseconds / IntPower(1000, 8);
 end;
 
 function YoctosecondsToKiloseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 9);
+  Result := AYoctoseconds / IntPower(1000, 9);
 end;
 
 function YoctosecondsToMegaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 10);
+  Result := AYoctoseconds / IntPower(1000, 10);
 end;
 
 function YoctosecondsToGigaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 11);
+  Result := AYoctoseconds / IntPower(1000, 11);
 end;
 
 function YoctosecondsToTeraseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 12);
+  Result := AYoctoseconds / IntPower(1000, 12);
 end;
 
 function YoctosecondsToPetaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 13);
+  Result := AYoctoseconds / IntPower(1000, 13);
 end;
 
 function YoctosecondsToExaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 14);
+  Result := AYoctoseconds / IntPower(1000, 14);
 end;
 
 function YoctosecondsToZettaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 15);
+  Result := AYoctoseconds / IntPower(1000, 15);
 end;
 
 function YoctosecondsToYottaseconds(const AYoctoseconds: LKFloat): LKFloat;
 begin
-  Result := AYoctoseconds / Power(1000, 16);
+  Result := AYoctoseconds / IntPower(1000, 16);
 end;
 
 // Zeptoseconds To ?
@@ -492,47 +492,47 @@ end;
 
 function ZeptosecondsToSeconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 7);
+  Result := AZeptoseconds / IntPower(1000, 7);
 end;
 
 function ZeptosecondsToKiloseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 8);
+  Result := AZeptoseconds / IntPower(1000, 8);
 end;
 
 function ZeptosecondsToMegaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 9);
+  Result := AZeptoseconds / IntPower(1000, 9);
 end;
 
 function ZeptosecondsToGigaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 10);
+  Result := AZeptoseconds / IntPower(1000, 10);
 end;
 
 function ZeptosecondsToTeraseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 11);
+  Result := AZeptoseconds / IntPower(1000, 11);
 end;
 
 function ZeptosecondsToPetaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 12);
+  Result := AZeptoseconds / IntPower(1000, 12);
 end;
 
 function ZeptosecondsToExaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 13);
+  Result := AZeptoseconds / IntPower(1000, 13);
 end;
 
 function ZeptosecondsToZettaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 14);
+  Result := AZeptoseconds / IntPower(1000, 14);
 end;
 
 function ZeptosecondsToYottaseconds(const AZeptoseconds: LKFloat): LKFloat;
 begin
-  Result := AZeptoseconds / Power(1000, 15);
+  Result := AZeptoseconds / IntPower(1000, 15);
 end;
 
 // Attoseconds To ?
@@ -578,42 +578,42 @@ end;
 
 function AttosecondsToKiloseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 7);
+  Result := AAttoseconds / IntPower(1000, 7);
 end;
 
 function AttosecondsToMegaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 8);
+  Result := AAttoseconds / IntPower(1000, 8);
 end;
 
 function AttosecondsToGigaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 9);
+  Result := AAttoseconds / IntPower(1000, 9);
 end;
 
 function AttosecondsToTeraseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 10);
+  Result := AAttoseconds / IntPower(1000, 10);
 end;
 
 function AttosecondsToPetaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 11);
+  Result := AAttoseconds / IntPower(1000, 11);
 end;
 
 function AttosecondsToExaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 12);
+  Result := AAttoseconds / IntPower(1000, 12);
 end;
 
 function AttosecondsToZettaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 13);
+  Result := AAttoseconds / IntPower(1000, 13);
 end;
 
 function AttosecondsToYottaseconds(const AAttoseconds: LKFloat): LKFloat;
 begin
-  Result := AAttoseconds / Power(1000, 14);
+  Result := AAttoseconds / IntPower(1000, 14);
 end;
 
 // Femtoseconds To ?
@@ -664,37 +664,37 @@ end;
 
 function FemtosecondsToMegaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 7);
+  Result := AFemtoseconds / IntPower(1000, 7);
 end;
 
 function FemtosecondsToGigaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 8);
+  Result := AFemtoseconds / IntPower(1000, 8);
 end;
 
 function FemtosecondsToTeraseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 9);
+  Result := AFemtoseconds / IntPower(1000, 9);
 end;
 
 function FemtosecondsToPetaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 10);
+  Result := AFemtoseconds / IntPower(1000, 10);
 end;
 
 function FemtosecondsToExaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 11);
+  Result := AFemtoseconds / IntPower(1000, 11);
 end;
 
 function FemtosecondsToZettaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 12);
+  Result := AFemtoseconds / IntPower(1000, 12);
 end;
 
 function FemtosecondsToYottaseconds(const AFemtoseconds: LKFloat): LKFloat;
 begin
-  Result := AFemtoseconds / Power(1000, 13);
+  Result := AFemtoseconds / IntPower(1000, 13);
 end;
 
 // Picoseconds To ?
@@ -750,32 +750,32 @@ end;
 
 function PicosecondsToGigaseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 7);
+  Result := APicoseconds / IntPower(1000, 7);
 end;
 
 function PicosecondsToTeraseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 8);
+  Result := APicoseconds / IntPower(1000, 8);
 end;
 
 function PicosecondsToPetaseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 9);
+  Result := APicoseconds / IntPower(1000, 9);
 end;
 
 function PicosecondsToExaseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 10);
+  Result := APicoseconds / IntPower(1000, 10);
 end;
 
 function PicosecondsToZettaseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 11);
+  Result := APicoseconds / IntPower(1000, 11);
 end;
 
 function PicosecondsToYottaseconds(const APicoseconds: LKFloat): LKFloat;
 begin
-  Result := APicoseconds / Power(1000, 12);
+  Result := APicoseconds / IntPower(1000, 12);
 end;
 
 // Nanoseconds To ?
@@ -836,27 +836,27 @@ end;
 
 function NanosecondsToTeraseconds(const ANanoseconds: LKFloat): LKFloat;
 begin
-  Result := ANanoseconds / Power(1000, 7);
+  Result := ANanoseconds / IntPower(1000, 7);
 end;
 
 function NanosecondsToPetaseconds(const ANanoseconds: LKFloat): LKFloat;
 begin
-  Result := ANanoseconds / Power(1000, 8);
+  Result := ANanoseconds / IntPower(1000, 8);
 end;
 
 function NanosecondsToExaseconds(const ANanoseconds: LKFloat): LKFloat;
 begin
-  Result := ANanoseconds / Power(1000, 9);
+  Result := ANanoseconds / IntPower(1000, 9);
 end;
 
 function NanosecondsToZettaseconds(const ANanoseconds: LKFloat): LKFloat;
 begin
-  Result := ANanoseconds / Power(1000, 10);
+  Result := ANanoseconds / IntPower(1000, 10);
 end;
 
 function NanosecondsToYottaseconds(const ANanoseconds: LKFloat): LKFloat;
 begin
-  Result := ANanoseconds / Power(1000, 11);
+  Result := ANanoseconds / IntPower(1000, 11);
 end;
 
 // Microseconds To ?
@@ -922,28 +922,28 @@ end;
 
 function MicrosecondsToPetaseconds(const AMicroseconds: LKFloat): LKFloat;
 begin
-  Result := AMicroseconds / Power(1000, 7);
+  Result := AMicroseconds / IntPower(1000, 7);
 end;
 
 function MicrosecondsToExaseconds(const AMicroseconds: LKFloat): LKFloat;
 begin
-  Result := AMicroseconds / Power(1000, 8);
+  Result := AMicroseconds / IntPower(1000, 8);
 end;
 
 function MicrosecondsToZettaseconds(const AMicroseconds: LKFloat): LKFloat;
 begin
-  Result := AMicroseconds / Power(1000, 9);
+  Result := AMicroseconds / IntPower(1000, 9);
 end;
 
 function MicrosecondsToYottaseconds(const AMicroseconds: LKFloat): LKFloat;
 begin
-  Result := AMicroseconds / Power(1000, 10);
+  Result := AMicroseconds / IntPower(1000, 10);
 end;
 
 // Milliseconds To ?
 function MillisecondsToYoctoseconds(const AMilliseconds: LKFloat): LKFloat;
 begin
-  Result := AMilliseconds * Power(1000, 7);
+  Result := AMilliseconds * IntPower(1000, 7);
 end;
 
 function MillisecondsToZeptoseconds(const AMilliseconds: LKFloat): LKFloat;
@@ -1008,28 +1008,28 @@ end;
 
 function MillisecondsToExaseconds(const AMilliseconds: LKFloat): LKFloat;
 begin
-  Result := AMilliseconds / Power(1000, 7);
+  Result := AMilliseconds / IntPower(1000, 7);
 end;
 
 function MillisecondsToZettaseconds(const AMilliseconds: LKFloat): LKFloat;
 begin
-  Result := AMilliseconds / Power(1000, 8);
+  Result := AMilliseconds / IntPower(1000, 8);
 end;
 
 function MillisecondsToYottaseconds(const AMilliseconds: LKFloat): LKFloat;
 begin
-  Result := AMilliseconds / Power(1000, 9);
+  Result := AMilliseconds / IntPower(1000, 9);
 end;
 
 // Seconds To ?
 function SecondsToYoctoseconds(const ASeconds: LKFloat): LKFloat;
 begin
-  Result := ASeconds * Power(1000, 8);
+  Result := ASeconds * IntPower(1000, 8);
 end;
 
 function SecondsToZeptoseconds(const ASeconds: LKFloat): LKFloat;
 begin
-  Result := ASeconds * Power(1000, 7);
+  Result := ASeconds * IntPower(1000, 7);
 end;
 
 function SecondsToAttoseconds(const ASeconds: LKFloat): LKFloat;
@@ -1094,28 +1094,28 @@ end;
 
 function SecondsToZettaseconds(const ASeconds: LKFloat): LKFloat;
 begin
-  Result := ASeconds / Power(1000, 7);
+  Result := ASeconds / IntPower(1000, 7);
 end;
 
 function SecondsToYottaseconds(const ASeconds: LKFloat): LKFloat;
 begin
-  Result := ASeconds / Power(1000, 8);
+  Result := ASeconds / IntPower(1000, 8);
 end;
 
      // Kiloseconds To ?
 function KilosecondsToYoctoseconds(const AKiloseconds: LKFloat): LKFloat;
 begin
-  Result := AKiloseconds * Power(1000, 9);
+  Result := AKiloseconds * IntPower(1000, 9);
 end;
 
 function KilosecondsToZeptoseconds(const AKiloseconds: LKFloat): LKFloat;
 begin
-  Result := AKiloseconds * Power(1000, 8);
+  Result := AKiloseconds * IntPower(1000, 8);
 end;
 
 function KilosecondsToAttoseconds(const AKiloseconds: LKFloat): LKFloat;
 begin
-  Result := AKiloseconds * Power(1000, 7);
+  Result := AKiloseconds * IntPower(1000, 7);
 end;
 
 function KilosecondsToFemtoseconds(const AKiloseconds: LKFloat): LKFloat;
@@ -1180,28 +1180,28 @@ end;
 
 function KilosecondsToYottaseconds(const AKiloseconds: LKFloat): LKFloat;
 begin
-  Result := AKiloseconds / Power(1000, 7);
+  Result := AKiloseconds / IntPower(1000, 7);
 end;
 
 // Megaseconds To ?
 function MegasecondsToYoctoseconds(const AMegaseconds: LKFloat): LKFloat;
 begin
-  Result := AMegaseconds * Power(1000, 10);
+  Result := AMegaseconds * IntPower(1000, 10);
 end;
 
 function MegasecondsToZeptoseconds(const AMegaseconds: LKFloat): LKFloat;
 begin
-  Result := AMegaseconds * Power(1000, 9);
+  Result := AMegaseconds * IntPower(1000, 9);
 end;
 
 function MegasecondsToAttoseconds(const AMegaseconds: LKFloat): LKFloat;
 begin
-  Result := AMegaseconds * Power(1000, 8);
+  Result := AMegaseconds * IntPower(1000, 8);
 end;
 
 function MegasecondsToFemtoseconds(const AMegaseconds: LKFloat): LKFloat;
 begin
-  Result := AMegaseconds * Power(1000, 7);
+  Result := AMegaseconds * IntPower(1000, 7);
 end;
 
 function MegasecondsToPicoseconds(const AMegaseconds: LKFloat): LKFloat;
@@ -1267,27 +1267,27 @@ end;
 // Gigaseconds To ?
 function GigasecondsToYoctoseconds(const AGigaseconds: LKFloat): LKFloat;
 begin
-  Result := AGigaseconds * Power(1000, 11);
+  Result := AGigaseconds * IntPower(1000, 11);
 end;
 
 function GigasecondsToZeptoseconds(const AGigaseconds: LKFloat): LKFloat;
 begin
-  Result := AGigaseconds * Power(1000, 10);
+  Result := AGigaseconds * IntPower(1000, 10);
 end;
 
 function GigasecondsToAttoseconds(const AGigaseconds: LKFloat): LKFloat;
 begin
-  Result := AGigaseconds * Power(1000, 9);
+  Result := AGigaseconds * IntPower(1000, 9);
 end;
 
 function GigasecondsToFemtoseconds(const AGigaseconds: LKFloat): LKFloat;
 begin
-  Result := AGigaseconds * Power(1000, 8);
+  Result := AGigaseconds * IntPower(1000, 8);
 end;
 
 function GigasecondsToPicoseconds(const AGigaseconds: LKFloat): LKFloat;
 begin
-  Result := AGigaseconds * Power(1000, 7);
+  Result := AGigaseconds * IntPower(1000, 7);
 end;
 
 function GigasecondsToNanoseconds(const AGigaseconds: LKFloat): LKFloat;
@@ -1348,32 +1348,32 @@ end;
 // Teraseconds To ?
 function TerasecondsToYoctoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 12);
+  Result := ATeraseconds * IntPower(1000, 12);
 end;
 
 function TerasecondsToZeptoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 11);
+  Result := ATeraseconds * IntPower(1000, 11);
 end;
 
 function TerasecondsToAttoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 10);
+  Result := ATeraseconds * IntPower(1000, 10);
 end;
 
 function TerasecondsToFemtoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 9);
+  Result := ATeraseconds * IntPower(1000, 9);
 end;
 
 function TerasecondsToPicoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 8);
+  Result := ATeraseconds * IntPower(1000, 8);
 end;
 
 function TerasecondsToNanoseconds(const ATeraseconds: LKFloat): LKFloat;
 begin
-  Result := ATeraseconds * Power(1000, 7);
+  Result := ATeraseconds * IntPower(1000, 7);
 end;
 
 function TerasecondsToMicroseconds(const ATeraseconds: LKFloat): LKFloat;
@@ -1429,37 +1429,37 @@ end;
 // Petaseconds To ?
 function PetasecondsToYoctoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 13);
+  Result := APetaseconds * IntPower(1000, 13);
 end;
 
 function PetasecondsToZeptoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 12);
+  Result := APetaseconds * IntPower(1000, 12);
 end;
 
 function PetasecondsToAttoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 11);
+  Result := APetaseconds * IntPower(1000, 11);
 end;
 
 function PetasecondsToFemtoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 10);
+  Result := APetaseconds * IntPower(1000, 10);
 end;
 
 function PetasecondsToPicoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 9);
+  Result := APetaseconds * IntPower(1000, 9);
 end;
 
 function PetasecondsToNanoseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 8);
+  Result := APetaseconds * IntPower(1000, 8);
 end;
 
 function PetasecondsToMicroseconds(const APetaseconds: LKFloat): LKFloat;
 begin
-  Result := APetaseconds * Power(1000, 7);
+  Result := APetaseconds * IntPower(1000, 7);
 end;
 
 function PetasecondsToMilliseconds(const APetaseconds: LKFloat): LKFloat;
@@ -1510,42 +1510,42 @@ end;
 // Exaseconds To ?
 function ExasecondsToYoctoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 14);
+  Result := AExaseconds * IntPower(1000, 14);
 end;
 
 function ExasecondsToZeptoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 13);
+  Result := AExaseconds * IntPower(1000, 13);
 end;
 
 function ExasecondsToAttoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 12);
+  Result := AExaseconds * IntPower(1000, 12);
 end;
 
 function ExasecondsToFemtoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 11);
+  Result := AExaseconds * IntPower(1000, 11);
 end;
 
 function ExasecondsToPicoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 10);
+  Result := AExaseconds * IntPower(1000, 10);
 end;
 
 function ExasecondsToNanoseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 9);
+  Result := AExaseconds * IntPower(1000, 9);
 end;
 
 function ExasecondsToMicroseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 8);
+  Result := AExaseconds * IntPower(1000, 8);
 end;
 
 function ExasecondsToMilliseconds(const AExaseconds: LKFloat): LKFloat;
 begin
-  Result := AExaseconds * Power(1000, 7);
+  Result := AExaseconds * IntPower(1000, 7);
 end;
 
 function ExasecondsToSeconds(const AExaseconds: LKFloat): LKFloat;
@@ -1591,47 +1591,47 @@ end;
 // Zettaseconds To ?
 function ZettasecondsToYoctoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 15);
+  Result := AZettaseconds * IntPower(1000, 15);
 end;
 
 function ZettasecondsToZeptoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 14);
+  Result := AZettaseconds * IntPower(1000, 14);
 end;
 
 function ZettasecondsToAttoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 13);
+  Result := AZettaseconds * IntPower(1000, 13);
 end;
 
 function ZettasecondsToFemtoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 12);
+  Result := AZettaseconds * IntPower(1000, 12);
 end;
 
 function ZettasecondsToPicoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 11);
+  Result := AZettaseconds * IntPower(1000, 11);
 end;
 
 function ZettasecondsToNanoseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 10);
+  Result := AZettaseconds * IntPower(1000, 10);
 end;
 
 function ZettasecondsToMicroseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 9);
+  Result := AZettaseconds * IntPower(1000, 9);
 end;
 
 function ZettasecondsToMilliseconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 8);
+  Result := AZettaseconds * IntPower(1000, 8);
 end;
 
 function ZettasecondsToSeconds(const AZettaseconds: LKFloat): LKFloat;
 begin
-  Result := AZettaseconds * Power(1000, 7);
+  Result := AZettaseconds * IntPower(1000, 7);
 end;
 
 function ZettasecondsToKiloseconds(const AZettaseconds: LKFloat): LKFloat;
@@ -1672,52 +1672,52 @@ end;
 // Yottaseconds To ?
 function YottasecondsToYoctoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 16);
+  Result := AYottaseconds * IntPower(1000, 16);
 end;
 
 function YottasecondsToZeptoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 15);
+  Result := AYottaseconds * IntPower(1000, 15);
 end;
 
 function YottasecondsToAttoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 14);
+  Result := AYottaseconds * IntPower(1000, 14);
 end;
 
 function YottasecondsToFemtoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 13);
+  Result := AYottaseconds * IntPower(1000, 13);
 end;
 
 function YottasecondsToPicoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 12);
+  Result := AYottaseconds * IntPower(1000, 12);
 end;
 
 function YottasecondsToNanoseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 11);
+  Result := AYottaseconds * IntPower(1000, 11);
 end;
 
 function YottasecondsToMicroseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 10);
+  Result := AYottaseconds * IntPower(1000, 10);
 end;
 
 function YottasecondsToMilliseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 9);
+  Result := AYottaseconds * IntPower(1000, 9);
 end;
 
 function YottasecondsToSeconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 8);
+  Result := AYottaseconds * IntPower(1000, 8);
 end;
 
 function YottasecondsToKiloseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
-  Result := AYottaseconds * Power(1000, 7);
+  Result := AYottaseconds * IntPower(1000, 7);
 end;
 
 function YottasecondsToMegaseconds(const AYottaseconds: LKFloat): LKFloat;
@@ -1748,78 +1748,6 @@ end;
 function YottasecondsToZettaseconds(const AYottaseconds: LKFloat): LKFloat;
 begin
   Result := AYottaseconds * 1000;
-end;
-
-procedure GetBestTimeValueUnit(const ATimeInSeconds: Double; var AValue: Double; var AUnit: String; const ALongNotation: Boolean = False; const ALargerThanSeconds: Boolean = True);
-const
-  LARGE_NOTATIONS: Array[0..7] of Array[Boolean] of String = (
-                                                               ('ks', 'Kilosecond'),
-                                                               ('Ms', 'Megasecond'),
-                                                               ('Gs', 'Gigasecond'),
-                                                               ('Ts', 'Terasecond'),
-                                                               ('Ps', 'Petasecond'),
-                                                               ('Es', 'Exasecond'),
-                                                               ('Zs', 'Zettasecond'),
-                                                               ('Ys', 'Yottasecond')
-                                                             );
-  SECOND_NOTATION: Array[Boolean] of String = ('s', 'Second');
-  SMALL_NOTATIONS: Array[0..7] of Array[Boolean] of String = (
-                                                               ('ms', 'Millisecond'),
-                                                               ('µs', 'Microsecond'),
-                                                               ('ns', 'Nanosecond'),
-                                                               ('ps', 'Picosecond'),
-                                                               ('fs', 'Femtosecond'),
-                                                               ('as', 'Attosecond'),
-                                                               ('zs', 'Zeptosecond'),
-                                                               ('ys', 'Yoctosecond')
-                                                             );
-var
-  I: Integer;
-  LValue: Double;
-begin
-  // Presume Seconds
-  AValue := ATimeInSeconds;
-  AUnit := SECOND_NOTATION[ALongNotation];
-
-  if ATimeInSeconds < 1 then // Times LOWER than 1 Second
-  begin
-    for I := Low(SMALL_NOTATIONS) to High(SMALL_NOTATIONS) do
-    begin
-
-      LValue := ATimeInSeconds * Power(1000, I + 1);
-      if LValue >= 1 then
-      begin
-        AValue := LValue;
-        AUnit := SMALL_NOTATIONS[I][ALongNotation];
-        Break;
-      end;
-    end;
-    if AValue = ATimeInSeconds then
-    begin
-      AValue := ATimeInSeconds * Power(1000, High(SMALL_NOTATIONS) + 1);
-      AUnit := SMALL_NOTATIONS[High(SMALL_NOTATIONS)][ALongNotation]
-    end;
-  end
-  else if (ATimeInSeconds > 999) and (ALargerThanSeconds) then // Times HIGHER than 0.99 Kiloseconds
-  begin
-    for I := Low(LARGE_NOTATIONS) to High(LARGE_NOTATIONS) do
-    begin
-      LValue := ATimeInSeconds / Power(1000, I + 1);
-      if LValue <= 999 then
-      begin
-        AValue := LValue;
-        AUnit := LARGE_NOTATIONS[I][ALongNotation];
-        Break;
-      end;
-    end;
-    if AValue = ATimeInSeconds then
-    begin
-      AValue := ATimeInSeconds / Power(1000, High(LARGE_NOTATIONS) + 1);
-      AUnit := LARGE_NOTATIONS[High(LARGE_NOTATIONS)][ALongNotation]
-    end;
-  end;
-  if (AValue >= 1) and (ALongNotation) then
-    AUnit := AUnit + 's';
 end;
 
 end.

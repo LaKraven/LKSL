@@ -256,6 +256,7 @@ LKSL.Generics.Collections.pas
 LKSL.Math.Time.pas
 ------------------
 	28th December 2014:
+		- Replaced usage of "Power()" with "IntPower()" because it's faster!
 		- Prepared for Release
 
 LKSL.Streamables.pas
