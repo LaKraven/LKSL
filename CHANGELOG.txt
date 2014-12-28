@@ -2,6 +2,11 @@ Search for a unit name to find its corresponding Changelog.
 
 LKSL.Common.Types.pas
 ---------------------
+	27th December 2014:
+		- Added LKTimeFloat...
+			- Defaults to Double
+			- Define LKSL_TIMEFLOAT_SINGLE sets LKTimeFloat to Single
+			- Define LKSL_TIMEFLOAT_EXTENDED sets LKTimeFloat to Double
 	15th December 2014:
 		- Added TLKObject
 	10th September 2014:
@@ -9,8 +14,17 @@ LKSL.Common.Types.pas
 	3rd September 2014:
 		- Prepared for Release
 
+LKSL.Common.Streams.pas
+-----------------------
+	27th December 2014:
+		- Prepared for Release
+
 LKSL.Events.Base.pas
 --------------------
+	27th December 2014:
+		- Modified all time values to use LKTimeFloat
+	23rd December 2014:
+		- Added Property TLKEvent.IsClone (read-only)
 	22nd December 2014:
 		- Event Scheduler (first stage) implemented and seems to be working!
 			- Call .Queue(<delay in seconds, Double-precision) to Schedule for the Queue
@@ -333,6 +347,8 @@ LKSL.Streams.Types.pas
 
 LKSL.Threads.Base.pas
 ---------------------
+	27th December 2014:
+		- Time units changed to use LKTimeFloat instead of Double
 	15th December 2014:
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:

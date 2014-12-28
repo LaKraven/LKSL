@@ -54,10 +54,11 @@ interface
 uses
   {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs;
+    System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
   {$ELSE}
-    Classes, SysUtils, Diagnostics, Math, SyncObjs;
+    Classes, SysUtils, Diagnostics, Math, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  LKSL.Common.Types;
 
   {$I LKSL_RTTI.inc}
 
@@ -82,52 +83,52 @@ type
   TLKThread = class abstract(TThread)
   private
     FLock: TCriticalSection;
-    FNextTickTime: Double;
+    FNextTickTime: LKTimeFloat;
     FThreadState: TLKThreadState;
-    FTickRate: Double; // The INSTANT Tick Rate (in "Ticks per Second")
-    FTickRateAverage: Double; // The AVERAGE Tick Rate (in "Ticks per Second")
-    FTickRateAverageOver: Double; // How much time (in seconds) the Average is calculated over
-    FTickRateDesired: Double; // The DESIRED rate at which you want the Thread to Tick (minimum)
-    FTickRateExtra: Double; // The number of extra ticks per second in excess of the DESIRED Tick Rate.
-    FTickRateExtraTime: Double; // The number of extra SECONDS available over the DESIRED Tick Rate.
-    FTickRateExtraAverage: Double; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
-    FTickRateExtraAverageTime: Double; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
-    FTickRateLimit: Double; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
+    FTickRate: LKTimeFloat; // The INSTANT Tick Rate (in "Ticks per Second")
+    FTickRateAverage: LKTimeFloat; // The AVERAGE Tick Rate (in "Ticks per Second")
+    FTickRateAverageOver: LKTimeFloat; // How much time (in seconds) the Average is calculated over
+    FTickRateDesired: LKTimeFloat; // The DESIRED rate at which you want the Thread to Tick (minimum)
+    FTickRateExtra: LKTimeFloat; // The number of extra ticks per second in excess of the DESIRED Tick Rate.
+    FTickRateExtraTime: LKTimeFloat; // The number of extra SECONDS available over the DESIRED Tick Rate.
+    FTickRateExtraAverage: LKTimeFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
+    FTickRateExtraAverageTime: LKTimeFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
+    FTickRateLimit: LKTimeFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FYieldAccumulatedTime: Boolean;
 
-    function GetNextTickTime: Double;
+    function GetNextTickTime: LKTimeFloat;
     function GetThreadState: TLKThreadState;
-    function GetTickRate: Double;
-    function GetTickRateAverage: Double;
-    function GetTickRateAverageOver: Double;
-    function GetTickRateDesired: Double;
-    function GetTickRateExtraTicks: Double;
-    function GetTickRateExtraTime: Double;
-    function GetTickRateExtraTicksAverage: Double;
-    function GetTickRateExtraTimeAverage: Double;
-    function GetTickRateLimit: Double;
+    function GetTickRate: LKTimeFloat;
+    function GetTickRateAverage: LKTimeFloat;
+    function GetTickRateAverageOver: LKTimeFloat;
+    function GetTickRateDesired: LKTimeFloat;
+    function GetTickRateExtraTicks: LKTimeFloat;
+    function GetTickRateExtraTime: LKTimeFloat;
+    function GetTickRateExtraTicksAverage: LKTimeFloat;
+    function GetTickRateExtraTimeAverage: LKTimeFloat;
+    function GetTickRateLimit: LKTimeFloat;
     function GetYieldAccumulatedTime: Boolean;
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
-    procedure SetTickRate(const ATickRate: Double); // Used internally!
-    procedure SetTickRateAverage(const ATickRateAverage: Double); // Used internally!
-    procedure SetTickRateAverageOver(const AAverageOver: Double);
-    procedure SetTickRateDesired(const ADesiredRate: Double);
-    procedure SetTickRateExtraTicks(const AExtraTime: Double); // Used internally!
-    procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: Double); // Used internally!
-    procedure SetTickRateLimit(const ATickRateLimit: Double);
+    procedure SetTickRate(const ATickRate: LKTimeFloat); // Used internally!
+    procedure SetTickRateAverage(const ATickRateAverage: LKTimeFloat); // Used internally!
+    procedure SetTickRateAverageOver(const AAverageOver: LKTimeFloat);
+    procedure SetTickRateDesired(const ADesiredRate: LKTimeFloat);
+    procedure SetTickRateExtraTicks(const AExtraTime: LKTimeFloat); // Used internally!
+    procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKTimeFloat); // Used internally!
+    procedure SetTickRateLimit(const ATickRateLimit: LKTimeFloat);
     procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
   protected
     // Override "GetDefaultTickRateLimit" if you want to set a default limit (the default is 0 [no limit])
-    function GetDefaultTickRateLimit: Double; virtual;
+    function GetDefaultTickRateLimit: LKTimeFloat; virtual;
     // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
-    function GetDefaultTickRateAverageOver: Double; virtual;
+    function GetDefaultTickRateAverageOver: LKTimeFloat; virtual;
     // Override "GetDefaultTickRateDesired" if you want to compute EXTRA Time between Ticks.
     // This Extra Time can be used during a Tick to selectively perform additional processing during a Tick.
     // One example in which this is useful is for graphics rendering, where Exta Time can be used for
     // post-processing computations.
     // Default = 0.00, which disables Extra Time Calculation
-    function GetDefaultTickRateDesired: Double; virtual;
+    function GetDefaultTickRateDesired: LKTimeFloat; virtual;
     // Override "GetDefaultYieldAccumulatedTime" if you DON'T want accumulated (excess) time to be yielded in a single block (Default = True)
     // False = Yield time in small chunks
     // True = Yield all accumulated time in a single block
@@ -135,7 +136,7 @@ type
     // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
     function GetInitialThreadState: TLKThreadState; virtual;
 
-    function CalculateExtraTime: Double;
+    function CalculateExtraTime: LKTimeFloat;
 
     // YOU MUST NOT override the TThread.Execute method in your descendants of TLKThread!!!!!!!!
     procedure Execute; override; final;
@@ -143,13 +144,13 @@ type
     // Override the "PreTick" procedure if your Thread needs to do something on EVERY cycle
     // NOTE: THIS METHOD IGNORES THE TICK RATE LIMIT!
     // "PreTick" is implemented by the Event Handler system (because the Event Queue needs to be processed regardless of the Tick Rate Limit)
-    procedure PreTick(const ADelta, AStartTime: Double); virtual;
+    procedure PreTick(const ADelta, AStartTime: LKTimeFloat); virtual;
 
     // Override the "Tick" procedure to implement your Thread's operational code.
     // ADelta = the time differential ("Delta") between the current Tick and the previous Tick
     // AStartTime = the Reference Time at which the current Tick began.
     // DON'T FORGET "INHERITED;" FIRST!!!!
-    procedure Tick(const ADelta, AStartTime: Double); virtual; abstract;
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); virtual; abstract;
   public
     // Override "Create" to initialize any custom Members and Starting Values (DON'T FORGET "INHERITED;" FIRST!)
     constructor Create; virtual;
@@ -172,29 +173,29 @@ type
     // (Public just in case you need to call it externally for some reason)
     procedure Unlock; inline;
 
-    property NextTickTime: Double read GetNextTickTime;
+    property NextTickTime: LKTimeFloat read GetNextTickTime;
     property ThreadState: TLKThreadState read GetThreadState write SetThreadState;
-    property TickRate: Double read GetTickRate;
-    property TickRateAverage: Double read GetTickRateAverage;
-    property TickRateAverageOver: Double read GetTickRateAverageOver write SetTickRateAverageOver;
-    property TickRateDesired: Double read GetTickRateDesired write SetTickRateDesired;
-    property TickRateExtraTicks: Double read GetTickRateExtraTicks;
-    property TickRateExtraTime: Double read GetTickRateExtraTime;
-    property TickRateExtraTicksAverage: Double read GetTickRateExtraTicksAverage;
-    property TickRateExtraTimeAverage: Double read GetTickRateExtraTimeAverage;
-    property TickRateLimit: Double read GetTickRateLimit write SetTickRateLimit;
+    property TickRate: LKTimeFloat read GetTickRate;
+    property TickRateAverage: LKTimeFloat read GetTickRateAverage;
+    property TickRateAverageOver: LKTimeFloat read GetTickRateAverageOver write SetTickRateAverageOver;
+    property TickRateDesired: LKTimeFloat read GetTickRateDesired write SetTickRateDesired;
+    property TickRateExtraTicks: LKTimeFloat read GetTickRateExtraTicks;
+    property TickRateExtraTime: LKTimeFloat read GetTickRateExtraTime;
+    property TickRateExtraTicksAverage: LKTimeFloat read GetTickRateExtraTicksAverage;
+    property TickRateExtraTimeAverage: LKTimeFloat read GetTickRateExtraTimeAverage;
+    property TickRateLimit: LKTimeFloat read GetTickRateLimit write SetTickRateLimit;
     property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
 
 // "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
-function GetReferenceTime: Double;
+function GetReferenceTime: LKTimeFloat;
 
 implementation
 
 var
   ReferenceWatch: TStopwatch;
 
-function GetReferenceTime: Double;
+function GetReferenceTime: LKTimeFloat;
 begin
   Result := TStopwatch.GetTimeStamp / TStopwatch.Frequency;
 end;
@@ -211,7 +212,7 @@ begin
   end;
 end;
 
-function TLKThread.CalculateExtraTime: Double;
+function TLKThread.CalculateExtraTime: LKTimeFloat;
 begin
   Result := NextTickTime - GetReferenceTime;
 end;
@@ -237,9 +238,9 @@ end;
 procedure TLKThread.Execute;
 var
   {$IFNDEF POSIX}LSleepTime: Integer;{$ENDIF}
-  LDelta, LCurrentTime: Double;
-  LTickRate, LTickRateLimit, LTickRateDesired, LTickRateAverage: Double;
-  LLastAverageCheckpoint, LNextAverageCheckpoint: Double;
+  LDelta, LCurrentTime: LKTimeFloat;
+  LTickRate, LTickRateLimit, LTickRateDesired, LTickRateAverage: LKTimeFloat;
+  LLastAverageCheckpoint, LNextAverageCheckpoint: LKTimeFloat;
   LAverageTicks: Integer;
 begin
   LCurrentTime := GetReferenceTime;
@@ -343,7 +344,7 @@ begin
   end;
 end;
 
-function TLKThread.GetDefaultTickRateLimit: Double;
+function TLKThread.GetDefaultTickRateLimit: LKTimeFloat;
 begin
   Result := 0.00;
 end;
@@ -353,12 +354,12 @@ begin
   Result := True;
 end;
 
-function TLKThread.GetDefaultTickRateAverageOver: Double;
+function TLKThread.GetDefaultTickRateAverageOver: LKTimeFloat;
 begin
   Result := 2.00;
 end;
 
-function TLKThread.GetDefaultTickRateDesired: Double;
+function TLKThread.GetDefaultTickRateDesired: LKTimeFloat;
 begin
   Result := 0.00;
 end;
@@ -368,7 +369,7 @@ begin
   Result := tsRunning;
 end;
 
-function TLKThread.GetNextTickTime: Double;
+function TLKThread.GetNextTickTime: LKTimeFloat;
 begin
   Lock;
   try
@@ -388,7 +389,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRate: Double;
+function TLKThread.GetTickRate: LKTimeFloat;
 begin
   Lock;
   try
@@ -398,7 +399,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateAverage: Double;
+function TLKThread.GetTickRateAverage: LKTimeFloat;
 begin
   Lock;
   try
@@ -408,7 +409,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateAverageOver: Double;
+function TLKThread.GetTickRateAverageOver: LKTimeFloat;
 begin
   Lock;
   try
@@ -418,7 +419,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateDesired: Double;
+function TLKThread.GetTickRateDesired: LKTimeFloat;
 begin
   Lock;
   try
@@ -428,7 +429,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateExtraTicks: Double;
+function TLKThread.GetTickRateExtraTicks: LKTimeFloat;
 begin
   Lock;
   try
@@ -438,7 +439,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateExtraTicksAverage: Double;
+function TLKThread.GetTickRateExtraTicksAverage: LKTimeFloat;
 begin
   Lock;
   try
@@ -448,7 +449,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateExtraTime: Double;
+function TLKThread.GetTickRateExtraTime: LKTimeFloat;
 begin
   Lock;
   try
@@ -458,7 +459,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateExtraTimeAverage: Double;
+function TLKThread.GetTickRateExtraTimeAverage: LKTimeFloat;
 begin
   Lock;
   try
@@ -468,7 +469,7 @@ begin
   end;
 end;
 
-function TLKThread.GetTickRateLimit: Double;
+function TLKThread.GetTickRateLimit: LKTimeFloat;
 begin
   Lock;
   try
@@ -500,7 +501,7 @@ begin
   FLock.Acquire;
 end;
 
-procedure TLKThread.PreTick(const ADelta, AStartTime: Double);
+procedure TLKThread.PreTick(const ADelta, AStartTime: LKTimeFloat);
 begin
   // Do nothing by default
 end;
@@ -515,7 +516,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRate(const ATickRate: Double);
+procedure TLKThread.SetTickRate(const ATickRate: LKTimeFloat);
 begin
   Lock;
   try
@@ -525,7 +526,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateAverage(const ATickRateAverage: Double);
+procedure TLKThread.SetTickRateAverage(const ATickRateAverage: LKTimeFloat);
 begin
   Lock;
   try
@@ -535,7 +536,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateAverageOver(const AAverageOver: Double);
+procedure TLKThread.SetTickRateAverageOver(const AAverageOver: LKTimeFloat);
 begin
   Lock;
   try
@@ -545,7 +546,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateDesired(const ADesiredRate: Double);
+procedure TLKThread.SetTickRateDesired(const ADesiredRate: LKTimeFloat);
 begin
   Lock;
   try
@@ -555,7 +556,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateExtraTicks(const AExtraTime: Double);
+procedure TLKThread.SetTickRateExtraTicks(const AExtraTime: LKTimeFloat);
 begin
   Lock;
   try
@@ -571,7 +572,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateExtraTicksAverage(const AExtraTimeAverage: Double);
+procedure TLKThread.SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKTimeFloat);
 begin
   Lock;
   try
@@ -587,7 +588,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetTickRateLimit(const ATickRateLimit: Double);
+procedure TLKThread.SetTickRateLimit(const ATickRateLimit: LKTimeFloat);
 begin
   Lock;
   try

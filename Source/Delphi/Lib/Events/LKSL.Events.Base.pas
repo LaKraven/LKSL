@@ -121,28 +121,31 @@ type
   private
     FAllowRecording: Boolean;
     FAllowTransmit: Boolean;
-    FCreatedTime: Double;
-    FDelta: Double;
+    FCreatedTime: LKTimeFloat;
+    FDelta: LKTimeFloat;
     FDispatchModes: TLKEventDispatchModes;
     FDispatchMethod: TLKEventDispatchMethod;
-    FDispatchTime: Double;
-    FExpiresAfter: Double;
+    FDispatchTime: LKTimeFloat;
+    FExpiresAfter: LKTimeFloat;
+    FIsClone: Boolean;
     FIsReplay: Boolean;
-    FProcessedTime: Double;
+    FProcessedTime: LKTimeFloat;
 
     function GetAllowRecording: Boolean;
     function GetAllowTransmit: Boolean;
-    function GetDelta: Double;
+    function GetDelta: LKTimeFloat;
     function GetDispatchMethod: TLKEventDispatchMethod;
-    function GetDispatchTime: Double;
-    function GetExpiresAfter: Double;
+    function GetDispatchTime: LKTimeFloat;
+    function GetExpiresAfter: LKTimeFloat;
+    function GetIsClone: Boolean;
     function GetIsReplay: Boolean;
-    function GetProcessedTime: Double;
-    function GetTimeSinceCreated: Double;
+    function GetProcessedTime: LKTimeFloat;
+    function GetTimeSinceCreated: LKTimeFloat;
+    function GetTimeSinceDispatched: LKTimeFloat;
 
     procedure SetAllowRecording(const AAllowRecording: Boolean);
     procedure SetAllowTransmit(const AAllowTransmit: Boolean);
-    procedure SetExpiresAfter(const AExpiresAfter: Double);
+    procedure SetExpiresAfter(const AExpiresAfter: LKTimeFloat);
     procedure SetIsReplay(const AIsReplay: Boolean);
   protected
     procedure ReadFromStream(const AStream: TStream); override; final;
@@ -168,7 +171,7 @@ type
     function GetDefaultAllowRecording: Boolean; virtual;
     // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
     // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.
-    function GetDefaultExpiresAfter: Double; virtual;
+    function GetDefaultExpiresAfter: LKTimeFloat; virtual;
     // Override "GetDefaultAllowTransmit" if you want the Event to be passed over to your Event Streaming
     // system. Your Event Transmission system should then decide where this Event should be Streamed to.
     // By default, it returns "False" indicating that this Event isn't intended to be Streamed to
@@ -184,21 +187,23 @@ type
     procedure Assign(AFromEvent: TPersistent); override; final;
 
     procedure Queue; overload; // Add this Event to the Event Queue
-    procedure Queue(const ASecondsFromNow: Double); overload;
+    procedure Queue(const ASecondsFromNow: LKTimeFloat); overload;
     procedure Stack; overload; // Add this Event to the Event Stack
-    procedure Stack(const ASecondsFromNow: Double); overload;
+    procedure Stack(const ASecondsFromNow: LKTimeFloat); overload;
     procedure TransmitOnly; // DOESN'T Queue OR Stack the Event for internal processing, just Transmits it
 
     property AllowRecording: Boolean read GetAllowRecording write SetAllowRecording;
     property AllowTransmit: Boolean read GetAllowTransmit write SetAllowTransmit;
-    property CreatedTime: Double read FCreatedTime;
-    property Delta: Double read GetDelta;
+    property CreatedTime: LKTimeFloat read FCreatedTime;
+    property Delta: LKTimeFloat read GetDelta;
     property DispatchMethod: TLKEventDispatchMethod read GetDispatchMethod;
-    property DispatchTime: Double read GetDispatchTime;
-    property ExpiresAfter: Double read GetExpiresAfter write SetExpiresAfter;
+    property DispatchTime: LKTimeFloat read GetDispatchTime;
+    property ExpiresAfter: LKTimeFloat read GetExpiresAfter write SetExpiresAfter;
+    property IsClone: Boolean read GetIsClone;
     property IsReplay: Boolean read GetIsReplay write SetIsReplay;
-    property ProcessedTime: Double read GetProcessedTime;
-    property TimeSinceCreated: Double read GetTimeSinceCreated;
+    property ProcessedTime: LKTimeFloat read GetProcessedTime;
+    property TimeSinceCreated: LKTimeFloat read GetTimeSinceCreated;
+    property TimeSinceDispatched: LKTimeFloat read GetTimeSinceDispatched;
   end;
 
   {
@@ -210,19 +215,19 @@ type
   private
     FCallUIThread: Boolean;
     FEventThread: TLKEventThread;
-    FExpireAfter: Double;
+    FExpireAfter: LKTimeFloat;
     FIndex: Integer;
-    FLastEventTime: Double;
+    FLastEventTime: LKTimeFloat;
     FNewestEventOnly: Boolean;
 
     function GetCallUIThread: Boolean;
     function GetEventThread: TLKEventThread;
-    function GetExpireAfter: Double;
-    function GetLastEventTime: Double;
+    function GetExpireAfter: LKTimeFloat;
+    function GetLastEventTime: LKTimeFloat;
     function GetNewestEventOnly: Boolean;
 
     procedure SetCallUIThread(const ACallUIThread: Boolean);
-    procedure SetExpireAfter(const AExpireAfter: Double);
+    procedure SetExpireAfter(const AExpireAfter: LKTimeFloat);
     procedure SetNewestEventOnly(const ANewestOnly: Boolean);
   protected
     // Override "GetDefaultCallUIThread" if you want your Listener to Synchronize its execution with the UI Thread
@@ -230,7 +235,7 @@ type
     function GetDefaultCallUIThread: Boolean; virtual;
     // Override "GetDefaultExpireAfter" if you want your Listener to disregard Events that are older than the specified time (in Seconds)
     // By default, Listeners do not care how old an Event is ("0.00" = No Expiry)
-    function GetDefaultExpireAfter: Double; virtual;
+    function GetDefaultExpireAfter: LKTimeFloat; virtual;
     // Override "GetDefaultNewestEventOnly" if you want your Listener to only process Events that are NEWER than the last processed Event.
     // By default, Listeners do not care about the order in which Events are executed (it returns "False")
     function GetDefaultNewestEventOnly: Boolean; virtual;
@@ -256,8 +261,8 @@ type
 
     property CallUIThread: Boolean read GetCallUIThread write SetCallUIThread;
     property EventThread: TLKEventThread read GetEventThread;
-    property ExpireAfter: Double read GetExpireAfter write SetExpireAfter;
-    property LastEventTime: Double read GetLastEventTime;
+    property ExpireAfter: LKTimeFloat read GetExpireAfter write SetExpireAfter;
+    property LastEventTime: LKTimeFloat read GetLastEventTime;
     property NewestEventOnly: Boolean read GetNewestEventOnly write SetNewestEventOnly;
   end;
 
@@ -319,7 +324,7 @@ type
   protected
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
-    procedure ProcessEvents(const ADelta, AStartTime: Double); virtual; abstract;
+    procedure ProcessEvents(const ADelta, AStartTime: LKTimeFloat); virtual; abstract;
     function GetInitialThreadState: TLKThreadState; override;
   public
     constructor Create; override;
@@ -343,13 +348,13 @@ type
     function GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
     // "ProcessListeners" iterates every Listener paired with the Thread and (assuming
     // the parameters match) executes the Event Call on the Listeners (respectively)
-    procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
+    procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: LKTimeFloat);
 
     // Methods to register and unregister Event Listeners
     procedure RegisterListener(const AListener: TLKEventListener);
     function UnregisterListener(const AListener: TLKEventListener): Integer;
   protected
-    procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
+    procedure ProcessEvents(const ADelta, AStartTime: LKTimeFloat); override; final;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -368,8 +373,8 @@ type
     FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
-    procedure PreTick(const ADelta, AStartTime: Double); override;
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure PreTick(const ADelta, AStartTime: LKTimeFloat); override;
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -426,8 +431,8 @@ type
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override;
     function GetInitialThreadState: TLKThreadState; override;
-    procedure PreTick(const ADelta, AStartTime: Double); override;
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure PreTick(const ADelta, AStartTime: LKTimeFloat); override;
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -454,8 +459,8 @@ type
     FIndex: Integer;
   protected
     function GetInitialThreadState: TLKThreadState; override;
-    procedure ProcessEvents(const ADelta, AStartTime: Double); override; final;
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure ProcessEvents(const ADelta, AStartTime: LKTimeFloat); override; final;
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); override;
     //
     procedure RecordEvent(const AEvent: TLKEvent); virtual; abstract;
   public
@@ -472,6 +477,7 @@ type
 implementation
 
 uses
+  LKSL.Common.Streams,
   LKSL.Streams.System,
   LKSL.Events.Streams;
 
@@ -492,7 +498,7 @@ type
   TLKEventProcessor = class(TLKEventThreadBaseWithListeners)
   protected
     function GetInitialThreadState: TLKThreadState; override;
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); override;
   public
     procedure QueueEvent(const AEvent: TLKEvent); override;
     procedure StackEvent(const AEvent: TLKEvent); override;
@@ -505,13 +511,13 @@ type
   TLKEventScheduled = class(TLKPersistent)
   private
     FEvent: TLKEvent;
-    FScheduledFor: Double;
+    FScheduledFor: LKTimeFloat;
   public
-    constructor Create(const AEvent: TLKEvent; const AScheduledFor: Double); reintroduce;
+    constructor Create(const AEvent: TLKEvent; const AScheduledFor: LKTimeFloat); reintroduce;
     destructor Destroy; override;
 
     property Event: TLKEvent read FEvent;
-    property ScheduledFor: Double read FScheduledFor;
+    property ScheduledFor: LKTimeFloat read FScheduledFor;
   end;
 
   {
@@ -537,16 +543,16 @@ type
   TLKEventScheduler = class(TLKThread)
   private
     FEvents: TLKEventScheduleList;
-    FNextEventTime: Double;
+    FNextEventTime: LKTimeFloat;
   protected
     function GetInitialThreadState: TLKThreadState; override;
-    procedure ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
+    procedure Tick(const ADelta, AStartTime: LKTimeFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure QueueEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
-    procedure StackEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+    procedure QueueEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
+    procedure StackEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
   end;
 
   {
@@ -604,6 +610,7 @@ begin
     TLKEvent(AFromEvent).Lock;
     Lock;
     try
+      FIsClone := True;
       FAllowRecording := TLKEvent(AFromEvent).FAllowRecording;
       FAllowTransmit := TLKEvent(AFromEvent).FAllowTransmit;
       FCreatedTime := TLKEvent(AFromEvent).CreatedTime;
@@ -625,6 +632,7 @@ end;
 constructor TLKEvent.Create;
 begin
   inherited;
+  FIsClone := False;
   FCreatedTime := GetReferenceTime;
   FAllowRecording := GetDefaultAllowRecording;
   FDelta := 0.00;
@@ -657,7 +665,7 @@ begin
   Result := True;
 end;
 
-function TLKEvent.GetDefaultExpiresAfter: Double;
+function TLKEvent.GetDefaultExpiresAfter: LKTimeFloat;
 begin
   Result := 0.00;
 end;
@@ -667,7 +675,7 @@ begin
   Result := False; // We don't intend to transmit Event Types to other process by default
 end;
 
-function TLKEvent.GetDelta: Double;
+function TLKEvent.GetDelta: LKTimeFloat;
 begin
   Lock;
   try
@@ -677,7 +685,7 @@ begin
   end;
 end;
 
-function TLKEvent.GetDispatchTime: Double;
+function TLKEvent.GetDispatchTime: LKTimeFloat;
 begin
   Lock;
   try
@@ -687,11 +695,21 @@ begin
   end;
 end;
 
-function TLKEvent.GetExpiresAfter: Double;
+function TLKEvent.GetExpiresAfter: LKTimeFloat;
 begin
   Lock;
   try
     Result := FExpiresAfter;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEvent.GetIsClone: Boolean;
+begin
+  Lock;
+  try
+    Result := FIsClone;
   finally
     Unlock;
   end;
@@ -717,7 +735,7 @@ begin
   end;
 end;
 
-function TLKEvent.GetProcessedTime: Double;
+function TLKEvent.GetProcessedTime: LKTimeFloat;
 begin
   Lock;
   try
@@ -727,9 +745,24 @@ begin
   end;
 end;
 
-function TLKEvent.GetTimeSinceCreated: Double;
+function TLKEvent.GetTimeSinceCreated: LKTimeFloat;
 begin
-  Result := GetReferenceTime - FCreatedTime;
+  Lock;
+  try
+    Result := GetReferenceTime - FCreatedTime;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEvent.GetTimeSinceDispatched: LKTimeFloat;
+begin
+  Lock;
+  try
+    Result := GetReferenceTime - FDispatchTime;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKEvent.GetAllowTransmit: Boolean;
@@ -748,11 +781,11 @@ begin
   StreamInsertBoolean(AStream, FAllowTransmit); // Insert FAllowTransmit
   StreamInsertBoolean(AStream, FAllowRecording); // Insert FAllowRecording
   StreamInsertBoolean(AStream, FIsReplay); // Insert FIsReplay
-  StreamInsertDouble(AStream, FDelta); // Insert FDelta
-  StreamInsertDouble(AStream, FDispatchTime); // Insert FDispatchTime
-  StreamInsertDouble(AStream, FExpiresAfter); // Insert FExpiresAfter
+  StreamInsertLKTimeFloat(AStream, FDelta); // Insert FDelta
+  StreamInsertLKTimeFloat(AStream, FDispatchTime); // Insert FDispatchTime
+  StreamInsertLKTimeFloat(AStream, FExpiresAfter); // Insert FExpiresAfter
   StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Insert FDispatchMethod
-  StreamInsertDouble(AStream, FProcessedTime); // Insert FProcessedTime
+  StreamInsertLKTimeFloat(AStream, FProcessedTime); // Insert FProcessedTime
   InsertEventIntoStream(AStream);
 end;
 
@@ -764,7 +797,7 @@ begin
     Events.StackEvent(Self);
 end;
 
-procedure TLKEvent.Queue(const ASecondsFromNow: Double);
+procedure TLKEvent.Queue(const ASecondsFromNow: LKTimeFloat);
 begin
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow)
@@ -778,11 +811,11 @@ begin
   FAllowTransmit := StreamReadBoolean(AStream); // Read FAllowTransmit
   FAllowRecording := StreamReadBoolean(AStream); // read FAllowRecording
   FIsReplay := StreamReadBoolean(AStream); // read FIsReplay
-  FDelta := StreamReadDouble(AStream); // Read FDelta
-  FDispatchTime := StreamReadDouble(AStream); // Read FDispatchTime
-  FExpiresAfter := StreamReadDouble(AStream); // Read FExpiresAfter
+  FDelta := StreamReadLKTimeFloat(AStream); // Read FDelta
+  FDispatchTime := StreamReadLKTimeFloat(AStream); // Read FDispatchTime
+  FExpiresAfter := StreamReadLKTimeFloat(AStream); // Read FExpiresAfter
   FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream); // Read FDispatchMethod
-  FProcessedTime := StreamReadDouble(AStream); // Read FProcessedTime
+  FProcessedTime := StreamReadLKTimeFloat(AStream); // Read FProcessedTime
   ReadEventFromStream(AStream);
 end;
 
@@ -796,7 +829,7 @@ begin
   end;
 end;
 
-procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: Double);
+procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: LKTimeFloat);
 begin
   Lock;
   try
@@ -834,7 +867,7 @@ begin
     Events.QueueEvent(Self);
 end;
 
-procedure TLKEvent.Stack(const ASecondsFromNow: Double);
+procedure TLKEvent.Stack(const ASecondsFromNow: LKTimeFloat);
 begin
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow)
@@ -853,11 +886,11 @@ begin
   StreamWriteBoolean(AStream, FAllowTransmit); // Append FAllowTransmit
   StreamWriteBoolean(AStream, FAllowRecording); // Append FAllowRecording
   StreamWriteBoolean(AStream, FIsReplay); // Append FIsReplay
-  StreamWriteDouble(AStream, FDelta); // Append FDelta
-  StreamWriteDouble(AStream, FDispatchTime); // Append FDispatchTime
-  StreamWriteDouble(AStream, FExpiresAfter); // Append FExpiresAfter
+  StreamWriteLKTimeFloat(AStream, FDelta); // Append FDelta
+  StreamWriteLKTimeFloat(AStream, FDispatchTime); // Append FDispatchTime
+  StreamWriteLKTimeFloat(AStream, FExpiresAfter); // Append FExpiresAfter
   StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Append FDispatchMethod
-  StreamWriteDouble(AStream, FProcessedTime); // Append FProcessedTime
+  StreamWriteLKTimeFloat(AStream, FProcessedTime); // Append FProcessedTime
   WriteEventToStream(AStream);
 end;
 
@@ -916,7 +949,7 @@ begin
   Result := False;
 end;
 
-function TLKEventListener.GetDefaultExpireAfter: Double;
+function TLKEventListener.GetDefaultExpireAfter: LKTimeFloat;
 begin
   Result := 0.00;
 end;
@@ -936,7 +969,7 @@ begin
   end;
 end;
 
-function TLKEventListener.GetExpireAfter: Double;
+function TLKEventListener.GetExpireAfter: LKTimeFloat;
 begin
   Lock;
   try
@@ -946,7 +979,7 @@ begin
   end;
 end;
 
-function TLKEventListener.GetLastEventTime: Double;
+function TLKEventListener.GetLastEventTime: LKTimeFloat;
 begin
   Lock;
   try
@@ -976,7 +1009,7 @@ begin
   end;
 end;
 
-procedure TLKEventListener.SetExpireAfter(const AExpireAfter: Double);
+procedure TLKEventListener.SetExpireAfter(const AExpireAfter: LKTimeFloat);
 begin
   Lock;
   try
@@ -1215,7 +1248,7 @@ begin
   end;
 end;
 
-procedure TLKEventThreadBaseWithListeners.ProcessEvents(const ADelta, AStartTime: Double);
+procedure TLKEventThreadBaseWithListeners.ProcessEvents(const ADelta, AStartTime: LKTimeFloat);
 var
   I, LStart, LEnd: Integer;
 begin
@@ -1245,7 +1278,7 @@ begin
   end;
 end;
 
-procedure TLKEventThreadBaseWithListeners.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: Double);
+procedure TLKEventThreadBaseWithListeners.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: LKTimeFloat);
 var
   LEventListenerGroup: TLKEventListenerGroup;
 begin
@@ -1328,12 +1361,12 @@ begin
   Result := False;
 end;
 
-procedure TLKEventThread.PreTick(const ADelta, AStartTime: Double);
+procedure TLKEventThread.PreTick(const ADelta, AStartTime: LKTimeFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
 end;
 
-procedure TLKEventThread.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventThread.Tick(const ADelta, AStartTime: LKTimeFloat);
 begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
@@ -1461,7 +1494,7 @@ begin
   Result := tsPaused;
 end;
 
-procedure TLKEventTransmitterManager.PreTick(const ADelta, AStartTime: Double);
+procedure TLKEventTransmitterManager.PreTick(const ADelta, AStartTime: LKTimeFloat);
 var
   I: Integer;
   LEventStream: TMemoryStream;
@@ -1488,7 +1521,7 @@ begin
   end;
 end;
 
-procedure TLKEventTransmitterManager.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventTransmitterManager.Tick(const ADelta, AStartTime: LKTimeFloat);
 begin
   // Do Nothing (Yet, but probably never will either)
 end;
@@ -1513,7 +1546,7 @@ begin
   Result := tsPaused;
 end;
 
-procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: Double);
+procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: LKTimeFloat);
 var
   I, LStart, LEnd: Integer;
 begin
@@ -1567,7 +1600,7 @@ begin
     Events.RegisterRecorder(Self);
 end;
 
-procedure TLKEventRecorder.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventRecorder.Tick(const ADelta, AStartTime: LKTimeFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
   if (FStack.Count = 0) and (FQueue.Count = 0) then
@@ -1599,7 +1632,7 @@ begin
   ThreadState := tsRunning;
 end;
 
-procedure TLKEventProcessor.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventProcessor.Tick(const ADelta, AStartTime: LKTimeFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
   if (FStack.Count = 0) and (FQueue.Count = 0) then
@@ -1608,7 +1641,7 @@ end;
 
 { TLKEventScheduled }
 
-constructor TLKEventScheduled.Create(const AEvent: TLKEvent; const AScheduledFor: Double);
+constructor TLKEventScheduled.Create(const AEvent: TLKEvent; const AScheduledFor: LKTimeFloat);
 begin
   inherited Create;
   FEvent := AEvent;
@@ -1681,13 +1714,13 @@ begin
   Result := tsPaused;
 end;
 
-procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+procedure TLKEventScheduler.QueueEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
 begin
   AEvent.FDispatchMethod := edQueue;
   ScheduleEvent(AEvent, AScheduleFor);
 end;
 
-procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
 var
   LSchedule: TLKEventScheduled;
 begin
@@ -1696,13 +1729,13 @@ begin
   ThreadState := tsRunning;
 end;
 
-procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent; const AScheduleFor: Double);
+procedure TLKEventScheduler.StackEvent(const AEvent: TLKEvent; const AScheduleFor: LKTimeFloat);
 begin
   AEvent.FDispatchMethod := edStack;
   ScheduleEvent(AEvent, AScheduleFor);
 end;
 
-procedure TLKEventScheduler.Tick(const ADelta, AStartTime: Double);
+procedure TLKEventScheduler.Tick(const ADelta, AStartTime: LKTimeFloat);
 begin
     if FEvents.Count > 0 then
     begin
