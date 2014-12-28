@@ -121,15 +121,15 @@ type
     procedure Unlock; inline;
   end;
 
-  {$IFDEF LKSL_TIMEFLOAT_SINGLE}
-    LKTimeFloat = Single;
+  {$IFDEF LKSL_FLOAT_SINGLE}
+    LKFloat = Single;
   {$ELSE}
-    {$IFDEF LKSL_TIMEFLOAT_EXTENDED}
-      LKTimeFloat = Extended;
+    {$IFDEF LKSL_FLOAT_EXTENDED}
+      LKFloat = Extended;
     {$ELSE}
-      LKTimeFloat = Double; // This is our default
-    {$ENDIF LKSL_TIMEFLOAT_DOUBLE}
-  {$ENDIF LKSL_TIMEFLOAT_SINGLE}
+      LKFloat = Double; // This is our default
+    {$ENDIF LKSL_FLOAT_DOUBLE}
+  {$ENDIF LKSL_FLOAT_SINGLE}
 
 implementation
 

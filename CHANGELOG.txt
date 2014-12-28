@@ -3,10 +3,10 @@ Search for a unit name to find its corresponding Changelog.
 LKSL.Common.Types.pas
 ---------------------
 	27th December 2014:
-		- Added LKTimeFloat...
+		- Added LKFloat...
 			- Defaults to Double
-			- Define LKSL_TIMEFLOAT_SINGLE sets LKTimeFloat to Single
-			- Define LKSL_TIMEFLOAT_EXTENDED sets LKTimeFloat to Double
+			- Define LKSL_FLOAT_SINGLE sets LKFloat to Single
+			- Define LKSL_FLOAT_EXTENDED sets LKFloat to Double
 	15th December 2014:
 		- Added TLKObject
 	10th September 2014:
@@ -22,7 +22,7 @@ LKSL.Common.Streams.pas
 LKSL.Events.Base.pas
 --------------------
 	27th December 2014:
-		- Modified all time values to use LKTimeFloat
+		- Modified all time values to use LKFloat
 	23rd December 2014:
 		- Added Property TLKEvent.IsClone (read-only)
 	22nd December 2014:
@@ -353,7 +353,7 @@ LKSL.Streams.Types.pas
 LKSL.Threads.Base.pas
 ---------------------
 	27th December 2014:
-		- Time units changed to use LKTimeFloat instead of Double
+		- Time units changed to use LKFloat instead of Double
 	15th December 2014:
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
 	10th December 2014:
