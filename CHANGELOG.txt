@@ -255,6 +255,13 @@ LKSL.Generics.Collections.pas
 
 LKSL.Math.Time.pas
 ------------------
+	29th December 2014:
+		- Added function "TimeUnitConvert" which takes an input value, an input unit type, and converts it to the
+		  output unit type, returning the converted value.
+		- Added "<TimeUnit>ToBest" procedures (and overloaded functions returning record TLKTime)
+			- These allow your program to automatically determine the best Time Unit (and its value) for a given value and unit.
+			- SecondstoBest(0.95, LValue, LUnit); would result in LValue (a variable of type LKFloat) becoming 950, and LUnit
+			  (a variable of type TLKTimeUnit) becoming tuMillisecond.
 	28th December 2014:
 		- Replaced usage of "Power()" with "IntPower()" because it's faster!
 		- Prepared for Release
