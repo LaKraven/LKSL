@@ -1032,26 +1032,26 @@ end;
 procedure TLKListBase<T>.QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
 var
   I, J: Integer;
-  pivot, temp: T;
+  LPivot, LTemp: T;
 begin
   if (Length(FArray) = 0) or ((AHigh - ALow) <= 0) then
     Exit;
   repeat
     I := ALow;
     J := AHigh;
-    pivot := FArray[ALow + (AHigh - ALow) shr 1];
+    LPivot := FArray[ALow + (AHigh - ALow) shr 1];
     repeat
       case ASortOrder of
         soAscending: begin
-                       while ASortHandler.ALessThanB(FArray[I], Pivot) do
+                       while ASortHandler.ALessThanB(FArray[I], LPivot) do
                          Inc(I);
-                       while ASortHAndler.AGreaterThanB(FArray[J], Pivot) do
+                       while ASortHAndler.AGreaterThanB(FArray[J], LPivot) do
                          Dec(J);
                      end;
         soDescending: begin
-                       while ASortHandler.ALessThanB(Pivot, FArray[I]) do
+                       while ASortHandler.ALessThanB(LPivot, FArray[I]) do
                          Inc(I);
-                       while ASortHAndler.AGreaterThanB(Pivot, FArray[J]) do
+                       while ASortHAndler.AGreaterThanB(LPivot, FArray[J]) do
                          Dec(J);
                       end;
       end;
@@ -1059,9 +1059,9 @@ begin
       begin
         if I <> J then
         begin
-          temp := FArray[I];
+          LTemp := FArray[I];
           FArray[I] := FArray[J];
-          FArray[J] := temp;
+          FArray[J] := LTemp;
         end;
         Inc(I);
         Dec(J);
