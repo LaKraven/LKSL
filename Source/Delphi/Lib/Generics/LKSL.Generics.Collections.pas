@@ -1,6 +1,6 @@
 {
   LaKraven Studios Standard Library [LKSL]
-  Copyright (c) 2014, LaKraven Studios Ltd, All Rights Reserved
+  Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved
 
   Original Source Location: https://github.com/LaKraven/LKSL
 
@@ -67,15 +67,16 @@ type
   TLKObjectList<T: class> = class;
   TLKSortedListBase<T> = class;
   TLKSortedList<T> = class;
-//  TLKSortedListUnique<T, TKey> = class;
   TLKSortedObjectList<T: class> = class;
   TLKCenteredList<T> = class;
   TLKCenteredObjectList<T: class> = class;
   TLKTreeNode<T> = class;
   TLKTreeObjectNode<T: class> = class;
+  TLKSortHandler<T> = class;
 
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
+  TLKListSortOrder = (soAscending, soDescending);
 
   { Exception Types }
   ELKGenericCollectionsException = class(ELKException);
@@ -178,6 +179,8 @@ type
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
     // Insert
     procedure InsertActual(const AItem: T; const AIndex: Integer); inline;
+    // Quick Sort
+    procedure QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
     // Validation Methods
     function ValidateIndexInRange(const AIndex: Integer): Boolean;
     function ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
@@ -208,6 +211,8 @@ type
     function Contains(const AItem: T): Boolean; overload; inline;
     function Contains(const AItems: TArrayOfT): Boolean; overload;
     function IndexOf(const AItem: T): Integer;
+
+    procedure Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
 
     property Capacity: Integer read GetCapacity;
     property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
@@ -272,28 +277,6 @@ type
     function Add(const AItem: T): Integer; reintroduce; overload;
   end;
 
-  {
-    TLKSortedListUnique<T, TKey>
-      - An implementation of TLKSortedListBase<T> requiring UNIQUE Sorted Keys
-      - Abstract methods need to be implemented on type-specific descendants
-  }
-{
-  TLKSortedListUnique<T, TKey> = class abstract(TLKSortedListBase<T>)
-  private type
-    TKeyValueMap = class(TLKDictionary<TKey, T>);
-  private
-    FMap: TKeyValueMap;
-    function GetItemByKey(const AKey: TKey): T;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    function Add(const AKey: TKey; const AItem: T): Integer; reintroduce;
-    procedure Delete(const AIndex: Integer); override;
-
-    property Items[const AKey: TKey]: T read GetItemByKey; default;
-  end;
-}
   {
     TLKSortedObjectList<T: class; TKey>
       - A version of TLKSortedList<T> capable of handling ownership of Class Instances
@@ -551,6 +534,21 @@ type
     destructor Destroy; override;
 
     property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
+  end;
+
+  {
+    TLKSortHandler<T>
+      - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
+      - Allows you to provide Dynamic Sorting Behaviour at Runtime!
+  }
+  TLKSortHandler<T> = class abstract(TLKPersistent)
+  public
+    // Parity Checks
+    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
   end;
 
 const
@@ -1031,6 +1029,50 @@ begin
   System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
 end;
 
+procedure TLKListBase<T>.QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
+var
+  I, J: Integer;
+  pivot, temp: T;
+begin
+  if (Length(FArray) = 0) or ((AHigh - ALow) <= 0) then
+    Exit;
+  repeat
+    I := ALow;
+    J := AHigh;
+    pivot := FArray[ALow + (AHigh - ALow) shr 1];
+    repeat
+      case ASortOrder of
+        soAscending: begin
+                       while ASortHandler.ALessThanB(FArray[I], Pivot) do
+                         Inc(I);
+                       while ASortHAndler.AGreaterThanB(FArray[J], Pivot) do
+                         Dec(J);
+                     end;
+        soDescending: begin
+                       while ASortHandler.ALessThanB(Pivot, FArray[I]) do
+                         Inc(I);
+                       while ASortHAndler.AGreaterThanB(Pivot, FArray[J]) do
+                         Dec(J);
+                      end;
+      end;
+      if I <= J then
+      begin
+        if I <> J then
+        begin
+          temp := FArray[I];
+          FArray[I] := FArray[J];
+          FArray[J] := temp;
+        end;
+        Inc(I);
+        Dec(J);
+      end;
+    until I > J;
+    if ALow < J then
+      QuickSort(ASortHandler, ALow, J, ASortOrder);
+    ALow := I;
+  until I >= AHigh;
+end;
+
 procedure TLKListBase<T>.Remove(const AItems: TArrayOfT);
 var
   I: Integer;
@@ -1075,6 +1117,11 @@ begin
   finally
     Unlock;
   end;
+end;
+
+procedure TLKListBase<T>.Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+begin
+  QuickSort(ASortHandler, 0, FCount - 1, ASortOrder);
 end;
 
 function TLKListBase<T>.ValidateIndexInRange(const AIndex: Integer): Boolean;
@@ -1228,55 +1275,6 @@ begin
   end;
 end;
 
-{ TLKSortedListUnique<T, TKey> }
-{
-function TLKSortedListUnique<T, TKey>.Add(const AKey: TKey; const AItem: T): Integer;
-begin
-  Result := -1;
-  Lock;
-  try
-    // Check if this Key exists in the Map
-    if FMap.ContainsKey(AKey) then
-      raise ELKGenericCollectionsKeyAlreadyExists.Create('Key Already In Use!')
-    else
-    begin
-      CheckCapacity(FCount + 1); // Ensure there's room for the new item
-      FMap.Add(AKey, AItem); // Add the new item to the Map
-      Result := GetSortedPosition(AItem);
-    end;
-  finally
-    Unlock;
-  end;
-end;
-
-constructor TLKSortedListUnique<T, TKey>.Create;
-begin
-  inherited;
-  FMap := TKeyValueMap.Create;
-end;
-
-procedure TLKSortedListUnique<T, TKey>.Delete(const AIndex: Integer);
-begin
-
-  inherited;
-end;
-
-destructor TLKSortedListUnique<T, TKey>.Destroy;
-begin
-  FMap.Free;
-  inherited;
-end;
-
-function TLKSortedListUnique<T, TKey>.GetItemByKey(const AKey: TKey): T;
-begin
-  Lock;
-  try
-    FMap.TryGetValue(AKey, Result);
-  finally
-    Unlock;
-  end;
-end;
-}
 { TLKSortedObjectList<T> }
 
 procedure TLKSortedObjectList<T>.Clear(const ACompact: Boolean);

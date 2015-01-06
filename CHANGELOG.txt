@@ -204,6 +204,11 @@ LKSL.Events.Streams.pas
 
 LKSL.Generics.Collections.pas
 -----------------------------
+	6th January 2015:
+		- Added (Public) TLKList<T>.Sort which allows you to sort a List passing a TLKSortHandler<T> instance to handle sort criteria.
+		  Also supports both Ascending and Descending sort ordering.
+		- Added Enum "TLKListSortOrder", which has values soAscending and soDescending respectively
+		- Added Abstract Class TLKSortHandler<T> for use with TLKList<T>.Sort
 	22nd December 2014:
 		- Added TLKListBase<T> (ABSTRACT class)
 			- Contains common members and functionality for Generic Lists (NOT including TLKCenteredList<T>, which works very differently)
