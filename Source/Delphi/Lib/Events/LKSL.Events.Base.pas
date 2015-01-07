@@ -69,6 +69,7 @@ uses
 type
   { Forward Declarations }
   TLKEvent = class;
+  TLKEventSimple = class;
   TLKEventListener = class;
   TLKEventListenerGroup = class;
   TLKEventThreadBase = class;
@@ -204,6 +205,19 @@ type
     property ProcessedTime: LKFloat read GetProcessedTime;
     property TimeSinceCreated: LKFloat read GetTimeSinceCreated;
     property TimeSinceDispatched: LKFloat read GetTimeSinceDispatched;
+  end;
+
+  {
+    TLKEventSimple
+      - A stripped-down version of TLKEvent which doesn't support Member Data of any kind
+      - Meant to be used solely as a "Trigger Event"
+  }
+  TLKEventSimple = class abstract(TLKEvent)
+  protected
+    procedure Clone(const AFromEvent: TLKEvent); override;
+    procedure ReadEventFromStream(const AStream: TStream); override;
+    procedure InsertEventIntoStream(const AStream: TStream); override;
+    procedure WriteEventToStream(const AStream: TStream); override;
   end;
 
   {
@@ -892,6 +906,28 @@ begin
   StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Append FDispatchMethod
   StreamWriteLKFloat(AStream, FProcessedTime); // Append FProcessedTime
   WriteEventToStream(AStream);
+end;
+
+{ TLKEventSimple }
+
+procedure TLKEventSimple.Clone(const AFromEvent: TLKEvent);
+begin
+  // Do Nothing
+end;
+
+procedure TLKEventSimple.InsertEventIntoStream(const AStream: TStream);
+begin
+  // Do Nothing
+end;
+
+procedure TLKEventSimple.ReadEventFromStream(const AStream: TStream);
+begin
+  // Do Nothing
+end;
+
+procedure TLKEventSimple.WriteEventToStream(const AStream: TStream);
+begin
+  // Do Nothing
 end;
 
 { TLKEventListener }

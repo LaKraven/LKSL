@@ -21,6 +21,8 @@ LKSL.Common.Streams.pas
 
 LKSL.Events.Base.pas
 --------------------
+	7th January 2015:
+		- Added "TLKEventSimple" (A cut-down version of TLKEvent which doesn't support custom data)
 	27th December 2014:
 		- Modified all time values to use LKFloat
 	23rd December 2014:
