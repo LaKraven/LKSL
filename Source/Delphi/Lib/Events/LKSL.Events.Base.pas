@@ -75,8 +75,8 @@ type
   TLKEventThreadBase = class;
   TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
+  TLKEventThreadPool = class;
   TLKEventTransmitterBase = class;
-  TLKEventTransmitterManager = class;
   TLKEventReceiverBase = class;
   TLKEventRecorder = class;
 
@@ -395,6 +395,32 @@ type
   end;
 
   {
+    TLKEventThreadPooled
+      - Essentially the same as TLKEventThread except it is created by a TLKEventThreadPool descendant
+  }
+  TLKEventThreadPooled = class abstract(TLKEventThreadBaseWithListeners)
+  private
+    FIndex: Integer; // This Thread's position in the Event Thread Pool's "EventThread" Array
+  protected
+    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
+    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
+  public
+    constructor Create(const AEventThreadPool: TLKEventThreadPool); reintroduce;
+    destructor Destroy; override;
+  end;
+
+  {
+    TLKEventThreadPool
+      - Manages and maintains a collection of TLKEventThreadPooled descendants of the nominated Type
+      - Balances the Event Load between the collection of Event Threads
+      -
+  }
+  TLKEventThreadPool = class abstract(TLKEventThreadBase)
+
+  end;
+
+  {
     TLKEventTransmitterBase
       - Abstract Base Class for Event Transmitters
       - Populate the virtual/abstract methods with the code necessary to send Events to whatever process
@@ -427,31 +453,6 @@ type
     procedure TransmitEvent(const AEvent: TLKEvent; const AEventStream: TMemoryStream); virtual; abstract;
 
     property UseEventTypeList: Boolean read GetUseEventTypeList write SetUseEventTypeList;
-  end;
-
-  {
-    TLKEventTransmitterManager
-      - Manages one or more Event Transmitters
-      - Events are Queued for Transmission (allows the internal Event Handler to continue processing
-        Events)
-  }
-  TLKEventTransmitterManager = class(TLKThread)
-  private
-    FTransmitters: TLKEventTransmitterList;
-    FEvents: TLKEventList;
-
-    procedure AddTransmitter(const ATransmitter: TLKEventTransmitterBase);
-    procedure DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
-  protected
-    function GetDefaultYieldAccumulatedTime: Boolean; override;
-    function GetInitialThreadState: TLKThreadState; override;
-    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
-    procedure Tick(const ADelta, AStartTime: LKFloat); override;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    procedure AddEvent(const AEvent: TLKEvent);
   end;
 
   {
@@ -503,6 +504,7 @@ type
   TLKEventScheduled = class;
   TLKEventScheduleList = class;
   TLKEventScheduler = class;
+  TLKEventTransmitterManager = class;
   TLKEventEngine = class;
 
   {
@@ -569,6 +571,30 @@ type
     procedure StackEvent(const AEvent: TLKEvent; const AScheduleFor: LKFloat);
   end;
 
+  {
+    TLKEventTransmitterManager
+      - Manages one or more Event Transmitters
+      - Events are Queued for Transmission (allows the internal Event Handler to continue processing
+        Events)
+  }
+  TLKEventTransmitterManager = class(TLKThread)
+  private
+    FTransmitters: TLKEventTransmitterList;
+    FEvents: TLKEventList;
+
+    procedure AddTransmitter(const ATransmitter: TLKEventTransmitterBase);
+    procedure DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
+  protected
+    function GetDefaultYieldAccumulatedTime: Boolean; override;
+    function GetInitialThreadState: TLKThreadState; override;
+    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure AddEvent(const AEvent: TLKEvent);
+  end;
   {
     TLKEventEngine
       - Heart and soul of the Event Engine.
@@ -1403,6 +1429,37 @@ begin
 end;
 
 procedure TLKEventThread.Tick(const ADelta, AStartTime: LKFloat);
+begin
+  // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
+end;
+
+{ TLKEventThreadPooled }
+
+constructor TLKEventThreadPooled.Create(const AEventThreadPool: TLKEventThreadPool);
+begin
+  inherited Create;
+  { TODO -oSimon -cEvent Engine : Register with Event Thread Pool }
+end;
+
+destructor TLKEventThreadPooled.Destroy;
+begin
+{ TODO -oSimon -cEvent Engine : Unregister with Event Thread Pool }
+  inherited;
+end;
+
+function TLKEventThreadPooled.GetDefaultYieldAccumulatedTime: Boolean;
+begin
+  // We must NOT yield all Accumulated Time on Event-enabled Threads.
+  // Doing so would prevent the Event Queue being processed
+  Result := False;
+end;
+
+procedure TLKEventThreadPooled.PreTick(const ADelta, AStartTime: LKFloat);
+begin
+  ProcessEvents(ADelta, AStartTime);
+end;
+
+procedure TLKEventThreadPooled.Tick(const ADelta, AStartTime: LKFloat);
 begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
