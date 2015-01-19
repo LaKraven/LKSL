@@ -72,6 +72,7 @@ type
   TLKEventThreadBase = class;
   TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
+  TLKEventThreadPooled = class;
   TLKEventThreadPool = class;
   TLKEventTransmitterBase = class;
   TLKEventReceiverBase = class;
@@ -103,14 +104,19 @@ type
   TLKEventListenerType = class of TLKEventListener;
   ///  <summary><c>Class Reference of <see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/></c></summary>
   TLKEventStreamableType = class of TLKEventStreamable;
+  TLKEventThreadPooledType = class of TLKEventThreadPooled;
 
   { Generics Lists Types }
+  TLKEventTypeList = TLKList<TLKEventType>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> instances.</c></summary>
   TLKEventList = TLKObjectList<TLKEvent>; // Used for in-order Lists of Events (such as in the Recorder)
   ///  <summary><c>A List of </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Base|TLKEventListener"/><c> instances.</c></summary>
   TLKEventListenerList = TLKList<TLKEventListener>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Base|TLKEventThread"/><c> instances.</c></summary>
   TLKEventThreadList = TLKList<TLKEventThread>;
+  TLKEventThreadList = TLKList<TLKEventThread>;
+  TLKEventThreadPooledList = TLKList<TLKEventThreadPooled>;
+  TLKEventTransmitterList = TLKList<TLKEventTransmitterBase>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventRecorder" cref="LKSL.Events.Base|TLKEventRecorder"/><c> instances.</c></summary>
   TLKEventRecorderList = TLKList<TLKEventRecorder>;
 
@@ -325,7 +331,7 @@ type
   end;
 
   {
-    TLKEventListener
+    TLKEventListener<T: TLKEvent>
       - A Generic version of the original TLKEventListener
       - Eliminates some replication of boilerplate code.
       - Contributed by Uwe Raab
@@ -520,6 +526,23 @@ type
       -
   }
   TLKEventThreadPool = class abstract(TLKEventThreadBase)
+  private
+    FEventThreadPooledType: TLKEventThreadPooledType;
+    FPooledEventThreads: TLKEventThreadPooledList;
+  protected
+    function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
+  public
+    constructor Create; overload; override;
+    constructor Create(const AInstanceLimit: Integer); reintroduce; overload;
+    destructor Destroy; override;
+  end;
+
+  {
+    TLKEventThreadPool<T: TLKEventThreadPooled>
+      - A Generic version of TLKEventThreadPool
+      - Eliminates the replication of boilerplate code.
+  }
+  TLKEventThreadPool<T: TLKEventThreadPooled> = class(TLKEventThreadPool)
 
   end;
 
@@ -2170,6 +2193,25 @@ procedure TLKEventEngine.UnregisterRecorder(const ARecorder: TLKEventRecorder);
 begin
   FRecorders.Delete(ARecorder.FIndex);
   ARecorder.FIndex := -1;
+end;
+
+{ TLKEventThreadPool }
+
+constructor TLKEventThreadPool.Create;
+begin
+  Create(TThread.ProcessorCount);
+end;
+
+constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
+begin
+  inherited Create;
+  FPooledEventThreads := TLKEventThreadPooledList.Create;
+end;
+
+destructor TLKEventThreadPool.Destroy;
+begin
+  FPooledEventThreads.Free;
+  inherited;
 end;
 
 initialization
