@@ -304,7 +304,7 @@ type
     constructor Create(const AOnEvent: TEventCallback); reintroduce; overload;
     constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback); reintroduce; overload;
     procedure EventCall(const AEvent: TLKEvent); override;
-    function GetEventType: TLKEventType; override;
+    function GetEventType: TLKEventType; override; final;
     property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
   end;
 
@@ -423,12 +423,12 @@ type
   private
     FEventThreadPooledType: TLKEventThreadPooledType;
     FPooledEventThreads: TLKEventThreadPooledList;
-  protected
-    function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
   public
     constructor Create; overload; override;
     constructor Create(const AInstanceLimit: Integer); reintroduce; overload;
     destructor Destroy; override;
+
+    function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
   end;
 
   {
@@ -437,7 +437,8 @@ type
       - Eliminates the replication of boilerplate code.
   }
   TLKEventThreadPool<T: TLKEventThreadPooled> = class(TLKEventThreadPool)
-
+  public
+    function GetEventThreadPooledType: TLKEventThreadPooledType; override; final;
   end;
 
   {
@@ -1484,6 +1485,32 @@ begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
 
+{ TLKEventThreadPool }
+
+constructor TLKEventThreadPool.Create;
+begin
+  Create(TThread.ProcessorCount);
+end;
+
+constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
+begin
+  inherited Create;
+  FPooledEventThreads := TLKEventThreadPooledList.Create;
+end;
+
+destructor TLKEventThreadPool.Destroy;
+begin
+  FPooledEventThreads.Free;
+  inherited;
+end;
+
+{ TLKEventThreadPool<T> }
+
+function TLKEventThreadPool<T>.GetEventThreadPooledType: TLKEventThreadPooledType;
+begin
+  Result := T;
+end;
+
 { TLKEventTransmitterBase }
 
 function TLKEventTransmitterBase.AcceptEvent(const AEvent: TLKEvent): Boolean;
@@ -2008,25 +2035,6 @@ procedure TLKEventEngine.UnregisterRecorder(const ARecorder: TLKEventRecorder);
 begin
   FRecorders.Delete(ARecorder.FIndex);
   ARecorder.FIndex := -1;
-end;
-
-{ TLKEventThreadPool }
-
-constructor TLKEventThreadPool.Create;
-begin
-  Create(TThread.ProcessorCount);
-end;
-
-constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
-begin
-  inherited Create;
-  FPooledEventThreads := TLKEventThreadPooledList.Create;
-end;
-
-destructor TLKEventThreadPool.Destroy;
-begin
-  FPooledEventThreads.Free;
-  inherited;
 end;
 
 initialization
