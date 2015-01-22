@@ -82,12 +82,20 @@ type
   public
     procedure DeleteValue<T>; overload;
     procedure DeleteValue<T>(const APosition: Int64); overload;
+    procedure DeleteArray<T>; overload;
+    procedure DeleteArray<T>(const APosition: Int64); overload;
     procedure InsertValue<T>(const AValue: T); overload;
     procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
+    procedure InsertArray<T>(const AValues: Array of T); overload;
+    procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
     function ReadValue<T>: T; overload;
     function ReadValue<T>(const APosition: Int64): T; overload;
+    function ReadArray<T>: TArray<T>; overload;
+    function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
     procedure WriteValue<T>(const AValue: T); overload;
     procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
+    procedure WriteArray<T>(const AValues: TArray<T>); overload;
+    procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
   end;
 {$ENDIF}
 
@@ -1632,6 +1640,16 @@ end;
     StreamManager.Delete<T>(Self, APosition);
   end;
 
+  procedure TLKStreamHelper.DeleteArray<T>;
+  begin
+    StreamManager.DeleteArray<T>(Self);
+  end;
+
+  procedure TLKStreamHelper.DeleteArray<T>(const APosition: Int64);
+  begin
+    StreamManager.DeleteArray<T>(Self, APosition);
+  end;
+
   procedure TLKStreamHelper.InsertValue<T>(const AValue: T);
   begin
     StreamManager.Insert<T>(Self, AValue);
@@ -1640,6 +1658,16 @@ end;
   procedure TLKStreamHelper.InsertValue<T>(const AValue: T; const APosition: Int64);
   begin
     StreamManager.Insert<T>(Self, AValue, APosition);
+  end;
+
+  procedure TLKStreamHelper.InsertArray<T>(const AValues: Array of T);
+  begin
+    StreamManager.InsertArray<T>(Self, AValues);
+  end;
+
+  procedure TLKStreamHelper.InsertArray<T>(const AValues: Array of T; const APosition: Int64);
+  begin
+    StreamManager.InsertArray<T>(Self, AValues, APosition);
   end;
 
   function TLKStreamHelper.ReadValue<T>: T;
@@ -1652,6 +1680,16 @@ end;
     Result := StreamManager.Read<T>(Self, APosition);
   end;
 
+  function TLKStreamHelper.ReadArray<T>: TArray<T>;
+  begin
+    Result := StreamManager.ReadArray<T>(Self);
+  end;
+
+  function TLKStreamHelper.ReadArray<T>(const APosition: Int64): TArray<T>;
+  begin
+    Result := StreamManager.ReadArray<T>(Self, APosition);
+  end;
+
   procedure TLKStreamHelper.WriteValue<T>(const AValue: T);
   begin
     StreamManager.Write<T>(Self, AValue);
@@ -1660,6 +1698,16 @@ end;
   procedure TLKStreamHelper.WriteValue<T>(const AValue: T; const APosition: Int64);
   begin
     StreamManager.Write<T>(Self, AValue, APosition);
+  end;
+
+  procedure TLKStreamHelper.WriteArray<T>(const AValues: TArray<T>);
+  begin
+    StreamManager.WriteArray<T>(Self, AValues);
+  end;
+
+  procedure TLKStreamHelper.WriteArray<T>(const AValues: TArray<T>; const APosition: Int64);
+  begin
+    StreamManager.WriteArray<T>(Self, AValues, APosition);
   end;
 
 {$ENDIF LKSL_USE_HELPERS}

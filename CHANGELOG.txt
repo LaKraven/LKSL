@@ -341,6 +341,7 @@ LKSL.Streams.System.pas
 			class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
 			class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
 			class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
+		- Added DeleteArray, InsertArray, ReadArray, and WriteArray methods to TLKStreamHelper
 
 	15th December 2014:
 		- Added RTTI Suppression (define LKSL_NO_RTTI in your project to disable RTTI for LKSL Units)
