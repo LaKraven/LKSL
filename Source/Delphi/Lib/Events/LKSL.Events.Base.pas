@@ -144,26 +144,27 @@ type
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
     procedure SetIsReplay(const AIsReplay: Boolean);
   protected
-    // You MUST override "Clone"
-    // (Remembering to type-cast "AFromEvent" to your Event Type) populate your Event Type's properties.
+    ///  <summary><c>Populates the referenced Instance with the values of AFromEvent</c></summary>
+    ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
+    ///  <comments><c>MUST be overriden in descendant classes</c></comments>
     procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
-    // Override "GetDefaultAllowRecording" if you want to PREVENT your Event from being recorded for replay.
-    // You can also set individual Event Instances to Allow or Disallow recording by setting the
-    // "AllowRecording" property to True (will record) or False (won't record)
-    // Default = True
-    // CRITICAL: If your Event Type contains a Pointer or Reference, you must NOT let it be recorded!
+    ///  <summary><c>Defines the default Recording Permission state.</c></summary>
+    ///  <returns><c>True = Allow Recording</c> Default = True</returns>
+    ///  <comments><c>Override if you wish to default to False</c></comments>
+    ///  <remarks><c>Recording can only work if a TLKEventStreamHandler exists to describe an implementing TLKEvent Type</c></remarks>
     function GetDefaultAllowRecording: Boolean; virtual;
-    // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
-    // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.
+    ///  <summary><c>Defines the default Expiration Time.</c></summary>
+    ///  <returns><c>Expiration Time in Seconds (Default = 0.00)</c></returns>
+    ///  <comments><c>Override if you want the Event Type to expire after a period of time by default.</c></comments>
     function GetDefaultExpiresAfter: LKFloat; virtual;
-    // Override "GetDefaultAllowTransmit" if you want the Event to be passed over to your Event Streaming
-    // system. Your Event Transmission system should then decide where this Event should be Streamed to.
-    // By default, it returns "False" indicating that this Event isn't intended to be Streamed to
-    // another process.
+    ///  <summary><c>Defines the default Transmit Permission state.</c></summary>
+    ///  <returns><c>True = Allow Transmit</c> Default = False</returns>
+    ///  <comments><c>Override if you wish to default to True</c></comments>
+    ///  <remarks><c>Transmission can only work if a TLKEventStreamHandler exists to describe an implementing TLKEvent Type</c></remarks>    ///
     function GetDefaultAllowTransmit: Boolean; virtual;
-    // Override "GetDispatchModes" if you want the Event to restrict the way your Event Type is dispatched.
-    // Available mode switches are: edmQueue, edmStack, edmThreads.
-    // Default = [edmQueue, edmStack, edmThreads]
+    ///  <summary><c>Defines the default allowable Dispatch Modes for the Event.</c></summary>
+    ///  <returns><c>A Set containing one or more of: edmQueue, edmStack, edmThreads</c> Default = [edmQueue, edmStack, edmThreads]</returns>
+    ///  <comments><c></c></comments>
     function GetDispatchModes: TLKEventDispatchModes; virtual;
   public
     constructor Create; override;
