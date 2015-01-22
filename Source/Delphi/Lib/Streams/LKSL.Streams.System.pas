@@ -61,12 +61,20 @@ type
   public
     class procedure Delete<T>(const AStream: TStream); overload; inline;
     class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+    class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
+    class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
     class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
     class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+    class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
+    class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
     class function Read<T>(const AStream: TStream): T; overload; inline;
     class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
+    class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
+    class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
     class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
     class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+    class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
+    class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
   end;
 
 {$IFDEF LKSL_USE_HELPERS}
@@ -1513,6 +1521,25 @@ begin
   StreamClearSpace(AStream, APosition, SizeOf(T));
 end;
 
+class procedure StreamManager.DeleteArray<T>(const AStream: TStream);
+var
+  LStartPos: Int64;
+  LLength, I: Integer;
+begin
+  LStartPos := AStream.Position;
+  LLength := Read<Integer>(AStream);
+  AStream.Position := LStartPos;
+  Delete<Integer>(AStream);
+  for I := 0 to LLength - 1 do
+    Delete<T>(AStream);
+end;
+
+class procedure StreamManager.DeleteArray<T>(const AStream: TStream; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  DeleteArray<T>(AStream);
+end;
+
 class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T);
 begin
   Insert<T>(AStream, AValue, AStream.Position);
@@ -1522,6 +1549,21 @@ class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T;
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(T));
   AStream.Write(AValue, SizeOf(T));
+end;
+
+class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  InsertArray<T>(AStream, AValues);
+end;
+
+class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T);
+var
+  I: Integer;
+begin
+  Insert<Integer>(AStream, Length(AValues)); // Prefix Array Length
+  for I := Low(AValues) to High(AValues) do // Insert Values in Sequence
+    Insert<T>(AStream, AValues[I]);
 end;
 
 class function StreamManager.Read<T>(const AStream: TStream): T;
@@ -1535,6 +1577,22 @@ begin
   AStream.Read(Result, SizeOf(T));
 end;
 
+class function StreamManager.ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>;
+begin
+  AStream.Position := APosition;
+  Result := ReadArray<T>(AStream);
+end;
+
+class function StreamManager.ReadArray<T>(const AStream: TStream): TArray<T>;
+var
+  LLength, I: Integer;
+begin
+  LLength := StreamManager.Read<Integer>(AStream);
+  SetLength(Result, LLength);
+  for I := 0 to LLength - 1 do
+    Result[I] := StreamManager.Read<T>(AStream);
+end;
+
 class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T);
 begin
   Write<T>(AStream, AValue, AStream.Size);
@@ -1544,6 +1602,21 @@ class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T; 
 begin
   AStream.Position := APosition;
   AStream.Write(AValue, SizeOf(T));
+end;
+
+class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>);
+var
+  I: Integer;
+begin
+  Write<Integer>(AStream, Length(AValues)); // Prefix Array Length
+  for I := Low(AValues) to High(AValues) do // Write Values in Sequence
+    Write<T>(AStream, AValues[I]);
+end;
+
+class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  WriteArray<T>(AStream, AValues);
 end;
 
 {$IFDEF LKSL_USE_HELPERS}
