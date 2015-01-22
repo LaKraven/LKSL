@@ -146,7 +146,7 @@ type
   protected
     // You MUST override "Clone"
     // (Remembering to type-cast "AFromEvent" to your Event Type) populate your Event Type's properties.
-    procedure Clone(const AFromEvent: TLKEvent); overload; virtual; abstract;
+    procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
     // Override "GetDefaultAllowRecording" if you want to PREVENT your Event from being recorded for replay.
     // You can also set individual Event Instances to Allow or Disallow recording by setting the
     // "AllowRecording" property to True (will record) or False (won't record)
