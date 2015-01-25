@@ -118,10 +118,10 @@ type
     // Creates a BLANK instance of your Streamable
     constructor Create; override;
     // Creates a POPULATED instance of your Streamable from a Stream
-    constructor CreateFromStream(const AStream: TStream); overload;
+    constructor CreateFromStream(const AStream: TStream); overload; virtual;
     constructor CreateFromStream(const AStream: TStream; const APosition: Int64); overload;
     // Creates a POPULATED instance of your Streamable from a File
-    constructor CreateFromFile(const AFileName: String);
+    constructor CreateFromFile(const AFileName: String); virtual;
     // "GetBlockSize" returns the Block Size for a given Streamable from within a given Stream.
     // It does this without
     // You MUST provide a UNIQUE GUID String identifier for ALL Streamable Types
@@ -229,6 +229,8 @@ type
   end;
 
 var
+  /// <summary><c>Global Streamable Types Manager</c></summary>
+  /// <description><c>For Registering Streamable Types, and retreiving the correct Streamable Type from a given Stream or GUID.</c></description>
   Streamables: TLKStreamables;
 
 implementation
