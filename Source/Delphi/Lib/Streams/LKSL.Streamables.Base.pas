@@ -114,6 +114,8 @@ type
     // "WriteToStream" writes an instance of your Streamable Type to the END of the given Stream.
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
     procedure WriteToStream(const AStream: TStream); virtual; abstract;
+    class procedure OnRegistration; virtual;
+    class procedure OnUnregistration; virtual;
   public
     // Creates a BLANK instance of your Streamable
     constructor Create; override;
@@ -322,6 +324,20 @@ procedure TLKStreamable.LoadFromStream(const AStream: TStream; const APosition: 
 begin
   AStream.Position := APosition;
   LoadFromStream(AStream);
+end;
+
+class procedure TLKStreamable.OnRegistration;
+begin
+  // Do Nothing!
+  // Your descendant Streamable Type may need to do something when it's being Registered
+  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Base.pas
+end;
+
+class procedure TLKStreamable.OnUnregistration;
+begin
+  // Do Nothing!
+  // Your descendant Streamable Type may need to do something when it's being Unregistered
+  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Base.pas
 end;
 
 procedure TLKStreamable.LoadFromStream(const AStream: TStream);
@@ -600,8 +616,10 @@ begin
   Lock;
   try
     if not (FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID)) then
-      FStreamableTypes.Add(AStreamableType.GetTypeGUID, AStreamableType)
-    else
+    begin
+      FStreamableTypes.Add(AStreamableType.GetTypeGUID, AStreamableType);
+      AStreamableType.OnRegistration;
+    end else
       raise ELKStreamableTypeAlreadyRegistered.CreateFmt('A Streamable Type with the GUID "%s" is already registered', [GUIDToString(AStreamableType.GetTypeGUID)]);
   finally
     Unlock;
@@ -630,8 +648,10 @@ begin
   Lock;
   try
     if FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID) then
-      FStreamableTypes.Remove(AStreamableType.GetTypeGUID)
-    else
+    begin
+      FStreamableTypes.Remove(AStreamableType.GetTypeGUID);
+      AStreamableType.OnUnregistration;
+    end else
       raise ELKStreamableTypeNotRegistered.CreateFmt('A Streamable Type with the GUID "%s" has not yet been registered, therefore cannot be unregistered!', [GUIDToString(AStreamableType.GetTypeGUID)]);
   finally
     Unlock;
