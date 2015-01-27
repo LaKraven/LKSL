@@ -213,20 +213,21 @@ type
     function GetEventType: TLKEventType; inline;
 
     ///  <summary><c>Dispatches the Event through the Event Queue.</c></summary>
-    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <param name="ALifetimeControl"><c>Defines whether control of the Event's Lifetime is handled by the Event Engine, or the caller.</c></param>
     ///  <permission>Public</permission>
     procedure Queue(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Schedules the Event through the Event Queue.</c></summary>
     ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
-    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <param name="ALifetimeControl"><c>Defines whether control of the Event's Lifetime is handled by the Event Engine, or the caller.</c></param>
     ///  <permission>Public</permission>
     procedure Queue(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Dispatches the Event through the Event Stack.</c></summary>
+    ///  <param name="ALifetimeControl"><c>Defines whether control of the Event's Lifetime is handled by the Event Engine, or the caller.</c></param>    ///
     ///  <permission>Public</permission>
     procedure Stack(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload; // Add this Event to the Event Stack
     ///  <summary><c>Schedules the Event through the Event Stack.</c></summary>
     ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
-    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <param name="ALifetimeControl"><c>Defines whether control of the Event's Lifetime is handled by the Event Engine, or the caller.</c></param>    ///
     ///  <permission>Public</permission>
     procedure Stack(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Dispatches the Event ONLY through registered Transmitters.</c></summary>
