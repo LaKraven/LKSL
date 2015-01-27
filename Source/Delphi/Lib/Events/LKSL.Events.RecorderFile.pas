@@ -189,13 +189,22 @@ procedure TLKEventRecorderFile.RecordEvent(const AEvent: TLKEvent);
 var
   LPosition: Int64;
   LCount: Integer;
+  LEventStreamable: TLKEventStreamable;
 begin
-  LPosition := FFileStream.Position;
-  AEvent.SaveToStream(FFileStream);
-  LCount := StreamReadInteger(FFileStream, FSessionEventCountPosition);
-  Inc(LCount);
-  StreamWriteInteger(FFileStream, LCount, FSessionEventCountPosition);
-  FFileStream.Position := LPosition;
+  LEventStreamable := PrepareStreamable(AEvent);
+  if LEventStreamable <> nil then
+  begin
+    try
+      LPosition := FFileStream.Position;
+      LEventStreamable.SaveToStream(FFileStream);
+      LCount := StreamReadInteger(FFileStream, FSessionEventCountPosition);
+      Inc(LCount);
+      StreamWriteInteger(FFileStream, LCount, FSessionEventCountPosition);
+      FFileStream.Position := LPosition;
+    finally
+      LEventStreamable.Free;
+    end;
+  end;
 end;
 
 procedure TLKEventRecorderFile.Replay(const ASession: Integer);
@@ -203,7 +212,7 @@ var
   LEventCount: Integer;
   I: Integer;
   LSessionSize: Int64;
-  LEvent: TLKEvent;
+  LEventStreamable: TLKEventStreamable;
   LStreamableType: TLKStreamableType;
 begin
   FFileStream.Position := FHeaderEndPosition;
@@ -219,13 +228,17 @@ begin
   for I := 0 to LEventCount - 1 do
   begin
     LStreamableType := Streamables.GetStreamableTypeFromStream(FFileStream);
-    if Streamables.StreamableTypeMatch(FFileStream, TLKEvent) then
+    if Streamables.StreamableTypeMatch(FFileStream, TLKEventStreamable) then
     begin
-      LEvent := TLKEvent(LStreamableType.CreateFromStream(FFileStream));
-      LEvent.IsReplay := True;
-      case LEvent.DispatchMethod of
-        edQueue: LEvent.Queue;
-        edStack: LEvent.Stack;
+      LEventStreamable := TLKEventStreamable(LStreamableType.CreateFromStream(FFileStream));
+      try
+        LEventStreamable.Event.IsReplay := True;
+        case LEventStreamable.Event.DispatchMethod of
+          edQueue: LEventStreamable.Event.Queue;
+          edStack: LEventStreamable.Event.Stack;
+        end;
+      finally
+        LEventStreamable.Free;
       end;
     end;
   end;

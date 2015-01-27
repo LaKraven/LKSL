@@ -381,6 +381,7 @@ type
   TLKEventStreamable = class abstract(TLKStreamable)
   protected
     FEvent: TLKEvent;
+    function GetEvent: TLKEvent; virtual;
     /// <summary><c>Defines the TLKEvent descendant to which this Streamable Descriptor applies</c></summary>
     class function GetEventType: TLKEventType; virtual; abstract;
     class procedure OnRegistration; override;
@@ -397,6 +398,7 @@ type
     constructor Create; overload; override;
     constructor Create(const AEvent: TLKEvent); reintroduce; overload;
     destructor Destroy; override;
+    property Event: TLKEvent read GetEvent;
   end;
 
   ///  <summary><c>Generic Abstract Base Class for all Event Streamable Descriptors</c></summary>
@@ -410,9 +412,8 @@ type
   ///  </remarks>
   ///  <permission>Public</permission>
   TLKEventStreamable<T: TLKEvent, constructor> = class abstract(TLKEventStreamable)
-  private
-    function GetEvent: T;
   protected
+    function GetEvent: T; reintroduce;
     class function GetEventType: TLKEventType; override; final;
     // Don't override the following methods anymore...
     procedure ReadEventFromStream(const AStream: TStream); overload; override; final;
@@ -501,6 +502,8 @@ type
   private
     FIndex: Integer;
   protected
+    function PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
+
     function GetInitialThreadState: TLKThreadState; override;
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
@@ -624,6 +627,9 @@ type
     procedure StackInThreads(const AEvent: TLKEvent);
     // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
     procedure TransmitEvent(const AEvent: TLKEvent);
+    // "GetEventStreamableType" returns a TLKEventStreamable type for a given TLKEvent type
+    function GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType; overload;
+    function GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType; overload;
 
     procedure RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
     procedure UnregisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
@@ -1183,6 +1189,11 @@ begin
   inherited;
 end;
 
+function TLKEventStreamable.GetEvent: TLKEvent;
+begin
+  Result := FEvent;
+end;
+
 procedure TLKEventStreamable.InsertIntoStream(const AStream: TStream);
 begin
   FEvent.Lock;
@@ -1517,6 +1528,16 @@ begin
   Result := tsPaused;
 end;
 
+function TLKEventRecorder.PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
+var
+  LStreamableType: TLKEventStreamableType;
+begin
+  Result := nil;
+  LStreamableType := Events.GetEventStreamableType(AEvent);
+  if LStreamableType <> nil then
+    Result := LStreamableType.Create(AEvent);
+end;
+
 procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: LKFloat);
 var
   I, LStart, LEnd: Integer;
@@ -1759,6 +1780,17 @@ begin
   FRecorders.Free;
   FEventStreamables.Free;
   inherited;
+end;
+
+function TLKEventEngine.GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType;
+begin
+  if (not FEventStreamables.TryGetValue(AEventType, Result)) then
+    Result := nil;
+end;
+
+function TLKEventEngine.GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType;
+begin
+  Result := GetEventStreamableType(TLKEventType(AEvent.ClassType));
 end;
 
 procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
