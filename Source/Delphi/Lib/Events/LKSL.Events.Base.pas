@@ -46,9 +46,6 @@ interface
     About this unit:
       - This unit provides type declarations required for our "Event Engine"
       - This unit also provides the Abstract Base Implementation for the same.
-
-    Included Usage Demos:
-      - "LKSL_Demo_EventEngine_Basic" in the "\Demos\Delphi\<version>\Event Engine\Basic" folder
   }
 {$ENDREGION}
 
@@ -69,15 +66,12 @@ uses
 type
   { Forward Declarations }
   TLKEvent = class;
-  TLKEventSimple = class;
   TLKEventListener = class;
   TLKEventListenerGroup = class;
+  TLKEventStreamable = class;
   TLKEventThreadBase = class;
   TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
-  TLKEventTransmitterBase = class;
-  TLKEventTransmitterManager = class;
-  TLKEventReceiverBase = class;
   TLKEventRecorder = class;
 
   { Exception Types }
@@ -86,39 +80,53 @@ type
     ELEventListenerGroupException = ELKEventException;
     ELEventRecorderException = ELKEventException;
       ELEventRecorderSignatureMismatchException = ELEventRecorderException;
+    ELKEventStreamableException = ELKEventException;
+      ELKEventStreamableExistsForEventType = ELKEventStreamableException;
+      ELKEventStreamableNotExists = ELKEventStreamableException;
 
   { Enum Types }
+  ///  <summary><c>Values represent the system through which an Event was dispatched for processing.</c></summary>
   TLKEventDispatchMode = (edmQueue, edmStack, edmThreads);
+  ///  <summary><c>Values represent the system through which an Event should be dispatched for processing.</c></summary>
   TLKEventDispatchMethod = (edQueue, edStack);
 
   { Set Types }
   TLKEventDispatchModes = set of TLKEventDispatchMode;
 
   { Class References }
+  ///  <summary><c>Class Reference of <see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/></c></summary>
   TLKEventType = class of TLKEvent;
+  ///  <summary><c>Class Reference of <see DisplayName="TLKEventListener" cref="LKSL.Events.Base|TLKEventListener"/></c></summary>
   TLKEventListenerType = class of TLKEventListener;
+  ///  <summary><c>Class Reference of <see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/></c></summary>
+  TLKEventStreamableType = class of TLKEventStreamable;
 
   { Generics Lists Types }
+  ///  <summary><c>A List of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> instances.</c></summary>
   TLKEventList = TLKObjectList<TLKEvent>; // Used for in-order Lists of Events (such as in the Recorder)
+  ///  <summary><c>A List of </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Base|TLKEventListener"/><c> instances.</c></summary>
   TLKEventListenerList = TLKList<TLKEventListener>;
-  TLKEventTransmitterList = TLKList<TLKEventTransmitterBase>;
-  TLKEventTypeList = TLKList<TLKEventType>;
+  ///  <summary><c>A List of </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Base|TLKEventThread"/><c> instances.</c></summary>
   TLKEventThreadList = TLKList<TLKEventThread>;
+  ///  <summary><c>A List of </c><see DisplayName="TLKEventRecorder" cref="LKSL.Events.Base|TLKEventRecorder"/><c> instances.</c></summary>
   TLKEventRecorderList = TLKList<TLKEventRecorder>;
 
   { Hashmap Types }
-  TLKEventListenerGroupDictionary =  TLKDictionary<TGUID, TLKEventListenerGroup>;
+  ///  <summary><c>Associates an Event Type (</c><see DisplayName="TLKEventType" cref="LKSL.Events.Base|TLKEventType"/><c>) with a group of Listeners (</c><see DisplayName="TLKEventListenerGroup" cref="LKSL.Events.Base|TLKEventListenerGroup"/><c>).</c></summary>
+  TLKEventListenerGroupDictionary =  TLKDictionary<TLKEventType, TLKEventListenerGroup>;
+  ///  <summary><c>Associates an Event Type (</c><see DisplayName="TLKEventType" cref="LKSL.Events.Base|TLKEventType"/><c>) with a Streamable Descriptor (</c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/><c>) Type Reference.</c></summary>
+  TLKEventStreamableDictionary = class(TLKDictionary<TLKEventType, TLKEventStreamableType>);
 
-  {
-    TLKEvent
-      - An "Event" does nothing but provide "Parameter Data"
-      - This "Parameter Data" is for use by your "Listeners"
-      - Information provided by default relates to dispatch and process timing
-      - Define an "ExpiresAfter" value of greater than 0.00 if you want the Event to expire
-        if it is not processed after a certain amount of time. This is useful if Event Data
-        is only valid for a limited time before being replaced by more up-to-date data.
-  }
-  TLKEvent = class abstract(TLKStreamable)
+  ///  <summary><c>Abstract Base Class for all Events</c></summary>
+  ///  <comments>
+  ///    <c>Provides parameter information for relevant Event Listeners to consume and operate against.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <c>Try to avoid defining functionality on a TLKEvent descendant.</c>
+  ///    <c>Implement a </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/><c> for this Event Type if you want to be able to Transmit/Record them.</c>
+  ///  </remarks>
+  ///  <permission>Public</permission>
+  TLKEvent = class abstract(TLKPersistent)
   private
     FAllowRecording: Boolean;
     FAllowTransmit: Boolean;
@@ -149,75 +157,108 @@ type
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
     procedure SetIsReplay(const AIsReplay: Boolean);
   protected
-    procedure ReadFromStream(const AStream: TStream); override; final;
-    procedure InsertIntoStream(const AStream: TStream); override; final;
-    procedure WriteToStream(const AStream: TStream); override; final;
-    // You MUST override "Clone"
-    // (Remembering to type-cast "AFromEvent" to your Event Type) populate your Event Type's properties.
-    procedure Clone(const AFromEvent: TLKEvent); overload; virtual; abstract;
-    // You MUST override and implement "ReadEventFromStream"
-    // This populates your Event Instance from a Stream
-    procedure ReadEventFromStream(const AStream: TStream); virtual; abstract;
-    // You MUST override and implement "InsertEventIntoStream"
-    // This Inserts your Event Instance's data into a Stream
-    procedure InsertEventIntoStream(const AStream: TStream); virtual; abstract;
-    // You MUST override and implement "WriteEventToStream"
-    // This APPENDS your Event Instance's data to the END of a Stream
-    procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
-    // Override "GetDefaultAllowRecording" if you want to PREVENT your Event from being recorded for replay.
-    // You can also set individual Event Instances to Allow or Disallow recording by setting the
-    // "AllowRecording" property to True (will record) or False (won't record)
-    // Default = True
-    // CRITICAL: If your Event Type contains a Pointer or Reference, you must NOT let it be recorded!
+    ///  <summary><c>Populates the referenced Instance with the values of </c>AFromEvent<c></c></summary>
+    ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
+    ///  <comments><c>MUST be overriden in descendant classes</c></comments>
+    ///  <permission>Protected - Override Only</permission>
+    procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
+    ///  <summary><c>Defines the default Recording Permission state.</c></summary>
+    ///  <returns><c>True = Allow Recording</c> Default = True</returns>
+    ///  <comments><c>Override if you wish to default to False</c></comments>
+    ///  <remarks><c>Recording can only work if a TLKEventStreamHandler exists to describe an implementing TLKEvent Type</c></remarks>
+    ///  <permission>Protected</permission>
     function GetDefaultAllowRecording: Boolean; virtual;
-    // Override "GetDefaultExpiresAfter" if you want your Event to Expire after a certain amount of time
-    // (measured in seconds). By default, it returns 0.00 to indiciate that the Event should NEVER expire.
+    ///  <summary><c>Defines the default Expiration Time.</c></summary>
+    ///  <returns><c>Expiration Time in Seconds (Default = 0.00)</c></returns>
+    ///  <comments><c>Override if you want the Event Type to expire after a period of time by default.</c></comments>
+    ///  <permission>Protected</permission>
     function GetDefaultExpiresAfter: LKFloat; virtual;
-    // Override "GetDefaultAllowTransmit" if you want the Event to be passed over to your Event Streaming
-    // system. Your Event Transmission system should then decide where this Event should be Streamed to.
-    // By default, it returns "False" indicating that this Event isn't intended to be Streamed to
-    // another process.
+    ///  <summary><c>Defines the default Transmit Permission state.</c></summary>
+    ///  <returns><c>True = Allow Transmit</c> Default = False</returns>
+    ///  <comments><c>Override if you wish to default to True</c></comments>
+    ///  <remarks><c>Transmission can only work if a TLKEventStreamHandler exists to describe an implementing TLKEvent Type</c></remarks>    ///
+    ///  <permission>Protected</permission>
     function GetDefaultAllowTransmit: Boolean; virtual;
-    // Override "GetDispatchModes" if you want the Event to restrict the way your Event Type is dispatched.
-    // Available mode switches are: edmQueue, edmStack, edmThreads.
-    // Default = [edmQueue, edmStack, edmThreads]
+    ///  <summary><c>Defines the default allowable Dispatch Modes for the Event.</c></summary>
+    ///  <returns><c>A Set containing one or more of: edmQueue, edmStack, edmThreads</c> Default = [edmQueue, edmStack, edmThreads]</returns>
+    ///  <comments><c></c></comments>
+    ///  <permission>Protected</permission>
     function GetDispatchModes: TLKEventDispatchModes; virtual;
   public
     constructor Create; override;
 
+    ///  <summary><c>Used to populate this instance from a nominated instance.</c></summary>
+    ///  <remarks><c>Marked as </c>final<c>, override </c>Clone<c> instead!</c></remarks>
+    ///  <permission>Public</permission>
     procedure Assign(AFromEvent: TPersistent); override; final;
 
+    ///  <summary><c>Simply returns a Reference to this Event Type.</c></summary>
+    ///  <remarks><c>Avoids the need to keep casting from "TClass" to "TLKEventType".</c></remarks>
+    ///  <remarks><c>Inlined for performance.</c></remarks>
+    ///  <permission>Public</permission>
+    function GetEventType: TLKEventType; inline;
+
+    ///  <summary><c>Dispatches the Event through the Event Queue.</c></summary>
+    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <permission>Public</permission>
     procedure Queue; overload; // Add this Event to the Event Queue
+    ///  <summary><c>Schedules the Event through the Event Queue.</c></summary>
+    ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
+    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <permission>Public</permission>
     procedure Queue(const ASecondsFromNow: LKFloat); overload;
+    ///  <summary><c>Dispatches the Event through the Event Stack.</c></summary>
+    ///  <permission>Public</permission>
     procedure Stack; overload; // Add this Event to the Event Stack
+    ///  <summary><c>Schedules the Event through the Event Stack.</c></summary>
+    ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
+    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <permission>Public</permission>
     procedure Stack(const ASecondsFromNow: LKFloat); overload;
-    procedure TransmitOnly; // DOESN'T Queue OR Stack the Event for internal processing, just Transmits it
+    ///  <summary><c>Dispatches the Event ONLY through registered Transmitters.</c></summary>
+    ///  <remarks><c>The Event will not be processed in the local process.</c></remarks>
+    ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
+    ///  <permission>Public</permission>
+    procedure TransmitOnly;
 
+    ///  <summary><c>Do you want this Event to be Recorded by any registered Event Recorder?</c></summary>
+    ///  <permission>Public - Read/Write</permission>
     property AllowRecording: Boolean read GetAllowRecording write SetAllowRecording;
+    ///  <summary><c>Do you want this Event to be Transmitter to any registered Event Transmitter?</c></summary>
+    ///  <permission>Public - Read/Write</permission>
     property AllowTransmit: Boolean read GetAllowTransmit write SetAllowTransmit;
+    ///  <summary><c>The Reference Time at which this Event was Created.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property CreatedTime: LKFloat read FCreatedTime;
+    ///  <summary><c>The Time Differential (Delta) between DispatchTime and the time of Processing.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property Delta: LKFloat read GetDelta;
+    ///  <summary><c>Returns a value representing whether the Event was dispatched through the Queue or the Stack.</c></summary>
+    ///  <remarks><c>Valid returns are</c> edQueue <c>or</c> edStack<c>.</c></remarks>
+    ///  <permission>Public - Read-Only</permission>
     property DispatchMethod: TLKEventDispatchMethod read GetDispatchMethod;
+    ///  <summary><c>The Time at which the Event was Dispatched.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property DispatchTime: LKFloat read GetDispatchTime;
+    ///  <summary><c>The time (in seconds) after which you want this Event to Expire.</c></summary>
+    ///  <remarks><c>A value of 0 means the Event will never Expire.</c></remarks>
+    ///  <permission>Public - Read/Write</permission>
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
+    ///  <summary><c>Whether this instance is the Original, or a Clone.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property IsClone: Boolean read GetIsClone;
+    ///  <summary><c>Was the Event created as part of a Replay?</c></summary>
+    ///  <permission>Public - Read/Write</permission>
     property IsReplay: Boolean read GetIsReplay write SetIsReplay;
+    ///  <summary><c>The time at which the Event Queue/Stack began processing this Event.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property ProcessedTime: LKFloat read GetProcessedTime;
+    ///  <summary><c>How much time has elapsed (in seconds) since this Event was Created.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property TimeSinceCreated: LKFloat read GetTimeSinceCreated;
+    ///  <summary><c>How much time has elapsed (in seconds) since this Event was Dispatched.</c></summary>
+    ///  <permission>Public - Read-Only</permission>
     property TimeSinceDispatched: LKFloat read GetTimeSinceDispatched;
-  end;
-
-  {
-    TLKEventSimple
-      - A stripped-down version of TLKEvent which doesn't support Member Data of any kind
-      - Meant to be used solely as a "Trigger Event"
-  }
-  TLKEventSimple = class abstract(TLKEvent)
-  protected
-    procedure Clone(const AFromEvent: TLKEvent); override;
-    procedure ReadEventFromStream(const AStream: TStream); override;
-    procedure InsertEventIntoStream(const AStream: TStream); override;
-    procedure WriteEventToStream(const AStream: TStream); override;
   end;
 
   {
@@ -327,6 +368,65 @@ type
     property EventType: TLKEventType read FEventType;
   end;
 
+  ///  <summary><c>Abstract Base Class for all Event Streamable Descriptors</c></summary>
+  ///  <comments>
+  ///    <c>Provides Streamable Handlers for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Override </c><see DisplayName="TLKEventStreamable.GetEventType" cref="LKSL.Events.Base|TLKEventStreamable.GetEventType"/><c> to provide the </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type Reference for which this Streamable Descriptor applies.</c></para>
+  ///    <para><c>Don't forget to override </c><see DisplayName="TLKStreamable.GetTypeGUID" cref="LKSL.Streamables.Base|TLKStreamable.GetTypeGUID"/><c> from </c><see DisplayName="TLKStreamable" cref="LKSL.Streamables.Base|TLKStreamable"/><c> to provide a unique GUID.</c></para>
+  ///    <para><c>Don't forget to Register your descendants with the </c><see DisplayName="Streamables" cref="LKSL.Streamables.Base|Streamables"/><c> Manager!</c></para>
+  ///  </remarks>
+  ///  <permission>Public</permission>
+  TLKEventStreamable = class abstract(TLKStreamable)
+  protected
+    FEvent: TLKEvent;
+    function GetEvent: TLKEvent; virtual;
+    /// <summary><c>Defines the TLKEvent descendant to which this Streamable Descriptor applies</c></summary>
+    class function GetEventType: TLKEventType; virtual; abstract;
+    class procedure OnRegistration; override;
+    class procedure OnUnregistration; override;
+
+    procedure ReadFromStream(const AStream: TStream); override;
+    procedure InsertIntoStream(const AStream: TStream); override;
+    procedure WriteToStream(const AStream: TStream); override;
+
+    procedure ReadEventFromStream(const AStream: TStream); virtual; abstract;
+    procedure InsertEventIntoStream(const AStream: TStream); virtual; abstract;
+    procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
+  public
+    constructor Create; overload; override;
+    constructor Create(const AEvent: TLKEvent); reintroduce; overload;
+    destructor Destroy; override;
+    property Event: TLKEvent read GetEvent;
+  end;
+
+  ///  <summary><c>Generic Abstract Base Class for all Event Streamable Descriptors</c></summary>
+  ///  <comments>
+  ///    <c>Provides Streamable Handlers for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Generic Parameter "T" associates this Streamable Handler Type with a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type.</c></para>
+  ///    <para><c>Don't forget to override </c><see DisplayName="TLKStreamable.GetTypeGUID" cref="LKSL.Streamables.Base|TLKStreamable.GetTypeGUID"/><c> from </c><see DisplayName="TLKStreamable" cref="LKSL.Streamables.Base|TLKStreamable"/><c> to provide a unique GUID.</c></para>
+  ///    <para><c>Don't forget to Register your descendants with the </c><see DisplayName="Streamables" cref="LKSL.Streamables.Base|Streamables"/><c> Manager!</c></para>
+  ///  </remarks>
+  ///  <permission>Public</permission>
+  TLKEventStreamable<T: TLKEvent, constructor> = class abstract(TLKEventStreamable)
+  protected
+    function GetEvent: T; reintroduce;
+    class function GetEventType: TLKEventType; override; final;
+    // Don't override the following methods anymore...
+    procedure ReadEventFromStream(const AStream: TStream); overload; override; final;
+    procedure InsertEventIntoStream(const AStream: TStream); overload; override; final;
+    procedure WriteEventToStream(const AStream: TStream); overload; override; final;
+    // ...  override these instead!
+    procedure ReadEventFromStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
+    procedure InsertEventIntoStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
+    procedure WriteEventToStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
+  public
+    property Event: T read GetEvent;
+  end;
+
   {
     TLKEventThreadBase
       - Abstract Base Type for Threads containing an Event Array
@@ -395,76 +495,6 @@ type
   end;
 
   {
-    TLKEventTransmitterBase
-      - Abstract Base Class for Event Transmitters
-      - Populate the virtual/abstract methods with the code necessary to send Events to whatever process
-        you want.
-  }
-  TLKEventTransmitterBase = class abstract(TLKPersistent)
-  private
-    FValidEventTypes: TLKEventTypeList;
-    FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
-    FUseEventTypeList: Boolean;
-    function GetUseEventTypeList: Boolean;
-    procedure SetUseEventTypeList(const AValue: Boolean);
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-    // Call "AddValidEventType" to add a Valid Event Type to the list
-    procedure AddValidEventType(const AEventType: TLKEventType);
-    // Call "RemoveValidEventType" to REMOVE a Valid Event Type from the list
-    procedure RemoveValidEventType(const AEventType: TLKEventType);
-    // Override "AcceptEvent" if you have a special criteria to determine whether or not THIS Transmitter
-    // should actually bother transmitting the Event at all.
-    // DON'T FORGET you can set "UseEventTypeList" to TRUE and add relevant Event Types using "AddEventType"
-    // so that this Transmitter will only transmit Events if they are of a relevant Type.
-    function AcceptEvent(const AEvent: TLKEvent): Boolean; virtual;
-    // You MUST override "TransmitEvent" to instruct YOUR specific Transmission System what to do with
-    // the Event.
-    // NOTE: You should pass ONLY the "AEventStream" along, as this is a Streamable-packed copy of the
-    //       Event containing all its Data.
-    //       "AEvent" is provided merely for dealing with Type-specific or Value-specific Transmissions.
-    procedure TransmitEvent(const AEvent: TLKEvent; const AEventStream: TMemoryStream); virtual; abstract;
-
-    property UseEventTypeList: Boolean read GetUseEventTypeList write SetUseEventTypeList;
-  end;
-
-  {
-    TLKEventTransmitterManager
-      - Manages one or more Event Transmitters
-      - Events are Queued for Transmission (allows the internal Event Handler to continue processing
-        Events)
-  }
-  TLKEventTransmitterManager = class(TLKThread)
-  private
-    FTransmitters: TLKEventTransmitterList;
-    FEvents: TLKEventList;
-
-    procedure AddTransmitter(const ATransmitter: TLKEventTransmitterBase);
-    procedure DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
-  protected
-    function GetDefaultYieldAccumulatedTime: Boolean; override;
-    function GetInitialThreadState: TLKThreadState; override;
-    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
-    procedure Tick(const ADelta, AStartTime: LKFloat); override;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    procedure AddEvent(const AEvent: TLKEvent);
-  end;
-
-  {
-    TLKEventReceiverBase
-      - Abstract Base Class for Event Receivers
-      - Populate the virtual/abstract methods with the code necessary to receive Events from other
-        processes.
-  }
-  TLKEventReceiverBase = class abstract(TLKPersistent)
-
-  end;
-
-  {
     TLKEventRecorder
       - A thread for spooling ANY Event type (along with its parameter values) out into a Stream
   }
@@ -472,10 +502,12 @@ type
   private
     FIndex: Integer;
   protected
+    function PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
+
     function GetInitialThreadState: TLKThreadState; override;
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
-    //
+
     procedure RecordEvent(const AEvent: TLKEvent); virtual; abstract;
   public
     constructor Create; override;
@@ -579,7 +611,7 @@ type
     FRecorders: TLKEventRecorderList;
     FEventProcessor: TLKEventProcessor;
     FEventScheduler: TLKEventScheduler;
-    FTransmitters: TLKEventTransmitterManager;
+    FEventStreamables: TLKEventStreamableDictionary;
 
     // "QueueInThreads" iterates through all Event Threads and (if there's a relevant
     // Listener for the Event Type) adds the Event to the Thread's internal Event Queue
@@ -595,6 +627,12 @@ type
     procedure StackInThreads(const AEvent: TLKEvent);
     // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
     procedure TransmitEvent(const AEvent: TLKEvent);
+    // "GetEventStreamableType" returns a TLKEventStreamable type for a given TLKEvent type
+    function GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType; overload;
+    function GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType; overload;
+
+    procedure RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
+    procedure UnregisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
 
     procedure RegisterEventThread(const AEventThread: TLKEventThread);
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
@@ -613,7 +651,7 @@ const
   LKSL_EVENTS_SCHEDULER_MINLEADTIME = 0.0001;
 
 var
-  Events: TLKEventEngine;
+  Events: TLKEventEngine = nil;
 
 { TLKEvent }
 
@@ -709,6 +747,11 @@ begin
   end;
 end;
 
+function TLKEvent.GetEventType: TLKEventType;
+begin
+  Result := TLKEventType(Self.ClassType);
+end;
+
 function TLKEvent.GetExpiresAfter: LKFloat;
 begin
   Lock;
@@ -789,20 +832,6 @@ begin
   end;
 end;
 
-procedure TLKEvent.InsertIntoStream(const AStream: TStream);
-begin
-  inherited;
-  StreamInsertBoolean(AStream, FAllowTransmit); // Insert FAllowTransmit
-  StreamInsertBoolean(AStream, FAllowRecording); // Insert FAllowRecording
-  StreamInsertBoolean(AStream, FIsReplay); // Insert FIsReplay
-  StreamInsertLKFloat(AStream, FDelta); // Insert FDelta
-  StreamInsertLKFloat(AStream, FDispatchTime); // Insert FDispatchTime
-  StreamInsertLKFloat(AStream, FExpiresAfter); // Insert FExpiresAfter
-  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Insert FDispatchMethod
-  StreamInsertLKFloat(AStream, FProcessedTime); // Insert FProcessedTime
-  InsertEventIntoStream(AStream);
-end;
-
 procedure TLKEvent.Queue;
 begin
   if (edmQueue in FDispatchModes) then
@@ -817,20 +846,6 @@ begin
     Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow)
   else
     Queue;
-end;
-
-procedure TLKEvent.ReadFromStream(const AStream: TStream);
-begin
-  inherited;
-  FAllowTransmit := StreamReadBoolean(AStream); // Read FAllowTransmit
-  FAllowRecording := StreamReadBoolean(AStream); // read FAllowRecording
-  FIsReplay := StreamReadBoolean(AStream); // read FIsReplay
-  FDelta := StreamReadLKFloat(AStream); // Read FDelta
-  FDispatchTime := StreamReadLKFloat(AStream); // Read FDispatchTime
-  FExpiresAfter := StreamReadLKFloat(AStream); // Read FExpiresAfter
-  FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream); // Read FDispatchMethod
-  FProcessedTime := StreamReadLKFloat(AStream); // Read FProcessedTime
-  ReadEventFromStream(AStream);
 end;
 
 procedure TLKEvent.SetAllowRecording(const AAllowRecording: Boolean);
@@ -892,42 +907,6 @@ end;
 procedure TLKEvent.TransmitOnly;
 begin
   Events.TransmitEvent(Self);
-end;
-
-procedure TLKEvent.WriteToStream(const AStream: TStream);
-begin
-  inherited;
-  StreamWriteBoolean(AStream, FAllowTransmit); // Append FAllowTransmit
-  StreamWriteBoolean(AStream, FAllowRecording); // Append FAllowRecording
-  StreamWriteBoolean(AStream, FIsReplay); // Append FIsReplay
-  StreamWriteLKFloat(AStream, FDelta); // Append FDelta
-  StreamWriteLKFloat(AStream, FDispatchTime); // Append FDispatchTime
-  StreamWriteLKFloat(AStream, FExpiresAfter); // Append FExpiresAfter
-  StreamInsertTLKEventDispatchMethod(AStream, FDispatchMethod); // Append FDispatchMethod
-  StreamWriteLKFloat(AStream, FProcessedTime); // Append FProcessedTime
-  WriteEventToStream(AStream);
-end;
-
-{ TLKEventSimple }
-
-procedure TLKEventSimple.Clone(const AFromEvent: TLKEvent);
-begin
-  // Do Nothing
-end;
-
-procedure TLKEventSimple.InsertEventIntoStream(const AStream: TStream);
-begin
-  // Do Nothing
-end;
-
-procedure TLKEventSimple.ReadEventFromStream(const AStream: TStream);
-begin
-  // Do Nothing
-end;
-
-procedure TLKEventSimple.WriteEventToStream(const AStream: TStream);
-begin
-  // Do Nothing
 end;
 
 { TLKEventListener }
@@ -1159,7 +1138,7 @@ var
 begin
   for I := 0 to FListeners.Count - 1 do
   begin
-    if AEvent.GetTypeGUID = FListeners[I].GetEventType.GetTypeGUID then
+    if AEvent.ClassType = FListeners[I].GetEventType then
     begin
       if (((FListeners[I].NewestEventOnly) and (AEvent.DispatchTime > FListeners[I].LastEventTime)) or
          (not FListeners[I].NewestEventOnly)) and (FListeners[I].GetConditionsMatch(AEvent)) and
@@ -1188,6 +1167,128 @@ begin
   FListeners.Delete(AListener.FIndex);
   if FListeners.Count = 0 then
     Free;
+end;
+
+{ TLKEventStreamable }
+
+constructor TLKEventStreamable.Create;
+begin
+  inherited Create;
+  FEvent := GetEventType.Create;
+end;
+
+constructor TLKEventStreamable.Create(const AEvent: TLKEvent);
+begin
+  Create;
+  FEvent.Assign(AEvent);
+end;
+
+destructor TLKEventStreamable.Destroy;
+begin
+  FEvent.Free;
+  inherited;
+end;
+
+function TLKEventStreamable.GetEvent: TLKEvent;
+begin
+  Result := FEvent;
+end;
+
+procedure TLKEventStreamable.InsertIntoStream(const AStream: TStream);
+begin
+  FEvent.Lock;
+  try
+    StreamInsertBoolean(AStream, FEvent.FAllowRecording);
+    StreamInsertBoolean(AStream, FEvent.FAllowTransmit);
+    StreamInsertLKFloat(AStream, FEvent.FCreatedTime);
+    StreamInsertLKFloat(AStream, FEvent.FDelta);
+    StreamInsertTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
+    StreamInsertLKFloat(AStream, FEvent.FDispatchTime);
+    StreamInsertLKFloat(AStream, FEvent.FExpiresAfter);
+    StreamInsertBoolean(AStream, FEvent.FIsClone);
+    StreamInsertBoolean(AStream, FEvent.FIsReplay);
+    StreamInsertLKFloat(AStream, FEvent.FProcessedTime);
+    InsertEventIntoStream(AStream);
+  finally
+    FEvent.Unlock;
+  end;
+end;
+
+class procedure TLKEventStreamable.OnRegistration;
+begin
+  Events.RegisterEventStreamable(Self);
+end;
+
+class procedure TLKEventStreamable.OnUnregistration;
+begin
+  Events.UnregisterEventStreamable(Self);
+end;
+
+procedure TLKEventStreamable.ReadFromStream(const AStream: TStream);
+begin
+  FEvent.Lock;
+  try
+    FEvent.FAllowRecording := StreamReadBoolean(AStream);
+    FEvent.FAllowTransmit := StreamReadBoolean(AStream);
+    FEvent.FCreatedTime := StreamReadLKFloat(AStream);
+    FEvent.FDelta := StreamReadLKFloat(AStream);
+    FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);
+    FEvent.FDispatchTime := StreamReadLKFloat(AStream);
+    FEvent.FExpiresAfter := StreamReadLKFloat(AStream);
+    FEvent.FIsClone := StreamReadBoolean(AStream);
+    FEvent.FIsReplay := StreamReadBoolean(AStream);
+    FEvent.FProcessedTime := StreamReadLKFloat(AStream);
+    ReadEventFromStream(AStream);
+  finally
+    FEvent.Unlock;
+  end;
+end;
+
+procedure TLKEventStreamable.WriteToStream(const AStream: TStream);
+begin
+  FEvent.Lock;
+  try
+    StreamWriteBoolean(AStream, FEvent.FAllowRecording);
+    StreamWriteBoolean(AStream, FEvent.FAllowTransmit);
+    StreamWriteLKFloat(AStream, FEvent.FCreatedTime);
+    StreamWriteLKFloat(AStream, FEvent.FDelta);
+    StreamWriteTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
+    StreamWriteLKFloat(AStream, FEvent.FDispatchTime);
+    StreamWriteLKFloat(AStream, FEvent.FExpiresAfter);
+    StreamWriteBoolean(AStream, FEvent.FIsClone);
+    StreamWriteBoolean(AStream, FEvent.FIsReplay);
+    StreamWriteLKFloat(AStream, FEvent.FProcessedTime);
+    WriteEventToStream(AStream);
+  finally
+    FEvent.Unlock;
+  end;
+end;
+
+{ TLKEventStreamable<T> }
+
+function TLKEventStreamable<T>.GetEvent: T;
+begin
+  Result := T(FEvent);
+end;
+
+class function TLKEventStreamable<T>.GetEventType: TLKEventType;
+begin
+  Result := T;
+end;
+
+procedure TLKEventStreamable<T>.InsertEventIntoStream(const AStream: TStream);
+begin
+  InsertEventIntoStream(GetEvent, AStream);
+end;
+
+procedure TLKEventStreamable<T>.ReadEventFromStream(const AStream: TStream);
+begin
+  ReadEventFromStream(GetEvent, AStream);
+end;
+
+procedure TLKEventStreamable<T>.WriteEventToStream(const AStream: TStream);
+begin
+  WriteEventToStream(GetEvent, AStream);
 end;
 
 { TLKEventThreadBase }
@@ -1231,8 +1332,8 @@ procedure TLKEventThreadBaseWithListeners.AddEventListenerGroup(const AEventList
 begin
   FEventListenerGroups.Lock;
   try
-    if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType.GetTypeGUID)) then
-      FEventListenerGroups.Add(AEventListenerGroup.EventType.GetTypeGUID, AEventListenerGroup);
+    if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType)) then
+      FEventListenerGroups.Add(AEventListenerGroup.EventType, AEventListenerGroup);
   finally
     FEventListenerGroups.Unlock;
   end;
@@ -1254,14 +1355,14 @@ end;
 constructor TLKEventThreadBaseWithListeners.Create;
 begin
   inherited;
-  FEventListenerGroups := TLKDictionary<TGUID, TLKEventListenerGroup>.Create;
+  FEventListenerGroups := TLKEventListenerGroupDictionary.Create;
 end;
 
 procedure TLKEventThreadBaseWithListeners.DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
 begin
   FEventListenerGroups.Lock;
   try
-    FEventListenerGroups.Remove(AEventListenerGroup.EventType.GetTypeGUID);
+    FEventListenerGroups.Remove(AEventListenerGroup.EventType);
   finally
     FEventListenerGroups.Unlock;
   end;
@@ -1278,7 +1379,7 @@ function TLKEventThreadBaseWithListeners.GetEventListenerGroup(const AEventType:
 begin
   FEventListenerGroups.Lock;
   try
-    FEventListenerGroups.TryGetValue(AEventType.GetTypeGUID, Result);
+    FEventListenerGroups.TryGetValue(AEventType, Result);
   finally
     FEventListenerGroups.Unlock;
   end;
@@ -1407,161 +1508,6 @@ begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
 
-{ TLKEventTransmitterBase }
-
-function TLKEventTransmitterBase.AcceptEvent(const AEvent: TLKEvent): Boolean;
-begin
-  Lock;
-  try
-    Result := ((FUseEventTypeList) and (FValidEventTypes.Contains(TLKEventType(AEvent)))) or (not FUseEventTypeList);
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKEventTransmitterBase.AddValidEventType(const AEventType: TLKEventType);
-begin
-  Lock;
-  try
-    if (not FValidEventTypes.Contains(AEventType)) then
-      FValidEventTypes.Add(AEventType);
-  finally
-    Unlock;
-  end;
-end;
-
-constructor TLKEventTransmitterBase.Create;
-begin
-  inherited;
-  FValidEventTypes := TLKEventTypeList.Create;
-  Events.FTransmitters.AddTransmitter(Self);
-  FUseEventTypeList := False; // We don't want to limit outgoing Events by default
-end;
-
-destructor TLKEventTransmitterBase.Destroy;
-begin
-  Events.FTransmitters.DeleteTransmitter(Self);
-  FValidEventTypes.Free;
-  inherited;
-end;
-
-function TLKEventTransmitterBase.GetUseEventTypeList: Boolean;
-begin
-  Lock;
-  try
-    Result := FUseEventTypeList;
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKEventTransmitterBase.RemoveValidEventType(const AEventType: TLKEventType);
-begin
-  Lock;
-  try
-    FValidEventTypes.Remove(AEventType);
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKEventTransmitterBase.SetUseEventTypeList(const AValue: Boolean);
-begin
-  Lock;
-  try
-    FUseEventTypeList := AValue;
-  finally
-    Unlock;
-  end;
-end;
-
-{ TLKEventTransmitterManager }
-
-procedure TLKEventTransmitterManager.AddEvent(const AEvent: TLKEvent);
-var
-  LTransmitterExists: Boolean;
-  LClone: TLKEvent;
-begin
-  // Check if there actually are any Transmitters first
-  LTransmitterExists := FTransmitters.Count > 0;
-  if LTransmitterExists then
-  begin
-    // Clone Event
-    LClone := TLKEventType(AEvent.ClassType).Create;
-    LClone.Assign(AEvent);
-    // Add Clone to Event Queue
-    FEvents.Add(AEvent);
-  end;
-end;
-
-procedure TLKEventTransmitterManager.AddTransmitter(const ATransmitter: TLKEventTransmitterBase);
-begin
-  ATransmitter.FIndex := FTransmitters.Add(ATransmitter);
-end;
-
-constructor TLKEventTransmitterManager.Create;
-begin
-  inherited;
-  FTransmitters := TLKEventTransmitterList.Create;
-  FEvents := TLKEventList.Create(False);
-end;
-
-procedure TLKEventTransmitterManager.DeleteTransmitter(const ATransmitter: TLKEventTransmitterBase);
-begin
-  FTransmitters.Delete(ATransmitter.FIndex);
-end;
-
-destructor TLKEventTransmitterManager.Destroy;
-begin
-  FTransmitters.Free;
-  FEvents.OwnsObjects := True;
-  FEvents.Free;
-  inherited;
-end;
-
-function TLKEventTransmitterManager.GetDefaultYieldAccumulatedTime: Boolean;
-begin
-  // We need to yield time in small chunks, rather than as a complete block
-  Result := False;
-end;
-
-function TLKEventTransmitterManager.GetInitialThreadState: TLKThreadState;
-begin
-  Result := tsPaused;
-end;
-
-procedure TLKEventTransmitterManager.PreTick(const ADelta, AStartTime: LKFloat);
-var
-  I: Integer;
-  LEventStream: TMemoryStream;
-begin
-  if FEvents.Count > 0 then
-  begin
-    LEventStream := TMemoryStream.Create;
-    try
-      // Since we're NOW Streaming the Event, we don't want an endless loop where Program A streams to
-      // Program B, then Program B instantly streams back to Program A.... that would suck!
-      FEvents[0].FAllowTransmit := False;
-      FEvents[0].WriteToStream(LEventStream); // Serialize the Event into the Event Stream
-      for I := 0 to FTransmitters.Count - 1 do
-      begin
-        if FTransmitters[I].AcceptEvent(FEvents[0]) then // Check if the Transmitter cares for this Event
-          FTransmitters[I].TransmitEvent(FEvents[0], LEventStream); // If so, Transmit it!
-      end;
-      FEvents[0].Free; // Destroy the Event
-      // Remove the processed Event from the Event Array
-      FEvents.Delete(0);
-    finally
-      LEventStream.Free;
-    end;
-  end;
-end;
-
-procedure TLKEventTransmitterManager.Tick(const ADelta, AStartTime: LKFloat);
-begin
-  // Do Nothing (Yet, but probably never will either)
-end;
-
 { TLKEventRecorder }
 
 constructor TLKEventRecorder.Create;
@@ -1580,6 +1526,16 @@ end;
 function TLKEventRecorder.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
+end;
+
+function TLKEventRecorder.PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
+var
+  LStreamableType: TLKEventStreamableType;
+begin
+  Result := nil;
+  LStreamableType := Events.GetEventStreamableType(AEvent);
+  if LStreamableType <> nil then
+    Result := LStreamableType.Create(AEvent);
 end;
 
 procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: LKFloat);
@@ -1806,8 +1762,8 @@ begin
   FEventThreads := TLKEventThreadList.Create;
   FRecorders := TLKEventRecorderList.Create;
   FEventProcessor := TLKEventProcessor.Create;
-  FTransmitters := TLKEventTransmitterManager.Create;
   FEventScheduler := TLKEventScheduler.Create;
+  FEventStreamables := TLKEventStreamableDictionary.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
@@ -1815,7 +1771,6 @@ var
   I: Integer;
 begin
   FEventScheduler.Kill;
-  FTransmitters.Kill;
   for I := FEventThreads.Count - 1 downto 0 do
     UnregisterEventThread(FEventThreads[I]);
   for I := FRecorders.Count - 1 downto 0 do
@@ -1823,7 +1778,19 @@ begin
   FEventProcessor.Kill;
   FEventThreads.Free;
   FRecorders.Free;
+  FEventStreamables.Free;
   inherited;
+end;
+
+function TLKEventEngine.GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType;
+begin
+  if (not FEventStreamables.TryGetValue(AEventType, Result)) then
+    Result := nil;
+end;
+
+function TLKEventEngine.GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType;
+begin
+  Result := GetEventStreamableType(TLKEventType(AEvent.ClassType));
 end;
 
 procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
@@ -1834,9 +1801,6 @@ begin
     QueueInRecorders(AEvent);
 
   QueueInThreads(AEvent);
-
-  if AEvent.AllowTransmit then
-    FTransmitters.AddEvent(AEvent);
 
   FEventProcessor.QueueEvent(AEvent);
 end;
@@ -1867,6 +1831,16 @@ begin
   end;
 end;
 
+procedure TLKEventEngine.RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
+var
+  LStreamableType: TLKEventStreamableType;
+begin
+  if FEventStreamables.TryGetValue(AEventStreamableType.GetEventType, LStreamableType) then
+    raise ELKEventStreamableExistsForEventType.CreateFmt('Event Type "%s" already has a registered Streamable Descriptor: "%s"', [AEventStreamableType.GetEventType.ClassName, LStreamableType.ClassName])
+  else
+    FEventStreamables.Add(AEventStreamableType.GetEventType, AEventStreamableType);
+end;
+
 procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
 begin
   AEventThread.FIndex := FEventThreads.Add(AEventThread);
@@ -1891,9 +1865,6 @@ begin
 
   StackInThreads(AEvent);
 
-  if AEvent.AllowTransmit then
-    FTransmitters.AddEvent(AEvent);
-
   FEventProcessor.StackEvent(AEvent);
 end;
 
@@ -1912,8 +1883,16 @@ end;
 
 procedure TLKEventEngine.TransmitEvent(const AEvent: TLKEvent);
 begin
-  FTransmitters.AddEvent(AEvent);
+//  FTransmitters.AddEvent(AEvent);
   AEvent.Free;
+end;
+
+procedure TLKEventEngine.UnregisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
+begin
+  if FEventStreamables.ContainsKey(AEventStreamableType.GetEventType) then
+    FEventStreamables.Remove(AEventStreamableType.GetEventType)
+  else
+    raise ELKEventStreamableNotExists.CreateFmt('Event Streamable Descriptor "%s" not Registered!', [AEventStreamableType.ClassName])
 end;
 
 procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThread);

@@ -21,6 +21,16 @@ LKSL.Common.Streams.pas
 
 LKSL.Events.Base.pas
 --------------------
+	24th January 2015:
+		- Removed "TLKEventSimple" because it is no longer required.
+		- TLKEvent no longer inherits from TLKStreamable, thus no longer requires overriding of the following:
+			- "RemoveEventFromStream"
+			- "ReadEventFromStream"
+			- "InsertEventIntoStream"
+			- "WriteEventToStream"
+		- The aforementioned methods no longer exist in TLKEvent.
+		- Added "TLKEventStreamable<T: TLKEvent>", which is a "Streamable Descriptor" for an associated TLKEvent Type.
+		- Rewritten the entire Event Recorder, Event Transmitter, and Event Receiver systems to use TLKEventStreamable<T: TLKEvent>
 	7th January 2015:
 		- Added "TLKEventSimple" (A cut-down version of TLKEvent which doesn't support custom data)
 	27th December 2014:
