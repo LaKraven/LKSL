@@ -549,7 +549,7 @@ type
       - A Generic version of TLKEventThreadPool
       - Eliminates the replication of boilerplate code.
   }
-  TLKEventThreadPool<T: TLKEventThreadPooled> = class(TLKEventThreadPool)
+  TLKEventThreadPool<T: TLKEventThreadPooled, constructor> = class(TLKEventThreadPool)
 
   end;
 
@@ -1628,6 +1628,25 @@ begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
 end;
 
+{ TLKEventThreadPool }
+
+constructor TLKEventThreadPool.Create;
+begin
+  Create(TThread.ProcessorCount);
+end;
+
+constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
+begin
+  inherited Create;
+  FPooledEventThreads := TLKEventThreadPooledList.Create;
+end;
+
+destructor TLKEventThreadPool.Destroy;
+begin
+  FPooledEventThreads.Free;
+  inherited;
+end;
+
 { TLKEventRecorder }
 
 constructor TLKEventRecorder.Create;
@@ -2018,25 +2037,6 @@ procedure TLKEventEngine.UnregisterRecorder(const ARecorder: TLKEventRecorder);
 begin
   FRecorders.Delete(ARecorder.FIndex);
   ARecorder.FIndex := -1;
-end;
-
-{ TLKEventThreadPool }
-
-constructor TLKEventThreadPool.Create;
-begin
-  Create(TThread.ProcessorCount);
-end;
-
-constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
-begin
-  inherited Create;
-  FPooledEventThreads := TLKEventThreadPooledList.Create;
-end;
-
-destructor TLKEventThreadPool.Destroy;
-begin
-  FPooledEventThreads.Free;
-  inherited;
 end;
 
 initialization
