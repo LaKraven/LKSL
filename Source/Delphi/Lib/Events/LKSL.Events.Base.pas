@@ -91,6 +91,12 @@ type
   TLKEventDispatchMode = (edmQueue, edmStack, edmThreads);
   ///  <summary><c>Values represent the system through which an Event should be dispatched for processing.</c></summary>
   TLKEventDispatchMethod = (edQueue, edStack);
+  ///  <summary><c>Values denote whether ownership of the original </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c>-based Object should be passed to the Event Engine, or left with the implementing code.</c></summary>
+  ///  <remarks>
+  ///    <para>eltEventEngine <c>instructs the Event Engine to take control of the Event's Lifetime.</c></para>
+  ///    <para>eltCaller <c>tells the Event Engine that the Event's Lifetime is controlled by the caller.</c></para>
+  ///  </remarks>
+  TLKEventLifetimeControl = (eltEventEngine, eltCaller);
 
   { Set Types }
   TLKEventDispatchModes = set of TLKEventDispatchMode;
@@ -209,20 +215,20 @@ type
     ///  <summary><c>Dispatches the Event through the Event Queue.</c></summary>
     ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
     ///  <permission>Public</permission>
-    procedure Queue; overload; // Add this Event to the Event Queue
+    procedure Queue(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Schedules the Event through the Event Queue.</c></summary>
     ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
     ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
     ///  <permission>Public</permission>
-    procedure Queue(const ASecondsFromNow: LKFloat); overload;
+    procedure Queue(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Dispatches the Event through the Event Stack.</c></summary>
     ///  <permission>Public</permission>
-    procedure Stack; overload; // Add this Event to the Event Stack
+    procedure Stack(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload; // Add this Event to the Event Stack
     ///  <summary><c>Schedules the Event through the Event Stack.</c></summary>
     ///  <param name="ASecondsFromNow"><c>How long (in seconds) from the point of dispatch before the Event is processed.</c></param>
     ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
     ///  <permission>Public</permission>
-    procedure Stack(const ASecondsFromNow: LKFloat); overload;
+    procedure Stack(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine); overload;
     ///  <summary><c>Dispatches the Event ONLY through registered Transmitters.</c></summary>
     ///  <remarks><c>The Event will not be processed in the local process.</c></remarks>
     ///  <remarks><c>The Lifecycle of the Event is passed to the Event Engine!</c></remarks>
@@ -890,20 +896,26 @@ begin
   end;
 end;
 
-procedure TLKEvent.Queue;
+procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
   if (edmQueue in FDispatchModes) then
     Events.QueueEvent(Self)
   else if (edmStack in FDispatchModes) then
     Events.StackEvent(Self);
+
+  if ALifetimeControl = eltEventEngine then
+    Free;
 end;
 
-procedure TLKEvent.Queue(const ASecondsFromNow: LKFloat);
+procedure TLKEvent.Queue(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow)
   else
     Queue;
+
+  if ALifetimeControl = eltEventEngine then
+    Free;
 end;
 
 procedure TLKEvent.SetAllowRecording(const AAllowRecording: Boolean);
@@ -946,20 +958,26 @@ begin
   end;
 end;
 
-procedure TLKEvent.Stack;
+procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
   if (edmStack in FDispatchModes) then
     Events.StackEvent(Self)
   else if (edmQueue in FDispatchModes) then
     Events.QueueEvent(Self);
+
+  if ALifetimeControl = eltEventEngine then
+    Free;
 end;
 
-procedure TLKEvent.Stack(const ASecondsFromNow: LKFloat);
+procedure TLKEvent.Stack(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow)
   else
     Stack;
+
+  if ALifetimeControl = eltEventEngine then
+    Free;
 end;
 
 procedure TLKEvent.TransmitOnly;
@@ -1381,15 +1399,23 @@ begin
 end;
 
 procedure TLKEventThreadBase.QueueEvent(const AEvent: TLKEvent);
+var
+  LClone: TLKEvent;
 begin
-  AEvent.FDispatchTime := GetReferenceTime;
-  FQueue.Add(AEvent);
+  LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
+  LClone.Assign(AEvent); // Copy the original data into the Clone
+  LClone.FDispatchTime := GetReferenceTime;
+  FQueue.Add(LClone);
 end;
 
 procedure TLKEventThreadBase.StackEvent(const AEvent: TLKEvent);
+var
+  LClone: TLKEvent;
 begin
-  AEvent.FDispatchTime := GetReferenceTime;
-  FStack.Add(AEvent);
+  LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
+  LClone.Assign(AEvent); // Copy the original data into the Clone
+  LClone.FDispatchTime := GetReferenceTime;
+  FStack.Add(LClone);
 end;
 
 { TLKEventThreadBaseWithListeners }
@@ -1497,9 +1523,7 @@ end;
 
 procedure TLKEventThreadBaseWithListeners.QueueEvent(const AEvent: TLKEvent);
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = nil then
-    AEvent.Free
-  else
+  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) <> nil then
     inherited;
 end;
 
@@ -1522,9 +1546,7 @@ end;
 
 procedure TLKEventThreadBaseWithListeners.StackEvent(const AEvent: TLKEvent);
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) = nil then
-    AEvent.Free
-  else
+  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) <> nil then
     inherited;
 end;
 
@@ -1812,8 +1834,11 @@ end;
 procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: LKFloat);
 var
   LSchedule: TLKEventScheduled;
+  LClone: TLKEvent;
 begin
-  LSchedule := TLKEventScheduled.Create(AEvent, AScheduleFor);
+  LClone := TLKEventType(AEvent.ClassType).Create;
+  LClone.Assign(AEvent);
+  LSchedule := TLKEventScheduled.Create(LClone, AScheduleFor);
   FEvents.Add(LSchedule);
   ThreadState := tsRunning;
 end;
@@ -1905,27 +1930,17 @@ end;
 procedure TLKEventEngine.QueueInRecorders(const AEvent: TLKEvent);
 var
   I: Integer;
-  LClone: TLKEvent;
 begin
   for I := 0 to FRecorders.Count - 1 do
-  begin
-    LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
-    LClone.Assign(AEvent); // Copy the original data into the Clone
-    FRecorders[I].QueueEvent(LClone); // Send a CLONE of the Event to the Recorder!
-  end;
+    FRecorders[I].QueueEvent(AEvent);
 end;
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
 var
   I: Integer;
-  LClone: TLKEvent;
 begin
   for I := 0 to FEventThreads.Count - 1 do
-  begin
-    LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
-    LClone.Assign(AEvent); // Copy the original data into the Clone
-    FEventThreads[I].QueueEvent(LClone); // Send a CLONE of the Event to the Thread!
-  end;
+    FEventThreads[I].QueueEvent(AEvent);
 end;
 
 procedure TLKEventEngine.RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
@@ -1968,14 +1983,9 @@ end;
 procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
 var
   I: Integer;
-  LClone: TLKEvent;
 begin
   for I := 0 to FEventThreads.Count - 1 do
-  begin
-    LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
-    LClone.Assign(AEvent); // Copy the original data into the Clone
-    FEventThreads[I].StackEvent(LClone); // Send a CLONE of the Event to the Thread!
-  end;
+    FEventThreads[I].StackEvent(AEvent);
 end;
 
 procedure TLKEventEngine.TransmitEvent(const AEvent: TLKEvent);
