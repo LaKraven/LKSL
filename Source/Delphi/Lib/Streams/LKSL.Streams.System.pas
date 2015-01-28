@@ -59,6 +59,15 @@ uses
 type
   StreamManager = class abstract
   public
+    class procedure CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64); overload; inline;
+    class procedure CustomDelete<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+    class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+    class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+    class function CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T; overload; inline;
+    class function CustomRead<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64): T; overload; inline;
+    class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+    class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+
     class procedure Delete<T>(const AStream: TStream); overload; inline;
     class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
     class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
@@ -1524,6 +1533,51 @@ begin
   Delete<T>(AStream, AStream.Position);
 end;
 
+class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64);
+begin
+  StreamClearSpace(AStream, ASizeOf);
+end;
+
+class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const APosition, ASizeOf: Int64);
+begin
+  AStream.Position := APosition;
+  CustomDelete<T>(AStream, ASizeOf);
+end;
+
+class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
+begin
+  StreamMakeSpace(AStream, ASizeOf);
+  AStream.Write(AValue, ASizeOf);
+end;
+
+class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
+begin
+  AStream.Position := APosition;
+  CustomInsert<T>(AStream, AValue, ASizeOf);
+end;
+
+class function StreamManager.CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T;
+begin
+  AStream.Read(Result, ASizeOf);
+end;
+
+class function StreamManager.CustomRead<T>(const AStream: TStream; const APosition, ASizeOf: Int64): T;
+begin
+  AStream.Position := APosition;
+  CustomRead<T>(AStream, ASizeOf);
+end;
+
+class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
+begin
+  CustomWrite<T>(AStream, AValue, AStream.Size);
+end;
+
+class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
+begin
+  AStream.Position := APosition;
+  AStream.Write(AValue, ASizeOf);
+end;
+
 class procedure StreamManager.Delete<T>(const AStream: TStream; const APosition: Int64);
 begin
   StreamClearSpace(AStream, APosition, SizeOf(T));
@@ -1550,13 +1604,13 @@ end;
 
 class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T);
 begin
-  Insert<T>(AStream, AValue, AStream.Position);
+  StreamMakeSpace(AStream, SizeOf(T));
+  AStream.Write(AValue, SizeOf(T));
 end;
 
 class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
 begin
-  StreamMakeSpace(AStream, APosition, SizeOf(T));
-  AStream.Write(AValue, SizeOf(T));
+  AStream.Position := APosition;
 end;
 
 class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T; const APosition: Int64);
@@ -1576,13 +1630,13 @@ end;
 
 class function StreamManager.Read<T>(const AStream: TStream): T;
 begin
-  Result := Read<T>(AStream, AStream.Position);
+  AStream.Read(Result, SizeOf(T));
 end;
 
 class function StreamManager.Read<T>(const AStream: TStream; const APosition: Int64): T;
 begin
   AStream.Position := APosition;
-  AStream.Read(Result, SizeOf(T));
+  Result := Read<T>(AStream);
 end;
 
 class function StreamManager.ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>;
