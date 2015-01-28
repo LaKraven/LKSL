@@ -1852,7 +1852,7 @@ begin
     Items[I].FEvent.Free;
     Items[I].Free;
   end;
-
+{ TODO -oSJS -cEvent Engine - Scheduler : Figure out why I've done it this way! Why am I not using TLKSortedObjectList? }
   Clear(True);
   inherited;
 end;
@@ -1942,8 +1942,10 @@ var
   I: Integer;
 begin
   FEventScheduler.Kill;
+  // If your implementation is correct, there shouldn't be anything in here to iterate!
   for I := FEventThreads.Count - 1 downto 0 do
     UnregisterEventThread(FEventThreads[I]);
+  // If your implementation is correct, there shouldn't be anything in here to iterate!
   for I := FRecorders.Count - 1 downto 0 do
     FRecorders[I].Unsubscribe;
   FEventProcessor.Kill;
