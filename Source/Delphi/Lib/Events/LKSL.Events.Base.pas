@@ -177,7 +177,7 @@ type
     ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
     ///  <comments><c>MUST be overriden in descendant classes</c></comments>
     ///  <permission>Protected - Override Only</permission>
-    procedure Clone(const AFromEvent: TLKEvent); virtual; abstract;
+    procedure Clone(const AFromEvent: TLKEvent); overload; virtual; abstract;
     ///  <summary><c>Defines the default Recording Permission state.</c></summary>
     ///  <returns><c>True = Allow Recording</c> Default = True</returns>
     ///  <comments><c>Override if you wish to default to False</c></comments>
@@ -202,6 +202,10 @@ type
     function GetDispatchModes: TLKEventDispatchModes; virtual;
   public
     constructor Create; override;
+
+    ///  <summary><c>Creates a Clone of this Event with the same Values</c></summary>
+    ///  <permission>Public</permission>
+    function Clone: TLKEvent; overload;
 
     ///  <summary><c>Used to populate this instance from a nominated instance.</c></summary>
     ///  <remarks><c>Marked as </c>final<c>, override </c>Clone<c> instead!</c></remarks>
@@ -565,6 +569,7 @@ type
   TLKEventRecorder = class abstract(TLKEventThreadBase)
   private
     FIndex: Integer;
+    FSubscribeMode: TLKEventSubscribeMode;
   protected
     function PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
 
@@ -574,8 +579,10 @@ type
 
     procedure RecordEvent(const AEvent: TLKEvent); virtual; abstract;
   public
-    constructor Create; override;
+    constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce;
     destructor Destroy; override;
+
+    procedure AfterConstruction; override;
 
     procedure Subscribe;
     procedure Unsubscribe;
@@ -890,6 +897,12 @@ begin
   finally
     Unlock;
   end;
+end;
+
+function TLKEvent.Clone: TLKEvent;
+begin
+  Result := GetEventType.Create;
+  Result.Assign(Self);
 end;
 
 function TLKEvent.GetAllowTransmit: Boolean;
@@ -1416,8 +1429,7 @@ procedure TLKEventThreadBase.QueueEvent(const AEvent: TLKEvent);
 var
   LClone: TLKEvent;
 begin
-  LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
-  LClone.Assign(AEvent); // Copy the original data into the Clone
+  LClone := AEvent.Clone;
   LClone.FDispatchTime := GetReferenceTime;
   FQueue.Add(LClone);
 end;
@@ -1426,8 +1438,7 @@ procedure TLKEventThreadBase.StackEvent(const AEvent: TLKEvent);
 var
   LClone: TLKEvent;
 begin
-  LClone := TLKEventType(AEvent.ClassType).Create; // Create a blank instance of the Event for the Clone
-  LClone.Assign(AEvent); // Copy the original data into the Clone
+  LClone := AEvent.Clone;
   LClone.FDispatchTime := GetReferenceTime;
   FStack.Add(LClone);
 end;
@@ -1527,7 +1538,7 @@ var
 begin
   AEvent.FDelta := ADelta;
   AEvent.FProcessedTime := AStartTime;
-  LEventListenerGroup := GetEventListenerGroup(TLKEventType(AEvent.ClassType));
+  LEventListenerGroup := GetEventListenerGroup(AEvent.GetEventType);
   if LEventListenerGroup <> nil then
   begin
     if (((AEvent.ExpiresAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < AEvent.ExpiresAfter)) or (AEvent.ExpiresAfter <= 0.00)) then
@@ -1537,7 +1548,7 @@ end;
 
 procedure TLKEventThreadBaseWithListeners.QueueEvent(const AEvent: TLKEvent);
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) <> nil then
+  if GetEventListenerGroup(AEvent.GetEventType) <> nil then
     inherited;
 end;
 
@@ -1560,7 +1571,7 @@ end;
 
 procedure TLKEventThreadBaseWithListeners.StackEvent(const AEvent: TLKEvent);
 begin
-  if GetEventListenerGroup(TLKEventType(AEvent.ClassType)) <> nil then
+  if GetEventListenerGroup(AEvent.GetEventType) <> nil then
     inherited;
 end;
 
@@ -1662,10 +1673,18 @@ end;
 
 { TLKEventRecorder }
 
-constructor TLKEventRecorder.Create;
+procedure TLKEventRecorder.AfterConstruction;
 begin
   inherited;
+  if FSubscribeMode = easAuto then
+    Subscribe;
+end;
+
+constructor TLKEventRecorder.Create(const ASubscribeMode: TLKEventSubscribeMode = easManual);
+begin
+  inherited Create;
   FIndex := -1;
+  FSubscribeMode := ASubscribeMode;
 end;
 
 destructor TLKEventRecorder.Destroy;
@@ -1867,11 +1886,8 @@ end;
 procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const AScheduleFor: LKFloat);
 var
   LSchedule: TLKEventScheduled;
-  LClone: TLKEvent;
 begin
-  LClone := TLKEventType(AEvent.ClassType).Create;
-  LClone.Assign(AEvent);
-  LSchedule := TLKEventScheduled.Create(LClone, AScheduleFor);
+  LSchedule := TLKEventScheduled.Create(AEvent.Clone, AScheduleFor);
   FEvents.Add(LSchedule);
   ThreadState := tsRunning;
 end;
@@ -1945,7 +1961,7 @@ end;
 
 function TLKEventEngine.GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType;
 begin
-  Result := GetEventStreamableType(TLKEventType(AEvent.ClassType));
+  Result := GetEventStreamableType(AEvent.GetEventType);
 end;
 
 procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
