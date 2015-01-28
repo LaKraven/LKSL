@@ -97,6 +97,8 @@ type
   ///    <para>eltCaller <c>tells the Event Engine that the Event's Lifetime is controlled by the caller.</c></para>
   ///  </remarks>
   TLKEventLifetimeControl = (eltEventEngine, eltCaller);
+  ///  <summary><c>Values represent whether a Subscribable Type (such as TLKEventListener and TLKEventRecorder) should Subscribe automatically via its Constructor.</c></summary>
+  TLKEventSubscribeMode = (easAuto, easManual);
 
   { Set Types }
   TLKEventDispatchModes = set of TLKEventDispatchMode;
@@ -289,6 +291,7 @@ type
     FIndex: Integer;
     FLastEventTime: LKFloat;
     FNewestEventOnly: Boolean;
+    FSubscribeMode: TLKEventSubscribeMode;
 
     function GetCallUIThread: Boolean;
     function GetEventThread: TLKEventThread;
@@ -310,9 +313,11 @@ type
     // By default, Listeners do not care about the order in which Events are executed (it returns "False")
     function GetDefaultNewestEventOnly: Boolean; virtual;
   public
-    constructor Create; overload; override; final;
-    constructor Create(const AEventThread: TLKEventThread); reintroduce; overload; virtual;
+    constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce; overload;
+    constructor Create(const AEventThread: TLKEventThread; const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce; overload; virtual;
     destructor Destroy; override;
+
+    procedure AfterConstruction; override;
 
     // You MUST override "GetEventType" and declare what Event Type (descendant of "TLKEvent") your Listener is interested in.
     function GetEventType: TLKEventType; virtual; abstract;
@@ -354,8 +359,8 @@ type
     function GetOnEvent: TEventCallback;
     procedure SetOnEvent(const AOnEvent: TEventCallback);
   public
-    constructor Create(const AOnEvent: TEventCallback); reintroduce; overload;
-    constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback); reintroduce; overload;
+    constructor Create(const AOnEvent: TEventCallback; const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce; overload;
+    constructor Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback; const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce; overload;
     procedure EventCall(const AEvent: TLKEvent); override;
     function GetEventType: TLKEventType; override;
     property OnEvent: TEventCallback read GetOnEvent write SetOnEvent;
@@ -988,12 +993,19 @@ end;
 
 { TLKEventListener }
 
-constructor TLKEventListener.Create;
+constructor TLKEventListener.Create(const ASubscribeMode: TLKEventSubscribeMode = easManual);
 begin
-  Create(nil);
+  Create(nil, ASubscribeMode);
 end;
 
-constructor TLKEventListener.Create(const AEventThread: TLKEventThread);
+procedure TLKEventListener.AfterConstruction;
+begin
+  inherited;
+  if FSubscribeMode = easAuto then
+    Subscribe;
+end;
+
+constructor TLKEventListener.Create(const AEventThread: TLKEventThread; const ASubscribeMode: TLKEventSubscribeMode = easManual);
 begin
   inherited Create;
   FCallUIThread := GetDefaultCallUIThread;
@@ -1002,6 +1014,7 @@ begin
   FLastEventTime := 0.00;
   FNewestEventOnly := GetDefaultNewestEventOnly;
   FEventThread := AEventThread;
+  FSubscribeMode := ASubscribeMode;
 end;
 
 destructor TLKEventListener.Destroy;
@@ -1144,15 +1157,15 @@ begin
 end;
 
 { TLKEventListener }
-constructor TLKEventListener<T>.Create(const AOnEvent: TEventCallback);
+constructor TLKEventListener<T>.Create(const AOnEvent: TEventCallback; const ASubscribeMode: TLKEventSubscribeMode = easManual);
 begin
-  inherited Create;
+  inherited Create(ASubscribeMode);
   FOnEvent := AOnEvent;
 end;
 
-constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback);
+constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEvent: TEventCallback; const ASubscribeMode: TLKEventSubscribeMode = easManual);
 begin
-  inherited Create(AEventThread);
+  inherited Create(AEventThread, ASubscribeMode);
   FOnEvent := AOnEvent;
 end;
 
