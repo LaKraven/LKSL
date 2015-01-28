@@ -73,7 +73,7 @@ type
   TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
   TLKEventThreadPooled = class;
-  TLKEventThreadPool = class;
+  TLKEventPool = class;
   TLKEventRecorder = class;
 
   { Exception Types }
@@ -123,6 +123,8 @@ type
   TLKEventThreadList = TLKList<TLKEventThread>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventThreadPooled" cref="LKSL.Events.Base|TLKEventThreadPooled"/><c> instances.</c></summary>
   TLKEventThreadPooledList = TLKList<TLKEventThreadPooled>;
+  ///  <summary><c>A List of </c><see DisplayName="TLKEventPool" cref="LKSL.Events.Base|TLKEventPool"/><c> instances.</c></summary>
+  TLKEventPoolList = TLKList<TLKEventPool>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventRecorder" cref="LKSL.Events.Base|TLKEventRecorder"/><c> instances.</c></summary>
   TLKEventRecorderList = TLKList<TLKEventRecorder>;
 
@@ -406,7 +408,6 @@ type
     FEvent: TLKEvent;
     function GetEvent: TLKEvent; virtual;
     /// <summary><c>Defines the </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> descendant to which this Streamable Descriptor applies</c></summary>
-    class function GetEventType: TLKEventType; virtual; abstract;
     class procedure OnRegistration; override;
     class procedure OnUnregistration; override;
 
@@ -418,6 +419,7 @@ type
     procedure InsertEventIntoStream(const AStream: TStream); virtual; abstract;
     procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
   public
+    class function GetEventType: TLKEventType; virtual; abstract;
     class function GetTypeVersion: Double; override;
     constructor Create; overload; override;
     constructor Create(const AEvent: TLKEvent); reintroduce; overload;
@@ -438,7 +440,6 @@ type
   TLKEventStreamable<T: TLKEvent, constructor> = class abstract(TLKEventStreamable)
   protected
     function GetEvent: T; reintroduce;
-    class function GetEventType: TLKEventType; override; final;
     // Don't override the following methods anymore...
     procedure ReadEventFromStream(const AStream: TStream); overload; override; final;
     procedure InsertEventIntoStream(const AStream: TStream); overload; override; final;
@@ -448,6 +449,7 @@ type
     procedure InsertEventIntoStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
     procedure WriteEventToStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
   public
+    class function GetEventType: TLKEventType; override; final;
     property Event: T read GetEvent;
   end;
 
@@ -460,10 +462,12 @@ type
     FQueue: TLKEventList;
     FStack: TLKEventList;
   protected
+    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat); virtual; abstract;
     function GetInitialThreadState: TLKThreadState; override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -510,9 +514,7 @@ type
   private
     FSubscribeMode: TLKEventSubscribeMode;
   protected
-    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
-    procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
     constructor Create; overload; override;
     constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
@@ -526,43 +528,53 @@ type
 
   {
     TLKEventThreadPooled
-      - Essentially the same as TLKEventThread except it is created by a TLKEventThreadPool descendant
+      - Essentially the same as TLKEventThread except it is created by a TLKEventPool descendant
   }
-  TLKEventThreadPooled = class abstract(TLKEventThreadBaseWithListeners)
-  protected
-    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
-    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
-    procedure Tick(const ADelta, AStartTime: LKFloat); override;
+  TLKEventThreadPooled = class abstract(TLKEventThread)
+  private
+    FEventPool: TLKEventPool;
   public
-    constructor Create(const AEventThreadPool: TLKEventThreadPool); reintroduce;
+    constructor Create(const AEventPool: TLKEventPool); reintroduce; virtual;
     destructor Destroy; override;
   end;
+  //TODO: Consider rearchitecting slightly so that TLKEventThread can switch roles depending on the called Constructor!
 
   {
-    TLKEventThreadPool
+    TLKEventPool
       - Manages and maintains a collection of TLKEventThreadPooled descendants of the nominated Type
       - Balances the Event Load between the collection of Event Threads
       -
   }
-  TLKEventThreadPool = class abstract(TLKEventThreadBase)
+  TLKEventPool = class abstract(TLKEventThreadBase)
   private
-    FEventThreadPooledType: TLKEventThreadPooledType;
-    FPooledEventThreads: TLKEventThreadPooledList;
+    FThreadPooledEventThreads: TLKEventThreadPooledList;
+    FSubscribeMode: TLKEventSubscribeMode;
+
+    procedure RegisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
+    procedure UnregisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
   protected
-    function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
+    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
+    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
   public
-    constructor Create; overload; override;
-    constructor Create(const AInstanceLimit: Integer); reintroduce; overload;
+    class function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
+    constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
+    constructor Create(const AInstanceLimit: Integer; const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
     destructor Destroy; override;
+
+    procedure AfterConstruction; override;
+
+    procedure Subscribe;
+    procedure Unsubscribe;
   end;
 
   {
-    TLKEventThreadPool<T: TLKEventThreadPooled>
-      - A Generic version of TLKEventThreadPool
+    TLKEventPool<T: TLKEventThreadPooled>
+      - A Generic version of TLKEventPool
       - Eliminates the replication of boilerplate code.
   }
-  TLKEventThreadPool<T: TLKEventThreadPooled, constructor> = class(TLKEventThreadPool)
-
+  TLKEventPool<T: TLKEventThreadPooled> = class(TLKEventPool)
+  public
+    class function GetEventThreadPooledType: TLKEventThreadPooledType; override; final;
   end;
 
   {
@@ -683,21 +695,26 @@ type
   }
   TLKEventEngine = class(TLKPersistent)
   private
+    FEventPools: TLKEventPoolList;
     FEventThreads: TLKEventThreadList;
     FRecorders: TLKEventRecorderList;
     FEventProcessor: TLKEventProcessor;
     FEventScheduler: TLKEventScheduler;
     FEventStreamables: TLKEventStreamableDictionary;
 
+    // "QueueInRecorders" iterates through all Event Recorders and adds the Event to them
+    procedure QueueInRecorders(const AEvent: TLKEvent); inline;
+
+    procedure QueueInPools(const AEvent: TLKEvent); inline;
     // "QueueInThreads" iterates through all Event Threads and (if there's a relevant
     // Listener for the Event Type) adds the Event to the Thread's internal Event Queue
     procedure QueueInThreads(const AEvent: TLKEvent); inline;
-    // "QueueInRecorders" iterates through all Event Recorders and adds the Event to them
-    procedure QueueInRecorders(const AEvent: TLKEvent); inline;
     // "QueueEvent" adds an Event to the Processing Queue (first in, first out)
     procedure QueueEvent(const AEvent: TLKEvent); inline;
     // "StackEvent" adds an Event to the Processing Stack (last in, first out)
     procedure StackEvent(const AEvent: TLKEvent); inline;
+
+    procedure StackInPools(const AEvent: TLKEvent); inline;
     // "StackInThreads" iterates through all Event Threads and (if there's a relevant
     // Listener for the Event Type) adds the Event to the Thread's internal Event Stack
     procedure StackInThreads(const AEvent: TLKEvent); inline;
@@ -707,6 +724,9 @@ type
     function GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType; overload; inline;
     ///  <summary><c>Returns a </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/><c> type for a given </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type</c></summary>
     function GetEventStreamableType(const AEvent: TLKEvent): TLKEventStreamableType; overload; inline;
+
+    procedure RegisterEventPool(const AEventPool: TLKEventPool); inline;
+    procedure UnregisterEventPool(const AEventPool: TLKEventPool); inline;
 
     procedure RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType); inline;
     procedure UnregisterEventStreamable(const AEventStreamableType: TLKEventStreamableType); inline;
@@ -1425,6 +1445,13 @@ begin
   inherited;
 end;
 
+function TLKEventThreadBase.GetDefaultYieldAccumulatedTime: Boolean;
+begin
+  // We must NOT yield all Accumulated Time on Event-enabled Threads.
+  // Doing so would prevent the Event Queue being processed
+  Result := False;
+end;
+
 function TLKEventThreadBase.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
@@ -1446,6 +1473,11 @@ begin
   LClone := AEvent.Clone;
   LClone.FDispatchTime := GetReferenceTime;
   FStack.Add(LClone);
+end;
+
+procedure TLKEventThreadBase.Tick(const ADelta, AStartTime: LKFloat);
+begin
+  // Do Nothing
 end;
 
 { TLKEventThreadBaseWithListeners }
@@ -1621,13 +1653,6 @@ begin
   inherited;
 end;
 
-function TLKEventThread.GetDefaultYieldAccumulatedTime: Boolean;
-begin
-  // We must NOT yield all Accumulated Time on Event-enabled Threads.
-  // Doing so would prevent the Event Queue being processed
-  Result := False;
-end;
-
 procedure TLKEventThread.PreTick(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
@@ -1638,11 +1663,6 @@ begin
   Events.RegisterEventThread(Self);
 end;
 
-procedure TLKEventThread.Tick(const ADelta, AStartTime: LKFloat);
-begin
-  // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
-end;
-
 procedure TLKEventThread.Unsubscribe;
 begin
   Events.UnregisterEventThread(Self);
@@ -1650,52 +1670,86 @@ end;
 
 { TLKEventThreadPooled }
 
-constructor TLKEventThreadPooled.Create(const AEventThreadPool: TLKEventThreadPool);
+constructor TLKEventThreadPooled.Create(const AEventPool: TLKEventPool);
 begin
-  inherited Create;
-  { TODO -oSimon -cEvent Engine : Register with Event Thread Pool }
+  inherited Create(easAuto);
+  FEventPool := AEventPool;
+  AEventPool.RegisterThreadPooledThread(Self);
 end;
 
 destructor TLKEventThreadPooled.Destroy;
 begin
-{ TODO -oSimon -cEvent Engine : Unregister with Event Thread Pool }
+  FEventPool.UnregisterThreadPooledThread(Self);
   inherited;
 end;
 
-function TLKEventThreadPooled.GetDefaultYieldAccumulatedTime: Boolean;
+{ TLKEventPool }
+
+constructor TLKEventPool.Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto);
 begin
-  // We must NOT yield all Accumulated Time on Event-enabled Threads.
-  // Doing so would prevent the Event Queue being processed
-  Result := False;
+  Create(TThread.ProcessorCount, ASubscribeMode);
 end;
 
-procedure TLKEventThreadPooled.PreTick(const ADelta, AStartTime: LKFloat);
+procedure TLKEventPool.AfterConstruction;
+begin
+  inherited;
+  if FSubscribeMode = easAuto then
+    Subscribe;
+end;
+
+constructor TLKEventPool.Create(const AInstanceLimit: Integer; const ASubscribeMode: TLKEventSubscribeMode = easAuto);
+begin
+  inherited Create;
+  FSubscribeMode := ASubscribeMode;
+  FThreadPooledEventThreads := TLKEventThreadPooledList.Create;
+end;
+
+destructor TLKEventPool.Destroy;
+begin
+  FThreadPooledEventThreads.Free;
+  inherited;
+end;
+
+procedure TLKEventPool.PreTick(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
 end;
 
-procedure TLKEventThreadPooled.Tick(const ADelta, AStartTime: LKFloat);
+procedure TLKEventPool.ProcessEvents(const ADelta, AStartTime: LKFloat);
 begin
-  // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
+  //TODO: Iterate Stack (then Queue, respectively, do same for each), determine best Thread to dispatch into, Remove processed Events from internal Stack/Queue
 end;
 
-{ TLKEventThreadPool }
-
-constructor TLKEventThreadPool.Create;
+procedure TLKEventPool.RegisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
 begin
-  Create(TThread.ProcessorCount);
+  if (not FThreadPooledEventThreads.Contains(AThreadPooled)) then
+    FThreadPooledEventThreads.Add(AThreadPooled);
 end;
 
-constructor TLKEventThreadPool.Create(const AInstanceLimit: Integer);
+procedure TLKEventPool.Subscribe;
 begin
-  inherited Create;
-  FPooledEventThreads := TLKEventThreadPooledList.Create;
+  Events.RegisterEventPool(Self);
 end;
 
-destructor TLKEventThreadPool.Destroy;
+procedure TLKEventPool.UnregisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
+var
+  LIndex: Integer;
 begin
-  FPooledEventThreads.Free;
-  inherited;
+  LIndex := FThreadPooledEventThreads.IndexOf(AThreadPooled);
+  if LIndex > -1 then
+    FThreadPooledEventThreads.Add(AThreadPooled);
+end;
+
+procedure TLKEventPool.Unsubscribe;
+begin
+  Events.UnregisterEventPool(Self);
+end;
+
+{ TLKEventPool<T> }
+
+class function TLKEventPool<T>.GetEventThreadPooledType: TLKEventThreadPooledType;
+begin
+  Result := T;
 end;
 
 { TLKEventRecorder }
@@ -1958,6 +2012,7 @@ begin
   FEventProcessor := TLKEventProcessor.Create;
   FEventScheduler := TLKEventScheduler.Create;
   FEventStreamables := TLKEventStreamableDictionary.Create;
+  FEventPools := TLKEventPoolList.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
@@ -1973,6 +2028,7 @@ begin
   FEventThreads.Free;
   FRecorders.Free;
   FEventStreamables.Free;
+  FEventPools.Free;
   inherited;
 end;
 
@@ -1999,6 +2055,14 @@ begin
   FEventProcessor.QueueEvent(AEvent);
 end;
 
+procedure TLKEventEngine.QueueInPools(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  for I := 0 to FEventPools.Count - 1 do
+    FEventPools[I].QueueEvent(AEvent);
+end;
+
 procedure TLKEventEngine.QueueInRecorders(const AEvent: TLKEvent);
 var
   I: Integer;
@@ -2013,6 +2077,12 @@ var
 begin
   for I := 0 to FEventThreads.Count - 1 do
     FEventThreads[I].QueueEvent(AEvent);
+end;
+
+procedure TLKEventEngine.RegisterEventPool(const AEventPool: TLKEventPool);
+begin
+  if (not FEventPools.Contains(AEventPool)) then
+    FEventPools.Add(AEventPool);
 end;
 
 procedure TLKEventEngine.RegisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
@@ -2054,6 +2124,14 @@ begin
   FEventProcessor.StackEvent(AEvent);
 end;
 
+procedure TLKEventEngine.StackInPools(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  for I := 0 to FEventPools.Count - 1 do
+    FEventPools[I].StackEvent(AEvent);
+end;
+
 procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
 var
   I: Integer;
@@ -2066,6 +2144,15 @@ procedure TLKEventEngine.TransmitEvent(const AEvent: TLKEvent);
 begin
 //  FTransmitters.AddEvent(AEvent);
   AEvent.Free;
+end;
+
+procedure TLKEventEngine.UnregisterEventPool(const AEventPool: TLKEventPool);
+var
+  LIndex: Integer;
+begin
+  LIndex := FEventPools.IndexOf(AEventPool);
+  if LIndex > -1 then
+    FEventPools.Delete(LIndex);
 end;
 
 procedure TLKEventEngine.UnregisterEventStreamable(const AEventStreamableType: TLKEventStreamableType);
