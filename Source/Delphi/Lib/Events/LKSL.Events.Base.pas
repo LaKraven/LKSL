@@ -292,7 +292,6 @@ type
     FCallUIThread: Boolean;
     FEventThread: TLKEventThread;
     FExpireAfter: LKFloat;
-    FIndex: Integer;
     FLastEventTime: LKFloat;
     FNewestEventOnly: Boolean;
     FSubscribeMode: TLKEventSubscribeMode;
@@ -491,7 +490,7 @@ type
 
     // Methods to register and unregister Event Listeners
     procedure RegisterListener(const AListener: TLKEventListener);
-    function UnregisterListener(const AListener: TLKEventListener): Integer;
+    procedure UnregisterListener(const AListener: TLKEventListener);
   protected
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
   public
@@ -508,8 +507,6 @@ type
       - Each cycle will process Events from the Queue before processing your Tick method.
   }
   TLKEventThread = class abstract(TLKEventThreadBaseWithListeners)
-  private
-    FIndex: Integer; // This Thread's position in the Event Handler's "EventThread" Array
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
@@ -524,8 +521,6 @@ type
       - Essentially the same as TLKEventThread except it is created by a TLKEventThreadPool descendant
   }
   TLKEventThreadPooled = class abstract(TLKEventThreadBaseWithListeners)
-  private
-    FIndex: Integer; // This Thread's position in the Event Thread Pool's "EventThread" Array
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
@@ -568,7 +563,6 @@ type
   }
   TLKEventRecorder = class abstract(TLKEventThreadBase)
   private
-    FIndex: Integer;
     FSubscribeMode: TLKEventSubscribeMode;
   protected
     function PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
@@ -716,7 +710,7 @@ type
     procedure UnregisterRecorder(const ARecorder: TLKEventRecorder); inline;
 
     procedure RegisterListener(const AListener: TLKEventListener); inline;
-    function UnregisterListener(const AListener: TLKEventListener): Integer; inline;
+    procedure UnregisterListener(const AListener: TLKEventListener); inline;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -1023,7 +1017,6 @@ begin
   inherited Create;
   FCallUIThread := GetDefaultCallUIThread;
   FExpireAfter := GetDefaultExpireAfter;
-  FIndex := -1;
   FLastEventTime := 0.00;
   FNewestEventOnly := GetDefaultNewestEventOnly;
   FEventThread := AEventThread;
@@ -1149,24 +1142,18 @@ end;
 
 procedure TLKEventListener.Subscribe;
 begin
-  if FIndex = -1 then
-  begin
-    if FEventThread = nil then
-      Events.RegisterListener(Self)
-    else
-      FEventThread.RegisterListener(Self);
-  end;
+  if FEventThread = nil then
+    Events.RegisterListener(Self)
+  else
+    FEventThread.RegisterListener(Self);
 end;
 
 procedure TLKEventListener.Unsubscribe;
 begin
-  if FIndex > -1 then
-  begin
-    if FEventThread = nil then
-      FIndex := Events.UnregisterListener(Self)
-    else
-      FIndex := FEventThread.UnregisterListener(Self);
-  end;
+  if FEventThread = nil then
+    Events.UnregisterListener(Self)
+  else
+    FEventThread.UnregisterListener(Self);
 end;
 
 { TLKEventListener }
@@ -1262,12 +1249,22 @@ end;
 
 procedure TLKEventListenerGroup.RegisterListener(const AListener: TLKEventListener);
 begin
-  AListener.FIndex := FListeners.Add(AListener);
+  if (not FListeners.Contains(AListener)) then
+    FListeners.Add(AListener);
 end;
 
 procedure TLKEventListenerGroup.UnregisterListener(const AListener: TLKEventListener);
+var
+  LIndex: Integer;
 begin
-  FListeners.Delete(AListener.FIndex);
+  FListeners.Lock;
+  try
+    LIndex := FListeners.IndexOf(AListener);
+    if LIndex > -1 then
+      FListeners.Delete(LIndex);
+  finally
+    FListeners.Unlock;
+  end;
   if FListeners.Count = 0 then
     Free;
 end;
@@ -1449,7 +1446,7 @@ procedure TLKEventThreadBaseWithListeners.AddEventListenerGroup(const AEventList
 begin
   FEventListenerGroups.Lock;
   try
-    if not (FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType)) then
+    if (not FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType)) then
       FEventListenerGroups.Add(AEventListenerGroup.EventType, AEventListenerGroup);
   finally
     FEventListenerGroups.Unlock;
@@ -1479,7 +1476,8 @@ procedure TLKEventThreadBaseWithListeners.DeleteEventListenerGroup(const AEventL
 begin
   FEventListenerGroups.Lock;
   try
-    FEventListenerGroups.Remove(AEventListenerGroup.EventType);
+    if FEventListenerGroups.ContainsKey(AEventListenerGroup.EventType) then
+      FEventListenerGroups.Remove(AEventListenerGroup.EventType);
   finally
     FEventListenerGroups.Unlock;
   end;
@@ -1575,7 +1573,7 @@ begin
     inherited;
 end;
 
-function TLKEventThreadBaseWithListeners.UnregisterListener(const AListener: TLKEventListener): Integer;
+procedure TLKEventThreadBaseWithListeners.UnregisterListener(const AListener: TLKEventListener);
 var
   LEventListenerGroup: TLKEventListenerGroup;
 begin
@@ -1584,9 +1582,8 @@ begin
     LEventListenerGroup := GetEventListenerGroup(AListener.GetEventType);
     if LEventListenerGroup <> nil then
       LEventListenerGroup.UnregisterListener(AListener);
-    FEventListenerGroups.Unlock;
   finally
-    Result := -1;
+    FEventListenerGroups.Unlock;
   end;
 end;
 
@@ -1683,14 +1680,12 @@ end;
 constructor TLKEventRecorder.Create(const ASubscribeMode: TLKEventSubscribeMode = easManual);
 begin
   inherited Create;
-  FIndex := -1;
   FSubscribeMode := ASubscribeMode;
 end;
 
 destructor TLKEventRecorder.Destroy;
 begin
-  if FIndex <> -1 then
-    Unsubscribe;
+  Unsubscribe;
   inherited;
 end;
 
@@ -1759,8 +1754,7 @@ end;
 
 procedure TLKEventRecorder.Subscribe;
 begin
-  if FIndex = -1 then
-    Events.RegisterRecorder(Self);
+  Events.RegisterRecorder(Self);
 end;
 
 procedure TLKEventRecorder.Tick(const ADelta, AStartTime: LKFloat);
@@ -1772,8 +1766,7 @@ end;
 
 procedure TLKEventRecorder.Unsubscribe;
 begin
-  if FIndex <> -1 then
-    Events.UnregisterRecorder(Self);
+  Events.UnregisterRecorder(Self);
 end;
 
 { TLKEventProcessor }
@@ -1942,10 +1935,8 @@ var
   I: Integer;
 begin
   FEventScheduler.Kill;
-  // If your implementation is correct, there shouldn't be anything in here to iterate!
   for I := FEventThreads.Count - 1 downto 0 do
     UnregisterEventThread(FEventThreads[I]);
-  // If your implementation is correct, there shouldn't be anything in here to iterate!
   for I := FRecorders.Count - 1 downto 0 do
     FRecorders[I].Unsubscribe;
   FEventProcessor.Kill;
@@ -2006,7 +1997,8 @@ end;
 
 procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
 begin
-  AEventThread.FIndex := FEventThreads.Add(AEventThread);
+  if (not FEventThreads.Contains(AEventThread)) then
+    FEventThreads.Add(AEventThread);
 end;
 
 procedure TLKEventEngine.RegisterListener(const AListener: TLKEventListener);
@@ -2016,7 +2008,8 @@ end;
 
 procedure TLKEventEngine.RegisterRecorder(const ARecorder: TLKEventRecorder);
 begin
-  ARecorder.FIndex := FRecorders.Add(ARecorder);
+  if (not FRecorders.Contains(ARecorder)) then
+    FRecorders.Add(ARecorder);
 end;
 
 procedure TLKEventEngine.StackEvent(const AEvent: TLKEvent);
@@ -2054,20 +2047,26 @@ begin
 end;
 
 procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThread);
+var
+  LIndex: Integer;
 begin
-  FEventThreads.Delete(AEventThread.FIndex);
+  LIndex := FEventThreads.IndexOf(AEventThread);
+  if (LIndex > -1) then
+    FEventThreads.Delete(LIndex);
 end;
 
-function TLKEventEngine.UnregisterListener(const AListener: TLKEventListener): Integer;
+procedure TLKEventEngine.UnregisterListener(const AListener: TLKEventListener);
 begin
   FEventProcessor.UnregisterListener(AListener);
-  Result := -1;
 end;
 
 procedure TLKEventEngine.UnregisterRecorder(const ARecorder: TLKEventRecorder);
+var
+  LIndex: Integer;
 begin
-  FRecorders.Delete(ARecorder.FIndex);
-  ARecorder.FIndex := -1;
+  LIndex := FRecorders.IndexOf(ARecorder);
+  if (LIndex > -1) then
+    FRecorders.Delete(LIndex);
 end;
 
 initialization
