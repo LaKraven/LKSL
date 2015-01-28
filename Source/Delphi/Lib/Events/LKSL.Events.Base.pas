@@ -507,13 +507,21 @@ type
       - Each cycle will process Events from the Queue before processing your Tick method.
   }
   TLKEventThread = class abstract(TLKEventThreadBaseWithListeners)
+  private
+    FSubscribeMode: TLKEventSubscribeMode;
   protected
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
-    constructor Create; override;
+    constructor Create; overload; override;
+    constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
     destructor Destroy; override;
+
+    procedure AfterConstruction; override;
+
+    procedure Subscribe;
+    procedure Unsubscribe;
   end;
 
   {
@@ -1589,15 +1597,27 @@ end;
 
 { TLKEventThread }
 
-constructor TLKEventThread.Create;
+procedure TLKEventThread.AfterConstruction;
 begin
   inherited;
-  Events.RegisterEventThread(Self);
+  if FSubscribeMode = easAuto then
+    Subscribe;
+end;
+
+constructor TLKEventThread.Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto);
+begin
+  inherited Create;
+  FSubscribeMode := ASubscribeMode;
+end;
+
+constructor TLKEventThread.Create;
+begin
+  Create(easAuto);
 end;
 
 destructor TLKEventThread.Destroy;
 begin
-  Events.UnregisterEventThread(Self);
+  Unsubscribe;
   inherited;
 end;
 
@@ -1613,9 +1633,19 @@ begin
   ProcessEvents(ADelta, AStartTime);
 end;
 
+procedure TLKEventThread.Subscribe;
+begin
+  Events.RegisterEventThread(Self);
+end;
+
 procedure TLKEventThread.Tick(const ADelta, AStartTime: LKFloat);
 begin
   // Do nothing (this just immutes the procedure, because you may not want a looping process in the Thread
+end;
+
+procedure TLKEventThread.Unsubscribe;
+begin
+  Events.UnregisterEventThread(Self);
 end;
 
 { TLKEventThreadPooled }
