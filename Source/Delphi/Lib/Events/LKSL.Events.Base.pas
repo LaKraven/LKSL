@@ -72,7 +72,6 @@ type
   TLKEventThreadBase = class;
   TLKEventThreadBaseWithListeners = class;
   TLKEventThread = class;
-  TLKEventThreadPooled = class;
   TLKEventPool = class;
   TLKEventRecorder = class;
 
@@ -110,8 +109,8 @@ type
   TLKEventListenerType = class of TLKEventListener;
   ///  <summary><c>Class Reference of <see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/></c></summary>
   TLKEventStreamableType = class of TLKEventStreamable;
-  ///  <summary><c>Class Reference of <see DisplayName="TLKEventThreadPooled" cref="LKSL.Events.Base|TLKEventThreadPooled"/></c></summary>
-  TLKEventThreadPooledType = class of TLKEventThreadPooled;
+  ///  <summary><c>Class Reference of <see DisplayName="TLKEventThread" cref="LKSL.Events.Base|TLKEventThread"/></c></summary>
+  TLKEventThreadType = class of TLKEventThread;
 
   { Generics Lists Types }
   TLKEventTypeList = TLKList<TLKEventType>;
@@ -121,8 +120,6 @@ type
   TLKEventListenerList = TLKList<TLKEventListener>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Base|TLKEventThread"/><c> instances.</c></summary>
   TLKEventThreadList = TLKList<TLKEventThread>;
-  ///  <summary><c>A List of </c><see DisplayName="TLKEventThreadPooled" cref="LKSL.Events.Base|TLKEventThreadPooled"/><c> instances.</c></summary>
-  TLKEventThreadPooledList = TLKList<TLKEventThreadPooled>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventPool" cref="LKSL.Events.Base|TLKEventPool"/><c> instances.</c></summary>
   TLKEventPoolList = TLKList<TLKEventPool>;
   ///  <summary><c>A List of </c><see DisplayName="TLKEventRecorder" cref="LKSL.Events.Base|TLKEventRecorder"/><c> instances.</c></summary>
@@ -513,11 +510,12 @@ type
   TLKEventThread = class abstract(TLKEventThreadBaseWithListeners)
   private
     FSubscribeMode: TLKEventSubscribeMode;
+    FEventPool: TLKEventPool;
   protected
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
   public
-    constructor Create; overload; override;
     constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
+    constructor Create(const AEventPool: TLKEventPool); reintroduce; overload; virtual;
     destructor Destroy; override;
 
     procedure AfterConstruction; override;
@@ -527,36 +525,23 @@ type
   end;
 
   {
-    TLKEventThreadPooled
-      - Essentially the same as TLKEventThread except it is created by a TLKEventPool descendant
-  }
-  TLKEventThreadPooled = class abstract(TLKEventThread)
-  private
-    FEventPool: TLKEventPool;
-  public
-    constructor Create(const AEventPool: TLKEventPool); reintroduce; virtual;
-    destructor Destroy; override;
-  end;
-  //TODO: Consider rearchitecting slightly so that TLKEventThread can switch roles depending on the called Constructor!
-
-  {
     TLKEventPool
-      - Manages and maintains a collection of TLKEventThreadPooled descendants of the nominated Type
+      - Manages and maintains a collection of TLKEventThread descendants of the nominated Type
       - Balances the Event Load between the collection of Event Threads
       -
   }
   TLKEventPool = class abstract(TLKEventThreadBase)
   private
-    FThreadPooledEventThreads: TLKEventThreadPooledList;
+    FEventThreads: TLKEventThreadList;
     FSubscribeMode: TLKEventSubscribeMode;
 
-    procedure RegisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
-    procedure UnregisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
+    procedure RegisterEventThread(const AEventThread: TLKEventThread);
+    procedure UnregisterEventThread(const AEventThread: TLKEventThread);
   protected
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
   public
-    class function GetEventThreadPooledType: TLKEventThreadPooledType; virtual; abstract;
+    class function GetEventThreadType: TLKEventThreadType; virtual; abstract;
     constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
     constructor Create(const AInstanceLimit: Integer; const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
     destructor Destroy; override;
@@ -568,13 +553,13 @@ type
   end;
 
   {
-    TLKEventPool<T: TLKEventThreadPooled>
+    TLKEventPool<T: TLKEventThread>
       - A Generic version of TLKEventPool
       - Eliminates the replication of boilerplate code.
   }
-  TLKEventPool<T: TLKEventThreadPooled> = class(TLKEventPool)
+  TLKEventPool<T: TLKEventThread> = class(TLKEventPool)
   public
-    class function GetEventThreadPooledType: TLKEventThreadPooledType; override; final;
+    class function GetEventThreadType: TLKEventThreadType; override; final;
   end;
 
   {
@@ -1639,12 +1624,14 @@ end;
 constructor TLKEventThread.Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto);
 begin
   inherited Create;
+  FEventPool := nil;
   FSubscribeMode := ASubscribeMode;
 end;
 
-constructor TLKEventThread.Create;
+constructor TLKEventThread.Create(const AEventPool: TLKEventPool);
 begin
   Create(easAuto);
+  FEventPool := AEventPool;
 end;
 
 destructor TLKEventThread.Destroy;
@@ -1660,27 +1647,18 @@ end;
 
 procedure TLKEventThread.Subscribe;
 begin
-  Events.RegisterEventThread(Self);
+  if FEventPool = nil then
+    Events.RegisterEventThread(Self)
+  else
+    FEventPool.RegisterEventThread(Self);
 end;
 
 procedure TLKEventThread.Unsubscribe;
 begin
-  Events.UnregisterEventThread(Self);
-end;
-
-{ TLKEventThreadPooled }
-
-constructor TLKEventThreadPooled.Create(const AEventPool: TLKEventPool);
-begin
-  inherited Create(easAuto);
-  FEventPool := AEventPool;
-  AEventPool.RegisterThreadPooledThread(Self);
-end;
-
-destructor TLKEventThreadPooled.Destroy;
-begin
-  FEventPool.UnregisterThreadPooledThread(Self);
-  inherited;
+  if FEventPool = nil then
+    Events.UnregisterEventThread(Self)
+  else
+    FEventPool.UnregisterEventThread(Self);
 end;
 
 { TLKEventPool }
@@ -1701,12 +1679,12 @@ constructor TLKEventPool.Create(const AInstanceLimit: Integer; const ASubscribeM
 begin
   inherited Create;
   FSubscribeMode := ASubscribeMode;
-  FThreadPooledEventThreads := TLKEventThreadPooledList.Create;
+  FEventThreads := TLKEventThreadList.Create;
 end;
 
 destructor TLKEventPool.Destroy;
 begin
-  FThreadPooledEventThreads.Free;
+  FEventThreads.Free;
   inherited;
 end;
 
@@ -1720,10 +1698,10 @@ begin
   //TODO: Iterate Stack (then Queue, respectively, do same for each), determine best Thread to dispatch into, Remove processed Events from internal Stack/Queue
 end;
 
-procedure TLKEventPool.RegisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
+procedure TLKEventPool.RegisterEventThread(const AEventThread: TLKEventThread);
 begin
-  if (not FThreadPooledEventThreads.Contains(AThreadPooled)) then
-    FThreadPooledEventThreads.Add(AThreadPooled);
+  if (not FEventThreads.Contains(AEventThread)) then
+    FEventThreads.Add(AEventThread);
 end;
 
 procedure TLKEventPool.Subscribe;
@@ -1731,13 +1709,13 @@ begin
   Events.RegisterEventPool(Self);
 end;
 
-procedure TLKEventPool.UnregisterThreadPooledThread(const AThreadPooled: TLKEventThreadPooled);
+procedure TLKEventPool.UnregisterEventThread(const AEventThread: TLKEventThread);
 var
   LIndex: Integer;
 begin
-  LIndex := FThreadPooledEventThreads.IndexOf(AThreadPooled);
+  LIndex := FEventThreads.IndexOf(AEventThread);
   if LIndex > -1 then
-    FThreadPooledEventThreads.Add(AThreadPooled);
+    FEventThreads.Add(AEventThread);
 end;
 
 procedure TLKEventPool.Unsubscribe;
@@ -1747,7 +1725,7 @@ end;
 
 { TLKEventPool<T> }
 
-class function TLKEventPool<T>.GetEventThreadPooledType: TLKEventThreadPooledType;
+class function TLKEventPool<T>.GetEventThreadType: TLKEventThreadType;
 begin
   Result := T;
 end;
@@ -2052,6 +2030,8 @@ begin
 
   QueueInThreads(AEvent);
 
+  QueueInPools(AEvent);
+
   FEventProcessor.QueueEvent(AEvent);
 end;
 
@@ -2120,6 +2100,8 @@ begin
     QueueInRecorders(AEvent);
 
   StackInThreads(AEvent);
+
+  StackInPools(AEvent);
 
   FEventProcessor.StackEvent(AEvent);
 end;
