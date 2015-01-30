@@ -462,7 +462,9 @@ type
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
-    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); virtual; abstract;
+    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); virtual; abstract;
+    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); virtual;
+    procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat); virtual;
     function GetInitialThreadState: TLKThreadState; override;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
@@ -485,15 +487,11 @@ type
     procedure ClearEventListenerGroups;
     procedure DeleteEventListenerGroup(const AEventListenerGroup: TLKEventListenerGroup);
     function GetEventListenerGroup(const AEventType: TLKEventType): TLKEventListenerGroup;
-    // "ProcessListeners" iterates every Listener paired with the Thread and (assuming
-    // the parameters match) executes the Event Call on the Listeners (respectively)
-    procedure ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
-
     // Methods to register and unregister Event Listeners
     procedure RegisterListener(const AListener: TLKEventListener);
     procedure UnregisterListener(const AListener: TLKEventListener);
   protected
-    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
+    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -538,7 +536,7 @@ type
     procedure RegisterEventThread(const AEventThread: TLKEventThread);
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
   protected
-    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
+    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
   public
     class function GetEventThreadType: TLKEventThreadType; virtual; abstract;
@@ -573,10 +571,10 @@ type
     function PrepareStreamable(const AEvent: TLKEvent): TLKEventStreamable;
 
     function GetInitialThreadState: TLKThreadState; override;
-    procedure ProcessEvents(const ADelta, AStartTime: LKFloat); override; final;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
 
     procedure RecordEvent(const AEvent: TLKEvent); virtual; abstract;
+    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
   public
     constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easManual); reintroduce;
     destructor Destroy; override;
@@ -687,24 +685,29 @@ type
     FEventScheduler: TLKEventScheduler;
     FEventStreamables: TLKEventStreamableDictionary;
 
-    // "QueueInRecorders" iterates through all Event Recorders and adds the Event to them
-    procedure QueueInRecorders(const AEvent: TLKEvent); inline;
-
-    procedure QueueInPools(const AEvent: TLKEvent); inline;
-    // "QueueInThreads" iterates through all Event Threads and (if there's a relevant
-    // Listener for the Event Type) adds the Event to the Thread's internal Event Queue
-    procedure QueueInThreads(const AEvent: TLKEvent); inline;
-    // "QueueEvent" adds an Event to the Processing Queue (first in, first out)
+    ///  <summary><c>Adds an Event to the Processing Queue (first in, first out)</c></summary>
     procedure QueueEvent(const AEvent: TLKEvent); inline;
-    // "StackEvent" adds an Event to the Processing Stack (last in, first out)
+    ///  <summary><c>Adds an Event to the Processing Stack (last in, first out)</c></summary>
     procedure StackEvent(const AEvent: TLKEvent); inline;
 
+    ///  <summary><c>Dispatches Event to Pools' Queues</c></summary>
+    procedure QueueInPools(const AEvent: TLKEvent); inline;
+    ///  <summary><c>Dispatches Event to Pools' Stacks</c></summary>
     procedure StackInPools(const AEvent: TLKEvent); inline;
-    // "StackInThreads" iterates through all Event Threads and (if there's a relevant
-    // Listener for the Event Type) adds the Event to the Thread's internal Event Stack
+
+    ///  <summary><c>Dispatches Event to Recorders' Queues</c></summary>
+    procedure QueueInRecorders(const AEvent: TLKEvent); inline;
+    ///  <summary><c>Dispatches Event to Recorders' Stacks</c></summary>
+    procedure StackInRecorders(const AEvent: TLKEvent); inline;
+
+    ///  <summary><c>Dispatches Event to Threads' Queues</c></summary>
+    procedure QueueInThreads(const AEvent: TLKEvent); inline;
+    ///  <summary><c>Dispatches Event to Threads' Stacks</c></summary>
     procedure StackInThreads(const AEvent: TLKEvent); inline;
-    // "TransmitEvent" passes an Event along to the Transmitters WITHOUT broadcasting it internally
+
+    ///  <summary><c>Passes an Event along to the Transmitters WITHOUT broadcasting it internally</c></summary>
     procedure TransmitEvent(const AEvent: TLKEvent); inline;
+
     ///  <summary><c>Returns a </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/><c> type for a given </c><see DisplayName="TLKEventType" cref="LKSL.Events.Base|TLKEventType"/><c> Reference.</c></summary>
     function GetEventStreamableType(const AEventType: TLKEventType): TLKEventStreamableType; overload; inline;
     ///  <summary><c>Returns a </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Base|TLKEventStreamable"/><c> type for a given </c><see DisplayName="TLKEvent" cref="LKSL.Events.Base|TLKEvent"/><c> Type</c></summary>
@@ -1442,6 +1445,29 @@ begin
   Result := tsPaused;
 end;
 
+procedure TLKEventThreadBase.ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
+var
+  I, LStart, LEnd: Integer;
+begin
+  if AEventList.Count > 0 then
+  begin
+    LStart := 0;
+    LEnd := AEventList.Count - 1;
+    for I := LStart to LEnd do
+    begin
+      ProcessEvent(AEventList[I], ADelta, AStartTime);
+      AEventList[I].Free;
+    end;
+    AEventList.DeleteRange(LStart, LEnd);
+  end;
+end;
+
+procedure TLKEventThreadBase.ProcessEvents(const ADelta, AStartTime: LKFloat);
+begin
+  ProcessEventList(FStack, ADelta, AStartTime);
+  ProcessEventList(FQueue, ADelta, AStartTime);
+end;
+
 procedure TLKEventThreadBase.QueueEvent(const AEvent: TLKEvent);
 var
   LClone: TLKEvent;
@@ -1525,37 +1551,7 @@ begin
   end;
 end;
 
-procedure TLKEventThreadBaseWithListeners.ProcessEvents(const ADelta, AStartTime: LKFloat);
-var
-  I, LStart, LEnd: Integer;
-begin
-  // Process Stack
-  if FStack.Count > 0 then
-  begin
-    LStart := 0;
-    LEnd := FStack.Count - 1;
-    for I := LStart to LEnd do
-    begin
-      ProcessListeners(FStack[I], ADelta, AStartTime);
-      FStack[I].Free;
-    end;
-    FStack.DeleteRange(LStart, LEnd);
-  end;
-  // Process Queue
-  if FQueue.Count > 0 then
-  begin
-    LStart := 0;
-    LEnd := FQueue.Count - 1;
-    for I := LStart to LEnd do
-    begin
-      ProcessListeners(FQueue[I], ADelta, AStartTime);
-      FQueue[I].Free;
-    end;
-    FQueue.DeleteRange(LStart, LEnd);
-  end;
-end;
-
-procedure TLKEventThreadBaseWithListeners.ProcessListeners(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
+procedure TLKEventThreadBaseWithListeners.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 var
   LEventListenerGroup: TLKEventListenerGroup;
 begin
@@ -1693,9 +1689,9 @@ begin
   ProcessEvents(ADelta, AStartTime);
 end;
 
-procedure TLKEventPool.ProcessEvents(const ADelta, AStartTime: LKFloat);
+procedure TLKEventPool.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 begin
-  //TODO: Iterate Stack (then Queue, respectively, do same for each), determine best Thread to dispatch into, Remove processed Events from internal Stack/Queue
+
 end;
 
 procedure TLKEventPool.RegisterEventThread(const AEventThread: TLKEventThread);
@@ -1766,40 +1762,9 @@ begin
     Result := LStreamableType.Create(AEvent);
 end;
 
-procedure TLKEventRecorder.ProcessEvents(const ADelta, AStartTime: LKFloat);
-var
-  I, LStart, LEnd: Integer;
+procedure TLKEventRecorder.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 begin
-  // We don't Lock the Event Array at this point, as doing so would prevent additional
-  // events from being added to the Queue (and could cause a Thread to freeze)
-  // Process Stack
-  if FStack.Count > 0 then
-  begin
-    LStart := 0;
-    LEnd := FStack.Count - 1;
-    for I := LStart to LEnd do
-    begin
-      FStack[I].FDelta := ADelta;
-      FStack[I].FProcessedTime := AStartTime;
-      RecordEvent(FStack[I]);
-      FStack[I].Free;
-    end;
-    FStack.DeleteRange(LStart, LEnd);
-  end;
-  // Process Queue
-  if FQueue.Count > 0 then
-  begin
-    LStart := 0;
-    LEnd := FQueue.Count - 1;
-    for I := LStart to LEnd do
-    begin
-      FQueue[I].FDelta := ADelta;
-      FQueue[I].FProcessedTime := AStartTime;
-      RecordEvent(FQueue[I]);
-      FQueue[I].Free;
-    end;
-    FQueue.DeleteRange(LStart, LEnd);
-  end;
+  RecordEvent(AEvent);
 end;
 
 procedure TLKEventRecorder.QueueEvent(const AEvent: TLKEvent);
@@ -2097,7 +2062,7 @@ begin
   AEvent.FDispatchMethod := edStack;
 
   if (AEvent.AllowRecording) and (not AEvent.IsReplay) then
-    QueueInRecorders(AEvent);
+    StackInRecorders(AEvent);
 
   StackInThreads(AEvent);
 
@@ -2112,6 +2077,14 @@ var
 begin
   for I := 0 to FEventPools.Count - 1 do
     FEventPools[I].StackEvent(AEvent);
+end;
+
+procedure TLKEventEngine.StackInRecorders(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  for I := 0 to FRecorders.Count - 1 do
+    FRecorders[I].StackEvent(AEvent);
 end;
 
 procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
