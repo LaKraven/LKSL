@@ -305,8 +305,8 @@ type
     procedure SetExpireAfter(const AExpireAfter: LKFloat);
     procedure SetNewestEventOnly(const ANewestOnly: Boolean);
   protected
-    // Override "GetDefaultCallUIThread" if you want your Listener to Synchronize its execution with the UI Thread
-    // By default, Event Callbacks are NOT Synchronized (it returns "False")
+    ///  <summary><c>Override if you want your Listener to Synchronize its execution with the UI Thread</c></summary>
+    ///  <remarks><c>By default, Event Callbacks are NOT Synchronized (it returns "False")</c></remarks>
     function GetDefaultCallUIThread: Boolean; virtual;
     // Override "GetDefaultExpireAfter" if you want your Listener to disregard Events that are older than the specified time (in Seconds)
     // By default, Listeners do not care how old an Event is ("0.00" = No Expiry)
