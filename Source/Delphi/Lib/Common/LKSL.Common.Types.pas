@@ -85,11 +85,17 @@ uses
 
 type
   { Forward Declarations }
+  TLKCriticalSection = class;
   TLKPersistent = class;
   TLKObject = class;
 
   { Exception Types }
   ELKException = class(Exception);
+
+  TLKCriticalSection = class(TCriticalSection)
+  private
+    {$HINTS OFF}FDummy : array [0..95] of Byte;{$HINTS ON}
+  end;
 
   {
     TLKPersistent
@@ -97,7 +103,7 @@ type
   }
   TLKPersistent = class(TPersistent)
   private
-    FLock: TCriticalSection;
+    FLock: TLKCriticalSection;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -112,7 +118,7 @@ type
   }
   TLKObject = class(TObject)
   private
-    FLock: TCriticalSection;
+    FLock: TLKCriticalSection;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -138,7 +144,7 @@ implementation
 constructor TLKPersistent.Create;
 begin
   inherited Create;
-  FLock := TCriticalSection.Create;
+  FLock := TLKCriticalSection.Create;
 end;
 
 destructor TLKPersistent.Destroy;
@@ -162,7 +168,7 @@ end;
 constructor TLKObject.Create;
 begin
   inherited Create;
-  FLock := TCriticalSection.Create;
+  FLock := TLKCriticalSection.Create;
 end;
 
 destructor TLKObject.Destroy;

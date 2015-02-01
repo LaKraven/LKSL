@@ -98,6 +98,8 @@ type
   TLKEventLifetimeControl = (eltEventEngine, eltCaller);
   ///  <summary><c>Values represent whether a Subscribable Type (such as TLKEventListener and TLKEventRecorder) should Subscribe automatically via its Constructor.</c></summary>
   TLKEventSubscribeMode = (easAuto, easManual);
+  ///  <summary><c>Values represent whether an Event Thread should discard pending Events on Termination or wait until they are complete.</c></summary>
+  TLKEventFinalizationMode = (efmDiscardPending, efmProcessPending);
 
   { Set Types }
   TLKEventDispatchModes = set of TLKEventDispatchMode;
@@ -456,9 +458,13 @@ type
   }
   TLKEventThreadBase = class abstract(TLKThread)
   private
+    FFinalizationMode: TLKEventFinalizationMode;
     FQueue: TLKEventList;
     FStack: TLKEventList;
+    function GetFinalizationMode: TLKEventFinalizationMode;
+    procedure SetFinalizationMode(const AFinalizationMode: TLKEventFinalizationMode);
   protected
+    function GetDefaultFinalizationMode: TLKEventFinalizationMode; virtual;
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
@@ -473,6 +479,8 @@ type
 
     procedure QueueEvent(const AEvent: TLKEvent); virtual;
     procedure StackEvent(const AEvent: TLKEvent); virtual;
+
+    property FinalizationMode: TLKEventFinalizationMode read GetFinalizationMode write SetFinalizationMode;
   end;
 
   {
@@ -510,13 +518,18 @@ type
     FSubscribeMode: TLKEventSubscribeMode;
     FEventPool: TLKEventPool;
   protected
+    procedure DoTerminate; override;
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
+    procedure RegisterListeners; virtual; abstract;
+    procedure UnregisterListeners; virtual; abstract;
   public
     constructor Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto); reintroduce; overload;
     constructor Create(const AEventPool: TLKEventPool); reintroduce; overload; virtual;
     destructor Destroy; override;
 
     procedure AfterConstruction; override;
+
+    procedure Kill; override;
 
     procedure Subscribe;
     procedure Unsubscribe;
@@ -684,6 +697,7 @@ type
     FEventProcessor: TLKEventProcessor;
     FEventScheduler: TLKEventScheduler;
     FEventStreamables: TLKEventStreamableDictionary;
+    FUIThread: TThread;
 
     ///  <summary><c>Adds an Event to the Processing Queue (first in, first out)</c></summary>
     procedure QueueEvent(const AEvent: TLKEvent); inline;
@@ -1241,23 +1255,25 @@ end;
 procedure TLKEventListenerGroup.ProcessEvent(const AEvent: TLKEvent);
 var
   I: Integer;
+  LListener: TLKEventListener;
 begin
   for I := 0 to FListeners.Count - 1 do
   begin
-    if AEvent.ClassType = FListeners[I].GetEventType then
+    LListener := FListeners[I];
+    if AEvent.ClassType = LListener.GetEventType then
     begin
-      if (((FListeners[I].NewestEventOnly) and (AEvent.DispatchTime > FListeners[I].LastEventTime)) or
-         (not FListeners[I].NewestEventOnly)) and (FListeners[I].GetConditionsMatch(AEvent)) and
-         (((FListeners[I].ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < FListeners[I].ExpireAfter)) or
-         (FListeners[I].ExpireAfter <= 0.00)) then
+      if (((LListener.NewestEventOnly) and (AEvent.DispatchTime > LListener.LastEventTime)) or
+         (not LListener.NewestEventOnly)) and (LListener.GetConditionsMatch(AEvent)) and
+         (((LListener.ExpireAfter > 0.00) and (GetReferenceTime - AEvent.DispatchTime < LListener.ExpireAfter)) or
+         (LListener.ExpireAfter <= 0.00)) then
       begin
-        if FListeners[I].CallUIThread then
+        if LListener.CallUIThread then
         begin
           FEventThread.Synchronize(procedure begin
-                                     FListeners[I].EventCall(AEvent);
+                                     LListener.EventCall(AEvent);
                                    end);
         end else
-          FListeners[I].EventCall(AEvent);
+          LListener.EventCall(AEvent);
       end;
     end;
   end;
@@ -1433,11 +1449,27 @@ begin
   inherited;
 end;
 
+function TLKEventThreadBase.GetDefaultFinalizationMode: TLKEventFinalizationMode;
+begin
+  // Discard by Default
+  Result := efmDiscardPending;
+end;
+
 function TLKEventThreadBase.GetDefaultYieldAccumulatedTime: Boolean;
 begin
   // We must NOT yield all Accumulated Time on Event-enabled Threads.
   // Doing so would prevent the Event Queue being processed
   Result := False;
+end;
+
+function TLKEventThreadBase.GetFinalizationMode: TLKEventFinalizationMode;
+begin
+  Lock;
+  try
+    Result := FFinalizationMode;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKEventThreadBase.GetInitialThreadState: TLKThreadState;
@@ -1455,7 +1487,8 @@ begin
     LEnd := AEventList.Count - 1;
     for I := LStart to LEnd do
     begin
-      ProcessEvent(AEventList[I], ADelta, AStartTime);
+      if (not Terminated) or (FinalizationMode = efmProcessPending) then
+        ProcessEvent(AEventList[I], ADelta, AStartTime);
       AEventList[I].Free;
     end;
     AEventList.DeleteRange(LStart, LEnd);
@@ -1475,6 +1508,16 @@ begin
   LClone := AEvent.Clone;
   LClone.FDispatchTime := GetReferenceTime;
   FQueue.Add(LClone);
+end;
+
+procedure TLKEventThreadBase.SetFinalizationMode(const AFinalizationMode: TLKEventFinalizationMode);
+begin
+  Lock;
+  try
+    FFinalizationMode := AFinalizationMode;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKEventThreadBase.StackEvent(const AEvent: TLKEvent);
@@ -1620,6 +1663,7 @@ end;
 constructor TLKEventThread.Create(const ASubscribeMode: TLKEventSubscribeMode = easAuto);
 begin
   inherited Create;
+  RegisterListeners;
   FEventPool := nil;
   FSubscribeMode := ASubscribeMode;
 end;
@@ -1631,6 +1675,38 @@ begin
 end;
 
 destructor TLKEventThread.Destroy;
+begin
+  Unsubscribe;
+  UnregisterListeners;
+  inherited;
+end;
+
+procedure TLKEventThread.DoTerminate;
+begin
+
+  Unsubscribe;
+  case FFinalizationMode of
+    efmDiscardPending: begin
+                         FQueue.OwnsObjects := True;
+                         FStack.OwnsObjects := True;
+                         FQueue.Clear;
+                         FStack.Clear;
+                       end;
+    efmProcessPending: begin
+                         while (FQueue.Count > 0) or (FStack.Count > 0) do
+                         begin
+                           if FQueue.Count > 0 then
+                             ProcessEventList(FQueue, 0.00, GetReferenceTime);
+                           if FStack.Count > 0 then
+                             ProcessEventList(FStack, 0.00, GetReferenceTime);
+                         end;
+                       end;
+  end;
+
+  inherited;
+end;
+
+procedure TLKEventThread.Kill;
 begin
   Unsubscribe;
   inherited;
@@ -1950,6 +2026,7 @@ end;
 constructor TLKEventEngine.Create;
 begin
   inherited;
+  FUIThread := TThread.CurrentThread;
   FEventThreads := TLKEventThreadList.Create;
   FRecorders := TLKEventRecorderList.Create;
   FEventProcessor := TLKEventProcessor.Create;

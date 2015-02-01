@@ -82,7 +82,7 @@ type
   }
   TLKThread = class abstract(TThread)
   private
-    FLock: TCriticalSection;
+    FLock: TLKCriticalSection;
     FNextTickTime: LKFloat;
     FThreadState: TLKThreadState;
     FTickRate: LKFloat; // The INSTANT Tick Rate (in "Ticks per Second")
@@ -164,7 +164,7 @@ type
 
     // "Kill" Terminates the Thread, waits for the thread to be Terminated, then Frees it.
     // It's basically just a way of performing three actions in a single call (sugar-coating, if you like)
-    procedure Kill;
+    procedure Kill; virtual;
 
     // "Lock" locks the Thread's global "Critical Section" using a "Spinlock"
     // (Public just in case you need to call it externally for some reason)
@@ -220,7 +220,7 @@ end;
 constructor TLKThread.Create;
 begin
   inherited Create(False);
-  FLock := TCriticalSection.Create;
+  FLock := TLKCriticalSection.Create;
   FreeOnTerminate := False;
   FThreadState := GetInitialThreadState;
   FTickRateLimit := GetDefaultTickRateLimit;
