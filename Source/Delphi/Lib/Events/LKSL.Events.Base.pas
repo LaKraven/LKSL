@@ -50,7 +50,7 @@ interface
 {$ENDREGION}
 
 uses
-  {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
+  {$IFDEF POSIX}Posix.Unistd,{$ENDIF POSIX}
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.SyncObjs,
   {$ELSE}
@@ -144,6 +144,9 @@ type
   ///  <permission>Public</permission>
   TLKEvent = class abstract(TLKPersistent)
   private
+    {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    FRefCount: Integer;
+    {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
     FAllowRecording: Boolean;
     FAllowTransmit: Boolean;
     FCreatedTime: LKFloat;
@@ -173,6 +176,11 @@ type
     procedure SetAllowTransmit(const AAllowTransmit: Boolean);
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
     procedure SetIsReplay(const AIsReplay: Boolean);
+
+    {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    procedure Ref;
+    procedure Unref;
+    {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
   protected
     ///  <summary><c>Populates the referenced Instance with the values of </c>AFromEvent<c></c></summary>
     ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
@@ -203,6 +211,7 @@ type
     function GetDispatchModes: TLKEventDispatchModes; virtual;
   public
     constructor Create; override;
+    destructor Destroy; override;
 
     ///  <summary><c>Creates a Clone of this Event with the same Values</c></summary>
     ///  <permission>Public</permission>
@@ -761,6 +770,9 @@ begin
     TLKEvent(AFromEvent).Lock;
     Lock;
     try
+      {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+      FRefCount := TLKEvent(AFromEvent).FRefCount;
+      {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
       FIsClone := True;
       FAllowRecording := TLKEvent(AFromEvent).FAllowRecording;
       FAllowTransmit := TLKEvent(AFromEvent).FAllowTransmit;
@@ -784,6 +796,9 @@ end;
 constructor TLKEvent.Create;
 begin
   inherited;
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+  FRefCount := 0;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
   FIsClone := False;
   FCreatedTime := GetReferenceTime;
   FAllowRecording := GetDefaultAllowRecording;
@@ -796,6 +811,12 @@ begin
   FAllowTransmit := GetDefaultAllowTransmit;
   FDispatchModes := GetDispatchModes;
   CreateGUID(FInstanceGUID);
+end;
+
+destructor TLKEvent.Destroy;
+begin
+
+  inherited;
 end;
 
 function TLKEvent.GetDispatchModes: TLKEventDispatchModes;
@@ -941,25 +962,38 @@ end;
 
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
+  FDispatchTime := GetReferenceTime;
   if (edmQueue in FDispatchModes) then
     Events.QueueEvent(Self)
   else if (edmStack in FDispatchModes) then
     Events.StackEvent(Self);
 
+  {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
   if ALifetimeControl = eltEventEngine then
     Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEvent.Queue(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
+  FDispatchTime := GetReferenceTime;
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.QueueEvent(Self, GetReferenceTime + ASecondsFromNow)
   else
     Queue;
 
+  {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
   if ALifetimeControl = eltEventEngine then
     Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
+
+{$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+procedure TLKEvent.Ref;
+begin
+  FRefCount := AtomicIncrement(FRefCount);
+end;
+{$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 
 procedure TLKEvent.SetAllowRecording(const AAllowRecording: Boolean);
 begin
@@ -1003,30 +1037,46 @@ end;
 
 procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
+  FDispatchTime := GetReferenceTime;
   if (edmStack in FDispatchModes) then
     Events.StackEvent(Self)
   else if (edmQueue in FDispatchModes) then
     Events.QueueEvent(Self);
 
+  {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
   if ALifetimeControl = eltEventEngine then
     Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEvent.Stack(const ASecondsFromNow: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = eltEventEngine);
 begin
+  FDispatchTime := GetReferenceTime;
   if ASecondsFromNow > LKSL_EVENTS_SCHEDULER_MINLEADTIME then
     Events.FEventScheduler.StackEvent(Self, GetReferenceTime + ASecondsFromNow)
   else
     Stack;
 
+  {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
   if ALifetimeControl = eltEventEngine then
     Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEvent.TransmitOnly;
 begin
+  FDispatchTime := GetReferenceTime;
   Events.TransmitEvent(Self);
 end;
+
+{$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+procedure TLKEvent.Unref;
+begin
+  FRefCount := AtomicDecrement(FRefCount);
+  if FRefCount <= 0 then
+    Free;
+end;
+{$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 
 { TLKEventListener }
 
@@ -1317,7 +1367,11 @@ end;
 
 destructor TLKEventStreamable.Destroy;
 begin
-  FEvent.Free;
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    FEvent.Unref;
+  {$ELSE}
+    FEvent.Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
   inherited;
 end;
 
@@ -1489,7 +1543,11 @@ begin
     begin
       if (not Terminated) or (FinalizationMode = efmProcessPending) then
         ProcessEvent(AEventList[I], ADelta, AStartTime);
-      AEventList[I].Free;
+      {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+        AEventList[I].Unref;
+      {$ELSE}
+        AEventList[I].Free;
+      {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
     end;
     AEventList.DeleteRange(LStart, LEnd);
   end;
@@ -1502,12 +1560,19 @@ begin
 end;
 
 procedure TLKEventThreadBase.QueueEvent(const AEvent: TLKEvent);
-var
-  LClone: TLKEvent;
+{$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+  var
+    LClone: TLKEvent;
+{$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 begin
-  LClone := AEvent.Clone;
-  LClone.FDispatchTime := GetReferenceTime;
-  FQueue.Add(LClone);
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    AEvent.Ref;
+    FQueue.Add(AEvent);
+  {$ELSE}
+    LClone := AEvent.Clone;
+    LClone.FDispatchTime := GetReferenceTime;
+    FQueue.Add(LClone);
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEventThreadBase.SetFinalizationMode(const AFinalizationMode: TLKEventFinalizationMode);
@@ -1521,12 +1586,19 @@ begin
 end;
 
 procedure TLKEventThreadBase.StackEvent(const AEvent: TLKEvent);
-var
+{$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+  var
   LClone: TLKEvent;
+{$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 begin
-  LClone := AEvent.Clone;
-  LClone.FDispatchTime := GetReferenceTime;
-  FStack.Add(LClone);
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    AEvent.Ref;
+    FStack.Add(AEvent);
+  {$ELSE}
+    LClone := AEvent.Clone;
+    LClone.FDispatchTime := GetReferenceTime;
+    FStack.Add(LClone);
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEventThreadBase.Tick(const ADelta, AStartTime: LKFloat);
@@ -1945,7 +2017,11 @@ var
 begin
   for I := Count - 1 downto 0 do
   begin
-    Items[I].FEvent.Free;
+    {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+      Items[I].FEvent.Unref;
+    {$ELSE}
+      Items[I].FEvent.Free;
+    {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
     Items[I].Free;
   end;
 { TODO -oSJS -cEvent Engine - Scheduler : Figure out why I've done it this way! Why am I not using TLKSortedObjectList? }
@@ -1983,7 +2059,12 @@ procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent; const ASchedul
 var
   LSchedule: TLKEventScheduled;
 begin
-  LSchedule := TLKEventScheduled.Create(AEvent.Clone, AScheduleFor);
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    AEvent.Ref;
+    LSchedule := TLKEventScheduled.Create(AEvent, AScheduleFor);
+  {$ELSE}
+    LSchedule := TLKEventScheduled.Create(AEvent.Clone, AScheduleFor);
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
   FEvents.Add(LSchedule);
   ThreadState := tsRunning;
 end;
@@ -2175,7 +2256,11 @@ end;
 procedure TLKEventEngine.TransmitEvent(const AEvent: TLKEvent);
 begin
 //  FTransmitters.AddEvent(AEvent);
-  AEvent.Free;
+  {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
+    AEvent.Unref;
+  {$ELSE}
+    AEvent.Free;
+  {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 end;
 
 procedure TLKEventEngine.UnregisterEventPool(const AEventPool: TLKEventPool);
