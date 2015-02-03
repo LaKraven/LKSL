@@ -23,6 +23,10 @@ Current Features
   - High Precision Threading (a special Thread type which provide extremely accurate "reference times" for interpolation)
   - Event Engine (a VERY powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems)
 
-Educational articles demonstrating the various features of the LKSL can be found at http://otapi.com
+Documentation
+====
+Comprehensive Documentation (as well as Unit Tests and Demos) are to be reintroduced soon, but in the meantime, educational articles demonstrating the various features of the LKSL can be found at http://otapi.com.
 
+Donations
+====
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking the button to the right: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
