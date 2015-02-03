@@ -91,3 +91,4 @@ __history/
 *.vsr
 
 gdbserver
+*.bak
