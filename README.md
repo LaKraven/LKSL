@@ -1,22 +1,28 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
-LaKraven Studios Standard Library (for RAD Studio and AppMethod)
+This library provides a vast (and growing) range of powerful features for the following programming languages:
+  - Delphi
+  - C++ Builder
+  - FreePascal/Lazarus
 
-This library provides a vast (and growing) range of powerful features for Delphi and C++ Builder.
+Library Installation for Delphi
+====
+Please run the LKSLInstall.exe file to configure your version(s) of the IDE to use the LKSL. It simply adds the LKSL source paths to RAD Studio's respective Search Paths. This executable can be re-run each time new paths are introduced in the LKSL.
 
-INSTALLATION: Please run the LKSLInstall.exe file to configure your version(s) of the IDE to use the LKSL. It simply adds the LKSL source paths to RAD Studio's respective Search Paths. This executable can be re-run each time new paths are introduced in the LKSL.
+Component Installation for Delphi
+====
+Please load \Packages\Delphi\<version>\LKSL_Components<version>.dproj in Delphi, right-click on the Project Manager and click "Install".
 
-COMPONENT INSTALLATION: Please load \Packages\Delphi\<version>\LKSL_Components<version>.dproj in Delphi, right-click on the Project Manager and click "Install".
+> NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
 
-NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
-
-Current features:
-Stream Handling Library (makes working with Streams much easier)
-Streamables Engine (an engine for serializing and loading custom objects to/from Streams)
-High Precision Threading (a special Thread type which provide extremely accurate "reference times" for interpolation)
-Event Engine (a VERY powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems)
+Current Features
+====
+  - Stream Handling Library (makes working with Streams much easier)
+  - Streamables Engine (an engine for serializing and loading custom objects to/from Streams)
+  - High Precision Threading (a special Thread type which provide extremely accurate "reference times" for interpolation)
+  - Event Engine (a VERY powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems)
 
 Educational articles demonstrating the various features of the LKSL can be found at http://otapi.com
 
-Donations (while by no means mandatory) are always appreciated, and can be made to paypal {at} lakraven [dot] com
+Donations (while by no means mandatory) are always appreciated, and can be made by clicking the button to the right: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
