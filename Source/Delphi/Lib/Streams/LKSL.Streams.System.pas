@@ -1611,6 +1611,7 @@ end;
 class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
 begin
   AStream.Position := APosition;
+  Insert<T>(AStream, AValue);
 end;
 
 class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T; const APosition: Int64);
