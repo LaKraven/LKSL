@@ -182,11 +182,13 @@ type
     procedure Unref;
     {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
   protected
-    ///  <summary><c>Populates the referenced Instance with the values of </c>AFromEvent<c></c></summary>
-    ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
-    ///  <comments><c>MUST be overriden in descendant classes</c></comments>
-    ///  <permission>Protected - Override Only</permission>
-    procedure Clone(const AFromEvent: TLKEvent); overload; virtual; abstract;
+    {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+      ///  <summary><c>Populates the referenced Instance with the values of </c>AFromEvent<c></c></summary>
+      ///  <param name="AFromEvent"><c>A reference to the source Instance</c></param>
+      ///  <comments><c>MUST be overriden in descendant classes</c></comments>
+      ///  <permission>Protected - Override Only</permission>
+      procedure Clone(const AFromEvent: TLKEvent); overload; virtual; abstract;
+    {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
     ///  <summary><c>Defines the default Recording Permission state.</c></summary>
     ///  <returns><c>True = Allow Recording</c> Default = True</returns>
     ///  <comments><c>Override if you wish to default to False</c></comments>
@@ -212,10 +214,11 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-
-    ///  <summary><c>Creates a Clone of this Event with the same Values</c></summary>
-    ///  <permission>Public</permission>
-    function Clone: TLKEvent; overload;
+    {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+      ///  <summary><c>Creates a Clone of this Event with the same Values</c></summary>
+      ///  <permission>Public</permission>
+      function Clone: TLKEvent; overload;
+    {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 
     ///  <summary><c>Used to populate this instance from a nominated instance.</c></summary>
     ///  <remarks><c>Marked as </c>final<c>, override </c>Clone<c> instead!</c></remarks>
@@ -771,7 +774,7 @@ begin
     Lock;
     try
       {$IFDEF LKSL_EVENTENGINE_REFCOUNT}
-      FRefCount := TLKEvent(AFromEvent).FRefCount;
+        FRefCount := TLKEvent(AFromEvent).FRefCount;
       {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
       FIsClone := True;
       FAllowRecording := TLKEvent(AFromEvent).FAllowRecording;
@@ -784,7 +787,9 @@ begin
       FIsReplay := TLKEvent(AFromEvent).FIsReplay;
       FProcessedTime := TLKEvent(AFromEvent).FProcessedTime;
       FInstanceGUID := TLKEvent(AFromEvent).FInstanceGUID;
-      Clone(TLKEvent(AFromEvent));
+      {$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+        Clone(TLKEvent(AFromEvent));
+      {$ENDIF LKSL_EVENTENGINE_REFCOUNT}
     finally
       Unlock;
       TLKEvent(AFromEvent).Unlock;
@@ -944,11 +949,13 @@ begin
   end;
 end;
 
-function TLKEvent.Clone: TLKEvent;
-begin
-  Result := GetEventType.Create;
-  Result.Assign(Self);
-end;
+{$IFNDEF LKSL_EVENTENGINE_REFCOUNT}
+  function TLKEvent.Clone: TLKEvent;
+  begin
+    Result := GetEventType.Create;
+    Result.Assign(Self);
+  end;
+{$ENDIF LKSL_EVENTENGINE_REFCOUNT}
 
 function TLKEvent.GetAllowTransmit: Boolean;
 begin
