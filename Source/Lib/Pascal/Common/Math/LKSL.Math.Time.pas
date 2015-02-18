@@ -39,7 +39,7 @@ unit LKSL.Math.Time;
 
 interface
 
-{$I LKSL.inc}
+{$I ..\Common\LKSL.inc}
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
@@ -49,7 +49,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types;
 
-  {$I LKSL_RTTI.inc}
+  {$I ..\Common\LKSL_RTTI.inc}
 
 type
 

@@ -39,9 +39,9 @@ unit LKSL.Math.Common;
 
 interface
 
-{$I LKSL.inc}
+{$I ..\Common\LKSL.inc}
 
-{$I LKSL_RTTI.inc}
+{$I ..\Common\LKSL_RTTI.inc}
 
 type
 

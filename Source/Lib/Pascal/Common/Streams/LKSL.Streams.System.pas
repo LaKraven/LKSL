@@ -39,7 +39,15 @@ unit LKSL.Streams.System;
 
 interface
 
-{$I LKSL.inc}
+{.$I ..\Common\LKSL.inc}
+
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
 
 {
   About this unit:
@@ -48,65 +56,73 @@ interface
 }
 
 uses
+  {$IFDEF FPC}
+    lazutf8,
+  {$ENDIF FPC}
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils;
   {$ELSE}
     Classes, SysUtils;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
-  {$I LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I ..\Common\LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
-type
-  StreamManager = class abstract
-  public
-    class procedure CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64); overload; inline;
-    class procedure CustomDelete<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64); overload; inline;
-    class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
-    class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
-    class function CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T; overload; inline;
-    class function CustomRead<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64): T; overload; inline;
-    class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
-    class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+  {$IFNDEF FPC}
+    type
+      StreamManager = class abstract
+      public
+        class procedure CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64); overload; inline;
+        class procedure CustomDelete<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+        class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+        class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+        class function CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T; overload; inline;
+        class function CustomRead<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64): T; overload; inline;
+        class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+        class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
 
-    class procedure Delete<T>(const AStream: TStream); overload; inline;
-    class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
-    class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
-    class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
-    class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
-    class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
-    class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
-    class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
-    class function Read<T>(const AStream: TStream): T; overload; inline;
-    class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
-    class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
-    class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
-    class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
-    class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
-    class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
-    class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
-  end;
+        class procedure Delete<T>(const AStream: TStream); overload; inline;
+        class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+        class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
+        class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+        class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
+        class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+        class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
+        class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
+        class function Read<T>(const AStream: TStream): T; overload; inline;
+        class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
+        class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
+        class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
+        class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
+        class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+        class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
+        class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
+      end;
+  {$ENDIF FPC}
 
-{$IFDEF LKSL_USE_HELPERS}
-  TLKStreamHelper = class helper for TStream
-  public
-    procedure DeleteValue<T>; overload;
-    procedure DeleteValue<T>(const APosition: Int64); overload;
-    procedure DeleteArray<T>; overload;
-    procedure DeleteArray<T>(const APosition: Int64); overload;
-    procedure InsertValue<T>(const AValue: T); overload;
-    procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
-    procedure InsertArray<T>(const AValues: Array of T); overload;
-    procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
-    function ReadValue<T>: T; overload;
-    function ReadValue<T>(const APosition: Int64): T; overload;
-    function ReadArray<T>: TArray<T>; overload;
-    function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
-    procedure WriteValue<T>(const AValue: T); overload;
-    procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
-    procedure WriteArray<T>(const AValues: TArray<T>); overload;
-    procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
-  end;
-{$ENDIF}
+  {$IFDEF LKSL_USE_HELPERS}
+    type
+      TLKStreamHelper = class helper for TStream
+      public
+        procedure DeleteValue<T>; overload;
+        procedure DeleteValue<T>(const APosition: Int64); overload;
+        procedure DeleteArray<T>; overload;
+        procedure DeleteArray<T>(const APosition: Int64); overload;
+        procedure InsertValue<T>(const AValue: T); overload;
+        procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
+        procedure InsertArray<T>(const AValues: Array of T); overload;
+        procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
+        function ReadValue<T>: T; overload;
+        function ReadValue<T>(const APosition: Int64): T; overload;
+        function ReadArray<T>: TArray<T>; overload;
+        function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
+        procedure WriteValue<T>(const AValue: T); overload;
+        procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
+        procedure WriteArray<T>(const AValues: TArray<T>); overload;
+        procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
+      end;
+  {$ENDIF}
 
 // Utility Methods
 procedure StreamClearSpace(const AStream: TStream; const ASize: Int64); overload;
@@ -114,12 +130,12 @@ procedure StreamClearSpace(const AStream: TStream; const APosition: Int64; const
 procedure StreamMakeSpace(const AStream: TStream; const ASize: Int64); overload;
 procedure StreamMakeSpace(const AStream: TStream; const APosition: Integer; const ASize: Int64); overload;
 // Delete Methods
-{$IFDEF MSWINDOWS}
-procedure StreamDeleteAnsiChar(const AStream: TStream); overload; platform;
-procedure StreamDeleteAnsiChar(const AStream: TStream; const APosition: Int64); overload; platform;
-procedure StreamDeleteAnsiString(const AStream: TStream); overload; platform;
-procedure StreamDeleteAnsiString(const AStream: TStream; const APosition: Int64); overload; platform;
-{$ENDIF}
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamDeleteAnsiChar(const AStream: TStream); overload; platform;
+  procedure StreamDeleteAnsiChar(const AStream: TStream; const APosition: Int64); overload; platform;
+  procedure StreamDeleteAnsiString(const AStream: TStream); overload; platform;
+  procedure StreamDeleteAnsiString(const AStream: TStream; const APosition: Int64); overload; platform;
+{$IFEND}
 procedure StreamDeleteBoolean(const AStream: TStream); overload;
 procedure StreamDeleteBoolean(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteByte(const AStream: TStream); overload;
@@ -167,11 +183,11 @@ procedure StreamDeleteWideString(const AStream: TStream; const APosition: Int64)
 procedure StreamDeleteWord(const AStream: TStream); overload;
 procedure StreamDeleteWord(const AStream: TStream; const APosition: Int64); overload;
 // Insert Methods
-{$IFDEF MSWINDOWS}
-procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar); overload; platform;
-procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64); overload; platform;
-procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString); overload; platform;
-procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64); overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar); overload; platform;
+  procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64); overload; platform;
+  procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString); overload; platform;
+  procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean); overload;
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
@@ -203,9 +219,9 @@ procedure StreamInsertSingle(const AStream: TStream; const AValue: Single); over
 procedure StreamInsertSingle(const AStream: TStream; const AValue: Single; const APosition: Int64); overload;
 procedure StreamInsertShortInt(const AStream: TStream; const AValue: ShortInt); overload;
 procedure StreamInsertShortInt(const AStream: TStream; const AValue: ShortInt; const APosition: Int64); overload;
-{$IFDEF MSWINDOWS}
-procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString); overload; platform;
-procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64); overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString); overload; platform;
+  procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamInsertSmallInt(const AStream: TStream; const AValue: SmallInt); overload;
 procedure StreamInsertSmallInt(const AStream: TStream; const AValue: SmallInt; const APosition: Int64); overload;
@@ -215,18 +231,18 @@ procedure StreamInsertStream(const AStream: TStream; const AValue: TStream); ove
 procedure StreamInsertStream(const AStream: TStream; const AValue: TStream; const APosition: Int64); overload;
 procedure StreamInsertTime(const AStream: TStream; const AValue: TTime); overload;
 procedure StreamInsertTime(const AStream: TStream; const AValue: TTime; const APosition: Int64); overload;
-{$IFDEF MSWINDOWS}
-procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString); overload; platform;
-procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64); overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString); overload; platform;
+  procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamInsertWord(const AStream: TStream; const AValue: Word); overload;
 procedure StreamInsertWord(const AStream: TStream; const AValue: Word; const APosition: Int64); overload;
 // Read Methods
-{$IFDEF MSWINDOWS}
-function StreamReadAnsiChar(const AStream: TStream): AnsiChar; overload; platform;
-function StreamReadAnsiChar(const AStream: TStream; const APosition: Int64): AnsiChar; overload; platform;
-function StreamReadAnsiString(const AStream: TStream): AnsiString; overload; platform;
-function StreamReadAnsiString(const AStream: TStream; const APosition: Int64): AnsiString; overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadAnsiChar(const AStream: TStream): AnsiChar; overload; platform;
+  function StreamReadAnsiChar(const AStream: TStream; const APosition: Int64): AnsiChar; overload; platform;
+  function StreamReadAnsiString(const AStream: TStream): AnsiString; overload; platform;
+  function StreamReadAnsiString(const AStream: TStream; const APosition: Int64): AnsiString; overload; platform;
 {$ENDIF}
 function StreamReadBoolean(const AStream: TStream): Boolean; overload;
 function StreamReadBoolean(const AStream: TStream; const APosition: Int64): Boolean; overload;
@@ -258,9 +274,9 @@ function StreamReadSingle(const AStream: TStream): Single; overload;
 function StreamReadSingle(const AStream: TStream; const APosition: Int64): Single; overload;
 function StreamReadShortInt(const AStream: TStream): ShortInt; overload;
 function StreamReadShortInt(const AStream: TStream; const APosition: Int64): ShortInt; overload;
-{$IFDEF MSWINDOWS}
-function StreamReadShortString(const AStream: TStream): ShortString; overload; platform;
-function StreamReadShortString(const AStream: TStream; const APosition: Int64): ShortString; overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadShortString(const AStream: TStream): ShortString; overload; platform;
+  function StreamReadShortString(const AStream: TStream; const APosition: Int64): ShortString; overload; platform;
 {$ENDIF}
 function StreamReadSmallInt(const AStream: TStream): SmallInt; overload;
 function StreamReadSmallInt(const AStream: TStream; const APosition: Int64): SmallInt; overload;
@@ -270,18 +286,18 @@ procedure StreamReadStream(const AStream: TStream; const AOutStream: TStream); o
 procedure StreamReadStream(const AStream: TStream; const AOutStream: TStream; const APosition: Int64); overload;
 function StreamReadTime(const AStream: TStream): TTime; overload;
 function StreamReadTime(const AStream: TStream; const APosition: Int64): TTime; overload;
-{$IFDEF MSWINDOWS}
-function StreamReadWideString(const AStream: TStream): WideString; overload; platform;
-function StreamReadWideString(const AStream: TStream; const APosition: Int64): WideString; overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadWideString(const AStream: TStream): WideString; overload; platform;
+  function StreamReadWideString(const AStream: TStream; const APosition: Int64): WideString; overload; platform;
 {$ENDIF}
 function StreamReadWord(const AStream: TStream): Word; overload;
 function StreamReadWord(const AStream: TStream; const APosition: Int64): Word; overload;
 // Write Methods
 {$IFDEF MSWINDOWS}
-procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar); overload; platform;
-procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64); overload; platform;
-procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString); overload; platform;
-procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64); overload; platform;
+  procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar); overload; platform;
+  procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64); overload; platform;
+  procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString); overload; platform;
+  procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamWriteBoolean(const AStream: TStream; const AValue: Boolean); overload;
 procedure StreamWriteBoolean(const AStream: TStream; const AValue: Boolean; const APosition: Int64); overload;
@@ -313,9 +329,9 @@ procedure StreamWriteSingle(const AStream: TStream; const AValue: Single); overl
 procedure StreamWriteSingle(const AStream: TStream; const AValue: Single; const APosition: Int64); overload;
 procedure StreamWriteShortInt(const AStream: TStream; const AValue: ShortInt); overload;
 procedure StreamWriteShortInt(const AStream: TStream; const AValue: ShortInt; const APosition: Int64); overload;
-{$IFDEF MSWINDOWS}
-procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString); overload; platform;
-procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64); overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString); overload; platform;
+  procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamWriteSmallInt(const AStream: TStream; const AValue: SmallInt); overload;
 procedure StreamWriteSmallInt(const AStream: TStream; const AValue: SmallInt; const APosition: Int64); overload;
@@ -325,9 +341,9 @@ procedure StreamWriteStream(const AStream: TStream; const AValue: TStream); over
 procedure StreamWriteStream(const AStream: TStream; const AValue: TStream; const APosition: Int64); overload;
 procedure StreamWriteTime(const AStream: TStream; const AValue: TTime); overload;
 procedure StreamWriteTime(const AStream: TStream; const AValue: TTime; const APosition: Int64); overload;
-{$IFDEF MSWINDOWS}
-procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString); overload; platform;
-procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64); overload; platform;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString); overload; platform;
+  procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64); overload; platform;
 {$ENDIF}
 procedure StreamWriteWord(const AStream: TStream; const AValue: Word); overload;
 procedure StreamWriteWord(const AStream: TStream; const AValue: Word; const APosition: Int64); overload;
@@ -335,6 +351,13 @@ procedure StreamWriteWord(const AStream: TStream; const AValue: Word; const APos
 implementation
 
 // Utility Methods
+
+{$IFDEF FPC}
+  function ByteLength(const AString: String): Int64;
+  begin
+    Result := Length(AString) * SizeOf(Char);
+  end;
+{$ENDIF FPC}
 
 procedure StreamClearSpace(const AStream: TStream; const ASize: Int64);
 begin
@@ -383,30 +406,30 @@ end;
 
 // Delete Methods
 
-{$IFDEF MSWINDOWS}
-procedure StreamDeleteAnsiChar(const AStream: TStream);
-begin
-  StreamDeleteAnsiChar(AStream, AStream.Position);
-end;
+{$IF Defined(MSWINDOWS) OR Defined(FPC)}
+  procedure StreamDeleteAnsiChar(const AStream: TStream);
+  begin
+    StreamDeleteAnsiChar(AStream, AStream.Position);
+  end;
 
-procedure StreamDeleteAnsiChar(const AStream: TStream; const APosition: Int64);
-begin
-  StreamClearSpace(AStream, APosition, SizeOf(AnsiChar));
-end;
+  procedure StreamDeleteAnsiChar(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(AnsiChar));
+  end;
 
-procedure StreamDeleteAnsiString(const AStream: TStream);
-begin
-  StreamDeleteAnsiString(AStream, AStream.Position);
-end;
+  procedure StreamDeleteAnsiString(const AStream: TStream);
+  begin
+    StreamDeleteAnsiString(AStream, AStream.Position);
+  end;
 
-procedure StreamDeleteAnsiString(const AStream: TStream; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  AStream.Position := APosition;
-  AStream.Read(LStringLength, SizeOf(Int64));
-  StreamClearSpace(AStream, APosition, LStringLength + SizeOf(Int64));
-end;
+  procedure StreamDeleteAnsiString(const AStream: TStream; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(LStringLength, SizeOf(Int64));
+    StreamClearSpace(AStream, APosition, LStringLength + SizeOf(Int64));
+  end;
 {$ENDIF}
 
 procedure StreamDeleteBoolean(const AStream: TStream);
@@ -657,32 +680,32 @@ begin
 end;
 
 // Insert Methods
-{$IFDEF MSWINDOWS}
-procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar);
-begin
-  StreamInsertAnsiChar(AStream, AValue, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar);
+  begin
+    StreamInsertAnsiChar(AStream, AValue, AStream.Position);
+  end;
 
-procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64);
-begin
-  StreamMakeSpace(AStream, APosition, SizeOf(AnsiChar));
-  AStream.Write(AValue, SizeOf(AnsiChar));
-end;
+  procedure StreamInsertAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64);
+  begin
+    StreamMakeSpace(AStream, APosition, SizeOf(AnsiChar));
+    AStream.Write(AValue, SizeOf(AnsiChar));
+  end;
 
-procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString);
-begin
-  StreamInsertAnsiString(AStream, AValue, AStream.Position);
-end;
+  procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString);
+  begin
+    StreamInsertAnsiString(AStream, AValue, AStream.Position);
+  end;
 
-procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  LStringLength := Length(AValue) * SizeOf(AnsiChar);
-  StreamMakeSpace(AStream, APosition, LStringLength);
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], LStringLength);
-end;
+  procedure StreamInsertAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    StreamMakeSpace(AStream, APosition, LStringLength);
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], LStringLength);
+  end;
 {$ENDIF}
 procedure StreamInsertBoolean(const AStream: TStream; const AValue: Boolean);
 begin
@@ -849,21 +872,21 @@ begin
   AStream.Write(AValue, SizeOf(ShortInt));
 end;
 
-{$IFDEF MSWINDOWS}
-procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString);
-begin
-  StreamInsertShortString(AStream, AValue, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString);
+  begin
+    StreamInsertShortString(AStream, AValue, AStream.Position);
+  end;
 
-procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  LStringLength := Length(AValue) * SizeOf(AnsiChar);
-  StreamMakeSpace(AStream, APosition, LStringLength);
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], LStringLength);
-end;
+  procedure StreamInsertShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    StreamMakeSpace(AStream, APosition, LStringLength);
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], LStringLength);
+  end;
 {$ENDIF}
 
 procedure StreamInsertSmallInt(const AStream: TStream; const AValue: SmallInt);
@@ -915,21 +938,21 @@ begin
   AStream.Write(AValue, SizeOf(TTime));
 end;
 
-{$IFDEF MSWINDOWS}
-procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString);
-begin
-  StreamInsertWideString(AStream, AValue, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString);
+  begin
+    StreamInsertWideString(AStream, AValue, AStream.Position);
+  end;
 
-procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  LStringLength := ByteLength(AValue);
-  StreamMakeSpace(AStream, APosition, LStringLength);
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], ByteLength(AValue));
-end;
+  procedure StreamInsertWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := ByteLength(AValue);
+    StreamMakeSpace(AStream, APosition, LStringLength);
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], ByteLength(AValue));
+  end;
 {$ENDIF}
 
 procedure StreamInsertWord(const AStream: TStream; const AValue: Word);
@@ -945,32 +968,32 @@ end;
 
 // Read Methods
 
-{$IFDEF MSWINDOWS}
-function StreamReadAnsiChar(const AStream: TStream): AnsiChar;
-begin
-  Result := StreamReadAnsiChar(AStream, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadAnsiChar(const AStream: TStream): AnsiChar;
+  begin
+    Result := StreamReadAnsiChar(AStream, AStream.Position);
+  end;
 
-function StreamReadAnsiChar(const AStream: TStream; const APosition: Int64): AnsiChar;
-begin
-  AStream.Position := APosition;
-  AStream.Read(Result, SizeOf(AnsiChar));
-end;
+  function StreamReadAnsiChar(const AStream: TStream; const APosition: Int64): AnsiChar;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(Result, SizeOf(AnsiChar));
+  end;
 
-function StreamReadAnsiString(const AStream: TStream): AnsiString;
-begin
-  Result := StreamReadAnsiString(AStream, AStream.Position);
-end;
+  function StreamReadAnsiString(const AStream: TStream): AnsiString;
+  begin
+    Result := StreamReadAnsiString(AStream, AStream.Position);
+  end;
 
-function StreamReadAnsiString(const AStream: TStream; const APosition: Int64): AnsiString;
-var
-  LStringLength: Int64;
-begin
-  AStream.Position := APosition;
-  AStream.Read(LStringLength, SizeOf(Int64));
-  SetLength(Result, LStringLength);
-  AStream.Read(Result[1], LStringLength);
-end;
+  function StreamReadAnsiString(const AStream: TStream; const APosition: Int64): AnsiString;
+  var
+    LStringLength: Int64;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(LStringLength, SizeOf(Int64));
+    SetLength(Result, LStringLength);
+    AStream.Read(Result[1], LStringLength);
+  end;
 {$ENDIF}
 
 function StreamReadBoolean(const AStream: TStream): Boolean;
@@ -1138,21 +1161,21 @@ begin
   AStream.Read(Result, SizeOf(ShortInt));
 end;
 
-{$IFDEF MSWINDOWS}
-function StreamReadShortString(const AStream: TStream): ShortString;
-begin
-  Result := StreamReadShortString(AStream, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadShortString(const AStream: TStream): ShortString;
+  begin
+    Result := StreamReadShortString(AStream, AStream.Position);
+  end;
 
-function StreamReadShortString(const AStream: TStream; const APosition: Int64): ShortString;
-var
-  LStringLength: Int64;
-begin
-  AStream.Position := APosition;
-  AStream.Read(LStringLength, SizeOf(Int64));
-  SetLength(Result, LStringLength);
-  AStream.Read(Result[1], LStringLength);
-end;
+  function StreamReadShortString(const AStream: TStream; const APosition: Int64): ShortString;
+  var
+    LStringLength: Int64;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(LStringLength, SizeOf(Int64));
+    SetLength(Result, LStringLength);
+    AStream.Read(Result[1], LStringLength);
+  end;
 {$ENDIF}
 
 function StreamReadSmallInt(const AStream: TStream): SmallInt;
@@ -1180,7 +1203,11 @@ begin
   AStream.Read(LStringLength, SizeOf(Int64));
   SetLength(LValue, LStringLength);
   AStream.Read(LValue[0], LStringLength);
-  Result := TEncoding.Unicode.GetString(LValue);
+  {$IFDEF FPC}
+    Result := UTF8CStringToUTF8String(PChar(LValue), Length(LValue));
+  {$ELSE}
+    Result := TEncoding.Unicode.GetString(LValue);
+  {$ENDIF FPC}
 end;
 
 procedure StreamReadStream(const AStream: TStream; const AOutStream: TStream);
@@ -1208,23 +1235,27 @@ begin
   AStream.Read(Result, SizeOf(TTime));
 end;
 
-{$IFDEF MSWINDOWS}
-function StreamReadWideString(const AStream: TStream): WideString;
-begin
-  Result := StreamReadWideString(AStream, AStream.Position);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadWideString(const AStream: TStream): WideString;
+  begin
+    Result := StreamReadWideString(AStream, AStream.Position);
+  end;
 
-function StreamReadWideString(const AStream: TStream; const APosition: Int64): WideString;
-var
-  LStringLength: Int64;
-  LValue: TBytes;
-begin
-  AStream.Position := APosition;
-  AStream.Read(LStringLength, SizeOf(Int64));
-  SetLength(LValue, LStringLength);
-  AStream.Read(LValue[0], LStringLength);
-  Result := TEncoding.Unicode.GetString(LValue);
-end;
+  function StreamReadWideString(const AStream: TStream; const APosition: Int64): WideString;
+  var
+    LStringLength: Int64;
+    LValue: TBytes;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(LStringLength, SizeOf(Int64));
+    SetLength(LValue, LStringLength);
+    AStream.Read(LValue[0], LStringLength);
+    {$IFDEF FPC}
+      Result := UTF8CStringToUTF8String(PChar(LValue), Length(LValue));
+    {$ELSE}
+      Result := TEncoding.Unicode.GetString(LValue);
+    {$ENDIF FPC}
+  end;
 {$ENDIF}
 
 function StreamReadWord(const AStream: TStream): Word;
@@ -1240,32 +1271,32 @@ end;
 
 // Write Methods
 
-{$IFDEF MSWINDOWS}
-procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar);
-begin
-  StreamWriteAnsiChar(AStream, AValue, AStream.Size);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar);
+  begin
+    StreamWriteAnsiChar(AStream, AValue, AStream.Size);
+  end;
 
-procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  AStream.Write(AValue, SizeOf(AnsiChar));
-end;
+  procedure StreamWriteAnsiChar(const AStream: TStream; const AValue: AnsiChar; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, SizeOf(AnsiChar));
+  end;
 
-procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString);
-begin
-  StreamWriteAnsiString(AStream, AValue, AStream.Size);
-end;
+  procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString);
+  begin
+    StreamWriteAnsiString(AStream, AValue, AStream.Size);
+  end;
 
-procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  AStream.Position := APosition;
-  LStringLength := Length(AValue) * SizeOf(AnsiChar);
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], LStringLength);
-end;
+  procedure StreamWriteAnsiString(const AStream: TStream; const AValue: AnsiString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    AStream.Position := APosition;
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], LStringLength);
+  end;
 {$ENDIF}
 
 procedure StreamWriteBoolean(const AStream: TStream; const AValue: Boolean);
@@ -1433,21 +1464,21 @@ begin
   AStream.Write(AValue, SizeOf(ShortInt));
 end;
 
-{$IFDEF MSWINDOWS}
-procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString);
-begin
-  StreamWriteShortString(AStream, AValue, AStream.Size);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString);
+  begin
+    StreamWriteShortString(AStream, AValue, AStream.Size);
+  end;
 
-procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  LStringLength := Length(AValue) * SizeOf(AnsiChar);
-  AStream.Position := APosition;
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], LStringLength);
-end;
+  procedure StreamWriteShortString(const AStream: TStream; const AValue: ShortString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    AStream.Position := APosition;
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], LStringLength);
+  end;
 {$ENDIF}
 
 procedure StreamWriteSmallInt(const AStream: TStream; const AValue: SmallInt);
@@ -1499,21 +1530,21 @@ begin
   AStream.Write(AValue, SizeOf(TTime));
 end;
 
-{$IFDEF MSWINDOWS}
-procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString);
-begin
-  StreamWriteWideString(AStream, AValue, AStream.Size);
-end;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString);
+  begin
+    StreamWriteWideString(AStream, AValue, AStream.Size);
+  end;
 
-procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64);
-var
-  LStringLength: Int64;
-begin
-  LStringLength := ByteLength(AValue);
-  AStream.Position := APosition;
-  AStream.Write(LStringLength, SizeOf(Int64));
-  AStream.Write(AValue[1], ByteLength(AValue));
-end;
+  procedure StreamWriteWideString(const AStream: TStream; const AValue: WideString; const APosition: Int64);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := ByteLength(AValue);
+    AStream.Position := APosition;
+    AStream.Write(LStringLength, SizeOf(Int64));
+    AStream.Write(AValue[1], LStringLength);
+  end;
 {$ENDIF}
 
 procedure StreamWriteWord(const AStream: TStream; const AValue: Word);
@@ -1527,160 +1558,162 @@ begin
   AStream.Write(AValue, SizeOf(Word));
 end;
 
-{ StreamManager }
-class procedure StreamManager.Delete<T>(const AStream: TStream);
-begin
-  Delete<T>(AStream, AStream.Position);
-end;
+{$IFNDEF FPC}
+  { StreamManager }
+  class procedure StreamManager.Delete<T>(const AStream: TStream);
+  begin
+    Delete<T>(AStream, AStream.Position);
+  end;
 
-class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64);
-begin
-  StreamClearSpace(AStream, ASizeOf);
-end;
+  class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64);
+  begin
+    StreamClearSpace(AStream, ASizeOf);
+  end;
 
-class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const APosition, ASizeOf: Int64);
-begin
-  AStream.Position := APosition;
-  CustomDelete<T>(AStream, ASizeOf);
-end;
+  class procedure StreamManager.CustomDelete<T>(const AStream: TStream; const APosition, ASizeOf: Int64);
+  begin
+    AStream.Position := APosition;
+    CustomDelete<T>(AStream, ASizeOf);
+  end;
 
-class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
-begin
-  StreamMakeSpace(AStream, ASizeOf);
-  AStream.Write(AValue, ASizeOf);
-end;
+  class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
+  begin
+    StreamMakeSpace(AStream, ASizeOf);
+    AStream.Write(AValue, ASizeOf);
+  end;
 
-class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
-begin
-  AStream.Position := APosition;
-  CustomInsert<T>(AStream, AValue, ASizeOf);
-end;
+  class procedure StreamManager.CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
+  begin
+    AStream.Position := APosition;
+    CustomInsert<T>(AStream, AValue, ASizeOf);
+  end;
 
-class function StreamManager.CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T;
-begin
-  AStream.Read(Result, ASizeOf);
-end;
+  class function StreamManager.CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T;
+  begin
+    AStream.Read(Result, ASizeOf);
+  end;
 
-class function StreamManager.CustomRead<T>(const AStream: TStream; const APosition, ASizeOf: Int64): T;
-begin
-  AStream.Position := APosition;
-  CustomRead<T>(AStream, ASizeOf);
-end;
+  class function StreamManager.CustomRead<T>(const AStream: TStream; const APosition, ASizeOf: Int64): T;
+  begin
+    AStream.Position := APosition;
+    CustomRead<T>(AStream, ASizeOf);
+  end;
 
-class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
-begin
-  CustomWrite<T>(AStream, AValue, AStream.Size);
-end;
+  class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64);
+  begin
+    CustomWrite<T>(AStream, AValue, AStream.Size);
+  end;
 
-class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
-begin
-  AStream.Position := APosition;
-  AStream.Write(AValue, ASizeOf);
-end;
+  class procedure StreamManager.CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition, ASizeOf: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, ASizeOf);
+  end;
 
-class procedure StreamManager.Delete<T>(const AStream: TStream; const APosition: Int64);
-begin
-  StreamClearSpace(AStream, APosition, SizeOf(T));
-end;
+  class procedure StreamManager.Delete<T>(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(T));
+  end;
 
-class procedure StreamManager.DeleteArray<T>(const AStream: TStream);
-var
-  LStartPos: Int64;
-  LLength, I: Integer;
-begin
-  LStartPos := AStream.Position;
-  LLength := Read<Integer>(AStream);
-  AStream.Position := LStartPos;
-  Delete<Integer>(AStream);
-  for I := 0 to LLength - 1 do
-    Delete<T>(AStream);
-end;
+  class procedure StreamManager.DeleteArray<T>(const AStream: TStream);
+  var
+    LStartPos: Int64;
+    LLength, I: Integer;
+  begin
+    LStartPos := AStream.Position;
+    LLength := Read<Integer>(AStream);
+    AStream.Position := LStartPos;
+    Delete<Integer>(AStream);
+    for I := 0 to LLength - 1 do
+      Delete<T>(AStream);
+  end;
 
-class procedure StreamManager.DeleteArray<T>(const AStream: TStream; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  DeleteArray<T>(AStream);
-end;
+  class procedure StreamManager.DeleteArray<T>(const AStream: TStream; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    DeleteArray<T>(AStream);
+  end;
 
-class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T);
-begin
-  StreamMakeSpace(AStream, SizeOf(T));
-  AStream.Write(AValue, SizeOf(T));
-end;
+  class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T);
+  begin
+    StreamMakeSpace(AStream, SizeOf(T));
+    AStream.Write(AValue, SizeOf(T));
+  end;
 
-class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  Insert<T>(AStream, AValue);
-end;
+  class procedure StreamManager.Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    Insert<T>(AStream, AValue);
+  end;
 
-class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  InsertArray<T>(AStream, AValues);
-end;
+  class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    InsertArray<T>(AStream, AValues);
+  end;
 
-class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T);
-var
-  I: Integer;
-begin
-  Insert<Integer>(AStream, Length(AValues)); // Prefix Array Length
-  for I := Low(AValues) to High(AValues) do // Insert Values in Sequence
-    Insert<T>(AStream, AValues[I]);
-end;
+  class procedure StreamManager.InsertArray<T>(const AStream: TStream; const AValues: array of T);
+  var
+    I: Integer;
+  begin
+    Insert<Integer>(AStream, Length(AValues)); // Prefix Array Length
+    for I := Low(AValues) to High(AValues) do // Insert Values in Sequence
+      Insert<T>(AStream, AValues[I]);
+  end;
 
-class function StreamManager.Read<T>(const AStream: TStream): T;
-begin
-  AStream.Read(Result, SizeOf(T));
-end;
+  class function StreamManager.Read<T>(const AStream: TStream): T;
+  begin
+    AStream.Read(Result, SizeOf(T));
+  end;
 
-class function StreamManager.Read<T>(const AStream: TStream; const APosition: Int64): T;
-begin
-  AStream.Position := APosition;
-  Result := Read<T>(AStream);
-end;
+  class function StreamManager.Read<T>(const AStream: TStream; const APosition: Int64): T;
+  begin
+    AStream.Position := APosition;
+    Result := Read<T>(AStream);
+  end;
 
-class function StreamManager.ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>;
-begin
-  AStream.Position := APosition;
-  Result := ReadArray<T>(AStream);
-end;
+  class function StreamManager.ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>;
+  begin
+    AStream.Position := APosition;
+    Result := ReadArray<T>(AStream);
+  end;
 
-class function StreamManager.ReadArray<T>(const AStream: TStream): TArray<T>;
-var
-  LLength, I: Integer;
-begin
-  LLength := StreamManager.Read<Integer>(AStream);
-  SetLength(Result, LLength);
-  for I := 0 to LLength - 1 do
-    Result[I] := StreamManager.Read<T>(AStream);
-end;
+  class function StreamManager.ReadArray<T>(const AStream: TStream): TArray<T>;
+  var
+    LLength, I: Integer;
+  begin
+    LLength := StreamManager.Read<Integer>(AStream);
+    SetLength(Result, LLength);
+    for I := 0 to LLength - 1 do
+      Result[I] := StreamManager.Read<T>(AStream);
+  end;
 
-class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T);
-begin
-  Write<T>(AStream, AValue, AStream.Size);
-end;
+  class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T);
+  begin
+    Write<T>(AStream, AValue, AStream.Size);
+  end;
 
-class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  AStream.Write(AValue, SizeOf(T));
-end;
+  class procedure StreamManager.Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, SizeOf(T));
+  end;
 
-class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>);
-var
-  I: Integer;
-begin
-  Write<Integer>(AStream, Length(AValues)); // Prefix Array Length
-  for I := Low(AValues) to High(AValues) do // Write Values in Sequence
-    Write<T>(AStream, AValues[I]);
-end;
+  class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>);
+  var
+    I: Integer;
+  begin
+    Write<Integer>(AStream, Length(AValues)); // Prefix Array Length
+    for I := Low(AValues) to High(AValues) do // Write Values in Sequence
+      Write<T>(AStream, AValues[I]);
+  end;
 
-class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  WriteArray<T>(AStream, AValues);
-end;
+  class procedure StreamManager.WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    WriteArray<T>(AStream, AValues);
+  end;
+{$ENDIF FPC}
 
 {$IFDEF LKSL_USE_HELPERS}
 

@@ -39,7 +39,7 @@ unit LKSL.Generics.Collections;
 
 interface
 
-{$I LKSL.inc}
+{$I ..\Common\LKSL.inc}
 
 {
   About this unit:
@@ -56,7 +56,7 @@ uses
   Generics.Collections,
   LKSL.Common.Types;
 
-  {$I LKSL_RTTI.inc}
+  {$I ..\Common\LKSL_RTTI.inc}
 
 type
   { Forward Declaration }

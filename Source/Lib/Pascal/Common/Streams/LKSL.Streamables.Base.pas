@@ -39,7 +39,7 @@ unit LKSL.Streamables.Base;
 
 interface
 
-{$I LKSL.inc}
+{$I ..\Common\LKSL.inc}
 
 {$REGION 'Unit About'}
   {
@@ -63,7 +63,7 @@ uses
   LKSL.Common.Types,
   LKSL.Streams.System;
 
-  {$I LKSL_RTTI.inc}
+  {$I ..\Common\LKSL_RTTI.inc}
 
 type
   { Forward Declarations }

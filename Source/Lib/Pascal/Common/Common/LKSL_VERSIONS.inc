@@ -38,6 +38,7 @@
 
 {$IFDEF FPC} // FreePascal Related Settings
 
+  {.$DEFINE SUPPORTS_RECORDHELPERS}
 
 {$ELSE} // Delphi Related Settings
 

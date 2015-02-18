@@ -40,6 +40,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_UnitSearchPath>..\..\..\Source\Lib\Pascal\Common\Common\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_Define>LKSL_EVENTENGINE_REFCOUNT;$(DCC_Define)</DCC_Define>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
@@ -107,6 +108,8 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.System.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.Types.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Threads\LKSL.Threads.Base.pas"/>
+        <None Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL_VERSIONS.inc"/>
+        <None Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.inc"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -128,13 +131,23 @@
                     <Source Name="MainSource">LKSL_Demo_EventThreadPooling.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k210.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp210.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k210.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dclofficexp210.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
+                <DeployFile LocalName="..\..\..\Source\Lib\Pascal\Common\Common\LKSL_VERSIONS.inc" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.inc" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>

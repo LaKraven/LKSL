@@ -39,7 +39,7 @@ unit LKSL.Events.Base;
 
 interface
 
-{$I LKSL.inc}
+{$I ..\Common\LKSL.inc}
 
 {$REGION 'Unit About'}
   {
@@ -61,7 +61,7 @@ uses
   LKSL.Threads.Base,
   LKSL.Streamables.Base;
 
-  {$I LKSL_RTTI.inc}
+  {$I ..\Common\LKSL_RTTI.inc}
 
 type
   { Forward Declarations }
@@ -623,7 +623,7 @@ uses
   LKSL.Streams.System,
   LKSL.Events.Streams;
 
-  {$I LKSL_RTTI.inc}
+  {$I ..\Common\LKSL_RTTI.inc}
 
 type
   { Forward Declarations }

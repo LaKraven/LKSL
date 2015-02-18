@@ -64,7 +64,7 @@ uses
   LKSL.Common.Types;
 
   {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
+    {$I ..\Common\LKSL_RTTI.inc}
   {$ENDIF FPC}
 
 type
