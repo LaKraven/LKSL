@@ -37,7 +37,7 @@
 }
 unit LKSL.Common.Stopwatch;
 
-{$I ..\Common\LKSL.inc}
+{$I LKSL.inc}
 
 {$IFDEF FPC}
   {$IFDEF LKSL_MODE_FPC}

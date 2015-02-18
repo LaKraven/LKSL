@@ -39,7 +39,7 @@ unit LKSL.Math.Length;
 
 interface
 
-{$I ..\Common\LKSL.inc}
+{$I LKSL.inc}
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
@@ -50,7 +50,7 @@ uses
   LKSL.Common.Types,
   LKSL.Math.Common;
 
-  {$I ..\Common\LKSL_RTTI.inc}
+  {$I LKSL_RTTI.inc}
 
 type
 

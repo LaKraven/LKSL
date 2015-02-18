@@ -39,7 +39,7 @@ unit LKSL.Generics.Collections;
 
 interface
 
-{$I ..\Common\LKSL.inc}
+{$I LKSL.inc}
 
 {$IFDEF FPC}
   {$IFDEF LKSL_MODE_FPC}
@@ -69,7 +69,7 @@ uses
   LKSL.Common.Types;
 
   {$IFNDEF FPC}
-    {$I ..\Common\LKSL_RTTI.inc}
+    {$I LKSL_RTTI.inc}
   {$ENDIF FPC}
 
 type

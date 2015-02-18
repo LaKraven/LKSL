@@ -39,7 +39,7 @@ unit LKSL.Streamables.Base;
 
 interface
 
-{$I ..\Common\LKSL.inc}
+{$I LKSL.inc}
 
 {$IFDEF FPC}
   {$IFDEF LKSL_MODE_FPC}
@@ -72,7 +72,7 @@ uses
   LKSL.Streams.System;
 
   {$IFNDEF FPC}
-    {$I ..\Common\LKSL_RTTI.inc}
+    {$I LKSL_RTTI.inc}
   {$ENDIF FPC}
 
 type

@@ -37,7 +37,7 @@
 }
 unit LKSL.Events.Streams;
 
-{$I ..\Common\LKSL.inc}
+{$I LKSL.inc}
 
 {
   About this unit:
@@ -57,7 +57,7 @@ uses
   LKSL.Common.Types,
   LKSL.Events.Base;
 
-  {$I ..\Common\LKSL_RTTI.inc}
+  {$I LKSL_RTTI.inc}
 
 // Delete Methods
 procedure StreamDeleteTLKEventDispatchMethod(const AStream: TStream); overload;
@@ -77,7 +77,7 @@ implementation
 uses
   LKSL.Streams.System;
 
-  {$I ..\Common\LKSL_RTTI.inc}
+  {$I LKSL_RTTI.inc}
 
 // Delete Methods
 
