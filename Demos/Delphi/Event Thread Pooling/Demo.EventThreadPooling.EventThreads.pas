@@ -28,8 +28,6 @@ implementation
 
 procedure TLKDemoEventThread.DoEvent(const AEvent: TLKDemoEvent);
 begin
-  // Simulate some "work"
-  Sleep(Random(10));
   TLKDemoResponseEvent.Create.Queue;
 end;
 
