@@ -198,7 +198,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -231,6 +231,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="LKSL.Streams.System"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.Types.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Streams.Types"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
