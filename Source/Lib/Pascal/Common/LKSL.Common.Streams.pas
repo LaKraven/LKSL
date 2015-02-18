@@ -39,6 +39,16 @@ unit LKSL.Common.Streams;
 
 interface
 
+{$I LKSL.inc}
+
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
+
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils,
@@ -47,7 +57,9 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types;
 
-  {$I LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
 // Delete Methods
 procedure StreamDeleteLKFloat(const AStream: TStream); overload;

@@ -28,7 +28,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+            <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -61,7 +61,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+            <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -94,7 +94,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+            <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -127,7 +127,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+            <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -160,7 +160,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+            <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -198,7 +198,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -212,30 +212,35 @@
         <UnitName Value="Demo.EventThreadPooling.MainForm"/>
       </Unit1>
       <Unit2>
-        <Filename Value="..\..\..\Source\Lib\Pascal\FPC\Common\LKSL.Common.Stopwatch.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Common.Stopwatch"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="..\..\..\Source\Lib\Pascal\Common\Threads\LKSL.Threads.Base.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Threads.Base"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.Common.Types.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Common.Types"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.System.pas"/>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Streams\LKSL.Streams.System.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="LKSL.Streams.System"/>
-      </Unit5>
-      <Unit6>
-        <Filename Value="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.Types.pas"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Streams\LKSL.Streams.Types.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="LKSL.Streams.Types"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Threads\LKSL.Threads.Base.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Threads.Base"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Common\LKSL.Common.Streams.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Common.Streams"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Common\LKSL.Common.Types.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Common.Types"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="..\..\..\Source\Lib\Pascal\Common\LKSL.Common.Stopwatch.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Common.Stopwatch"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -246,7 +251,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="C:\(SIMON)\(LIBS)\LKSL\Source\Lib\Pascal\FPC\Common\;..\..\..\Source\Lib\Pascal\Common\Threads;..\..\..\Source\Lib\Pascal\Common\Common;..\..\..\Source\Lib\Pascal\Common\Streams"/>
+      <OtherUnitFiles Value="..\..\..\Source\Lib\Pascal\Streams;..\..\..\Source\Lib\Pascal\Threads;..\..\..\Source\Lib\Pascal\Common"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

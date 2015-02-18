@@ -40,7 +40,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\..\..\Source\Lib\Pascal\Common\Common\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\..\Source\Lib\Pascal\Common\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_Define>LKSL_EVENTENGINE_REFCOUNT;$(DCC_Define)</DCC_Define>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
@@ -95,21 +95,19 @@
         </DCCReference>
         <DCCReference Include="Demo.EventThreadPooling.Events.pas"/>
         <DCCReference Include="Demo.EventThreadPooling.EventThreads.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.Common.Streams.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.Common.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Events\LKSL.Events.Base.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Events\LKSL.Events.Streams.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Generics\LKSL.Generics.Collections.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Math\LKSL.Math.Base.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Math\LKSL.Math.Common.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Math\LKSL.Math.Length.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Math\LKSL.Math.Time.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streamables.Base.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.System.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Streams\LKSL.Streams.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\Threads\LKSL.Threads.Base.pas"/>
-        <None Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL_VERSIONS.inc"/>
-        <None Include="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.inc"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\LKSL.Common.Types.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Common\LKSL.Common.Streams.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Events\LKSL.Events.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Events\LKSL.Events.Streams.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Generics\LKSL.Generics.Collections.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Math\LKSL.Math.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Math\LKSL.Math.Common.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Math\LKSL.Math.Length.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Math\LKSL.Math.Time.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Streams\LKSL.Streamables.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Streams\LKSL.Streams.System.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Streams\LKSL.Streams.Types.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\Threads\LKSL.Threads.Base.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -136,18 +134,6 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
-                <DeployFile LocalName="..\..\..\Source\Lib\Pascal\Common\Common\LKSL_VERSIONS.inc" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\..\..\Source\Lib\Pascal\Common\Common\LKSL.inc" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>
