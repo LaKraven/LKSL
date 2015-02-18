@@ -24,7 +24,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="LKSL_Demo_EventThreadPooling"/>
+            <Filename Value="..\..\..\Bin\Lazarus\Win32\Release\LKSL_Demo_EventThreadPooling"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -57,7 +57,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="LKSL_Demo_EventThreadPooling"/>
+            <Filename Value="..\..\..\Bin\Lazarus\Win64\Debug\LKSL_Demo_EventThreadPooling"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -90,7 +90,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="LKSL_Demo_EventThreadPooling"/>
+            <Filename Value="..\..\..\Bin\Lazarus\Linux32\Debug\LKSL_Demo_EventThreadPooling"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -123,7 +123,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="LKSL_Demo_EventThreadPooling"/>
+            <Filename Value="..\..\..\Bin\Lazarus\Linux64\Debug\LKSL_Demo_EventThreadPooling"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -156,7 +156,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="LKSL_Demo_EventThreadPooling"/>
+            <Filename Value="..\..\..\Bin\Lazarus\Android\Debug\LKSL_Demo_EventThreadPooling"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -232,7 +232,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="LKSL_Demo_EventThreadPooling"/>
+      <Filename Value="..\..\..\Bin\Lazarus\Win32\Debug\LKSL_Demo_EventThreadPooling"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
