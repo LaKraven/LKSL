@@ -45,35 +45,40 @@ unit LKSL.Common.Types;
   {$ELSE}
     {$mode delphi}
   {$ENDIF LKSL_MODE_FPC}
+
+  {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
+    {$IF FPC_VERSION < 3}
+      {$ERROR 'FreePascal (FPC) 3.0 or above is required for the LKSL.'}
+      {$DEFINE LKSL_WARNING_VERSION}
+    {$IFEND FPC_VERSION}
+  {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
+
+{$ELSE}
+  {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
+    {$IFNDEF DELPHIXE2}
+      {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
+      {$DEFINE LKSL_WARNING_VERSION}
+    {$ENDIF DELPHIXE2}
+
+    {$IFDEF DELPHIXE8}
+      {$MESSAGE WARN 'Delphi XE8 is in Beta, problems may be bugs in Delphi itself! Please report any issues on https://github.com/LaKraven/LKSL'}
+      {$DEFINE LKSL_WARNING_VERSION}
+    {$ENDIF DELPHIXE8}
+  {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
+
 {$ENDIF FPC}
-
-{$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
-  {$IFNDEF DELPHIXE2}
-    {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
-    {$DEFINE LKSL_WARNING_VERSION}
-  {$ENDIF DELPHIXE2}
-
-  {$IFDEF DELPHIXE8}
-    {$MESSAGE WARN 'Delphi XE8 is in Beta, problems may be bugs in Delphi itself! Please report any issues on https://github.com/LaKraven/LKSL'}
-    {$DEFINE LKSL_WARNING_VERSION}
-  {$ENDIF DELPHIXE8}
-{$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
-
-{$IFNDEF LKSL_SUPPRESS_DEPRECATION_WARNING}
-  {$IFNDEF LKSL_USE_LISTS}
-    {$MESSAGE WARN 'The use of Generic Lists is going to become mandatory by January 2015. If you object to this, please contact us through https://github.com/LaKraven/LKSL'}
-    {$DEFINE LKSL_WARNING_DEPRECATION}
-  {$ENDIF LKSL_USE_LISTS}
-{$ENDIF LKSL_SUPPRESS_DEPRECATION_WARNING}
 
 {$IFDEF LKSL_WARNING_VERSION}
   {$MESSAGE HINT 'Define "LKSL_SUPPRESS_VERSION_WARNING" in your project options to get rid of these messages'}
   {$UNDEF LKSL_WARNING_VERSION}
 {$ENDIF LKSL_WARNING_VERSION}
 
-{$IFDEF LKSL_WARNING_DEPRECATION}
-  {$MESSAGE HINT 'Define "LKSL_SUPPRESS_DEPRECATION_WARNING" in your project options to get rid of these messages'}
-{$ENDIF LKSL_WARNING_DEPRECATION}
+{$IFNDEF LKSL_SUPPRESS_DEPRECATION_WARNING}
+  // Nothing deprecated to warn about at this moment
+  {$IFDEF LKSL_WARNING_DEPRECATION}
+    {$MESSAGE HINT 'Define "LKSL_SUPPRESS_DEPRECATION_WARNING" in your project options to get rid of these messages'}
+  {$ENDIF LKSL_WARNING_DEPRECATION}
+{$ENDIF LKSL_SUPPRESS_DEPRECATION_WARNING}
 
 {
   About this unit:
