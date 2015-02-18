@@ -1,6 +1,6 @@
 {
   LaKraven Studios Standard Library [LKSL]
-  Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved
+  Copyright (c) 2014, LaKraven Studios Ltd, All Rights Reserved
 
   Original Source Location: https://github.com/LaKraven/LKSL
 
@@ -35,121 +35,22 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-unit LKSL_Common_Types;
-
-{$mode objfpc}{$H+}
-
-{$I LKSL.inc}
+unit LKSL.Math.Common;
 
 interface
 
-uses
-  Classes, SysUtils, syncobjs;
+{$I LKSL.inc}
+
+{$I LKSL_RTTI.inc}
 
 type
-  { Forward Declarations }
-  TLKCriticalSection = class;
 
-  {
-    TLKCriticalSection
-      - Internal version of TCriticalSection
-  }
-  TLKCriticalSection = class(TCriticalSection)
+  { Enum Types }
+  TLKUnitNotation = (unShort, unLong);
 
-  end;
-
-  {
-    TLKPersistent
-      - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
-  }
-  TLKPersistent = class(TPersistent)
-  private
-    FLock: TLKCriticalSection;
-  public
-    constructor Create; virtual;
-    destructor Destroy; override;
-
-    procedure Lock; inline;
-    procedure Unlock; inline;
-  end;
-
-  {
-    TLKObject
-      - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
-  }
-  TLKObject = class(TObject)
-  private
-    FLock: TLKCriticalSection;
-  public
-    constructor Create; virtual;
-    destructor Destroy; override;
-
-    procedure Lock; inline;
-    procedure Unlock; inline;
-  end;
-
-  {$IFDEF LKSL_FLOAT_SINGLE}
-    // Single-precision Float
-    LKFloat = Single;
-  {$ELSE}
-    {$IFDEF LKSL_FLOAT_EXTENDED}
-      // Extended-precision Float
-      LKFloat = Extended;
-    {$ELSE}
-      // Double-precision Float
-      LKFloat = Double; // This is our default
-    {$ENDIF LKSL_FLOAT_DOUBLE}
-  {$ENDIF LKSL_FLOAT_SINGLE}
+const
+  LKUnitLongNotation: Array[Boolean] of TLKUnitNotation = (unShort, unLong);
 
 implementation
 
-{ TLKPersistent }
-
-constructor TLKPersistent.Create;
-begin
-  inherited Create;
-  FLock := TLKCriticalSection.Create;
-end;
-
-destructor TLKPersistent.Destroy;
-begin
-  FLock.Free;
-  inherited;
-end;
-
-procedure TLKPersistent.Lock;
-begin
-  FLock.Acquire;
-end;
-
-procedure TLKPersistent.Unlock;
-begin
-  FLock.Release;
-end;
-
-{ TLKObject }
-
-constructor TLKObject.Create;
-begin
-  inherited Create;
-  FLock := TLKCriticalSection.Create;
-end;
-
-destructor TLKObject.Destroy;
-begin
-  FLock.Free;
-  inherited;
-end;
-
-procedure TLKObject.Lock;
-begin
-  FLock.Acquire;
-end;
-
-procedure TLKObject.Unlock;
-begin
-  FLock.Release;
-end;
-
 end.
-
