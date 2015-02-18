@@ -35,11 +35,17 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-unit LKSL_Common_Stopwatch;
+unit LKSL.Common.Stopwatch;
 
-{$mode objfpc}{$H+}
+{$I ..\..\Common\Common\LKSL.inc}
 
-{$I LKSL.inc}
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
 
 interface
 

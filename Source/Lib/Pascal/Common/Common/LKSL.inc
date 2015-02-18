@@ -35,33 +35,38 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-
 {$I LKSL_VERSIONS.inc}
 
-// MINIMUM SUPPORTED VERSION
-{$IFNDEF DELPHI2010}
-  {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2010, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
+{$IFDEF FPC}
+  {$IFNDEF LKSL_FPC_MODE}
+    {$DEFINE LKSL_DELPHI_MODE}
+  {$ENDIF LKSL_FPC_MODE}
 {$ELSE}
-  {$DEFINE LKSL}
-{$ENDIF DELPHI2010}
+  // MINIMUM SUPPORTED VERSION
+  {$IFNDEF DELPHI2010}
+    {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2010, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
+  {$ELSE}
+    {$DEFINE LKSL}
+  {$ENDIF DELPHI2010}
 
-{$IFDEF SUPPORTS_RECORDHELPERS}
-  {$IFNDEF LKSL_NO_HELPERS}
-    {$DEFINE LKSL_USE_HELPERS} // Define "LKSL_NO_HELPERS" in your project to disable Helpers
-  {$ENDIF LKSL_NO_HELPERS}
-{$ENDIF SUPPORTS_RECORDHELPERS}
+  {$IFDEF SUPPORTS_RECORDHELPERS}
+    {$IFNDEF LKSL_NO_HELPERS}
+      {$DEFINE LKSL_USE_HELPERS} // Define "LKSL_NO_HELPERS" in your project to disable Helpers
+    {$ENDIF LKSL_NO_HELPERS}
+  {$ENDIF SUPPORTS_RECORDHELPERS}
 
-{$IFNDEF LKSL_NO_LISTS}
-  {$DEFINE LKSL_USE_LISTS} // Define "LKSL_NO_LISTS" in your project to disable Generic Lists
-{$ENDIF LKSL_NO_LISTS}
+  {$IFNDEF LKSL_NO_LISTS}
+    {$DEFINE LKSL_USE_LISTS} // Define "LKSL_NO_LISTS" in your project to disable Generic Lists
+  {$ENDIF LKSL_NO_LISTS}
 
-{$IFDEF SUPPORTS_NAMESPACES}
-  {$IFNDEF LKSL_NO_EXPLICIT_UNIT_NAMES}
-    {$IFDEF NAMESPACES_BY_DEFAULT}
-      {$DEFINE LKSL_USE_EXPLICIT_UNIT_NAMES} // Define "LKSL_NO_EXPLICIT_UNIT_NAMES" to disable explicit unit names on XE2+
-    {$ENDIF NAMESPACES_BY_DEFAULT}
-  {$ENDIF LKSL_NO_EXPLICIT_UNIT_NAMES}
-{$ENDIF SUPPORTS_NAMESPACES}
+  {$IFDEF SUPPORTS_NAMESPACES}
+    {$IFNDEF LKSL_NO_EXPLICIT_UNIT_NAMES}
+      {$IFDEF NAMESPACES_BY_DEFAULT}
+        {$DEFINE LKSL_USE_EXPLICIT_UNIT_NAMES} // Define "LKSL_NO_EXPLICIT_UNIT_NAMES" to disable explicit unit names on XE2+
+      {$ENDIF NAMESPACES_BY_DEFAULT}
+    {$ENDIF LKSL_NO_EXPLICIT_UNIT_NAMES}
+  {$ENDIF SUPPORTS_NAMESPACES}
+{$ENDIF FPC}
 
 // Enforce Default Float Type Precision
 {$IFNDEF LKSL_FLOAT_SINGLE}

@@ -38,8 +38,6 @@
 
 {$IFDEF FPC} // FreePascal Related Settings
 
-  {$MODE DELPHI}
-  {$MESSAGE FATAL 'FreePascal is not yet supported by the LaKraven Studios Standard Library [LKSL]'}
 
 {$ELSE} // Delphi Related Settings
 

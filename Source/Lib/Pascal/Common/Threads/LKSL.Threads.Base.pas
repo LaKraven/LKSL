@@ -37,30 +37,40 @@
 }
 unit LKSL.Threads.Base;
 
-{$I LKSL.inc}
-
 {
   About this unit:
     - This unit provides type declarations required for our "High Precision Threads"
     - This unit also provides the Abstract Base Implementation for the same.
-
-  Included Usage Demos:
-    - "LKSL_Demo_HighPrecisionThreads" in the "\Demos\Delphi\<version>\High Precision Threading (HPT)"
-      folder
 }
 
 interface
 
-uses
-  {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
-  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
+{$I ..\Common\LKSL.inc}
+
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
   {$ELSE}
-    Classes, SysUtils, Diagnostics, Math, SyncObjs,
-  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
+
+uses
+  {$IFDEF FPC}
+    Classes, SysUtils, LKSL.Common.Stopwatch, Math,
+  {$ELSE}
+    {$IFDEF POSIX}Posix.Unistd,{$ENDIF}
+    {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+      System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
+    {$ELSE}
+      Classes, SysUtils, Diagnostics, Math, SyncObjs,
+    {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  {$ENDIF FPC}
   LKSL.Common.Types;
 
-  {$I LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
 type
   { Forward Declarations }

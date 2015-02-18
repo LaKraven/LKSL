@@ -93,3 +93,10 @@ __history/
 gdbserver
 *.bak
 /New folder
+*.ppu
+*.or
+*.lps
+*.res
+*.rsj
+*.compiled
+*.dbg

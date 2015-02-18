@@ -39,6 +39,14 @@ unit LKSL.Common.Types;
 
 {$I LKSL.inc}
 
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
+
 {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
   {$IFNDEF DELPHIXE2}
     {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
@@ -81,7 +89,9 @@ uses
     Classes, SysUtils, SyncObjs;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
-  {$I LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
 type
   { Forward Declarations }
@@ -92,6 +102,7 @@ type
   { Exception Types }
   ELKException = class(Exception);
 
+  ///  <summary><c>Avoids CPU caching (which causes problems)</c></summary>
   TLKCriticalSection = class(TCriticalSection)
   private
     {$HINTS OFF}FDummy : array [0..95] of Byte;{$HINTS ON}
