@@ -41,6 +41,14 @@ interface
 
 {$I ..\Common\LKSL.inc}
 
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
+
 {$REGION 'Unit About'}
   {
     About this unit:
@@ -59,11 +67,13 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  Generics.Collections, LKSL.Generics.Collections,
+  LKSL.Generics.Collections,
   LKSL.Common.Types,
   LKSL.Streams.System;
 
-  {$I ..\Common\LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I ..\Common\LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
 type
   { Forward Declarations }
@@ -93,7 +103,7 @@ type
   TLKStreamableArray = TArray<TLKStreamable>;
 
   { Hashmap Types }
-  TLKStreamableTypesDictionary = TDictionary<TGUID, TLKStreamableType>;
+  TLKStreamableTypesDictionary = TLKDictionary<TGUID, TLKStreamableType>;
 
   {
     TLKStreamable

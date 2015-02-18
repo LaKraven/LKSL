@@ -41,6 +41,14 @@ interface
 
 {$I ..\Common\LKSL.inc}
 
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}
+
 {
   About this unit:
     - This unit provides useful enhancements for Generics types used in the LKSL.
@@ -52,11 +60,17 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  Generics.Defaults,
-  Generics.Collections,
+  {$IFNDEF FPC}
+    Generics.Defaults,
+    Generics.Collections,
+  {$ELSE}
+    fgl,
+  {$ENDIF FPC}
   LKSL.Common.Types;
 
-  {$I ..\Common\LKSL_RTTI.inc}
+  {$IFNDEF FPC}
+    {$I ..\Common\LKSL_RTTI.inc}
+  {$ENDIF FPC}
 
 type
   { Forward Declaration }
@@ -68,10 +82,12 @@ type
   TLKSortedListBase<T> = class;
   TLKSortedList<T> = class;
   TLKSortedObjectList<T: class> = class;
-  TLKCenteredList<T> = class;
-  TLKCenteredObjectList<T: class> = class;
-  TLKTreeNode<T> = class;
-  TLKTreeObjectNode<T: class> = class;
+  {$IFNDEF FPC}
+    TLKCenteredList<T> = class;
+    TLKCenteredObjectList<T: class> = class;
+    TLKTreeNode<T> = class;
+    TLKTreeObjectNode<T: class> = class;
+  {$ENDIF FPC}
   TLKSortHandler<T> = class;
 
   { Enum Types }
@@ -125,20 +141,24 @@ type
     TLKDictionary<TKey, TValue>
       - Provides a Thread-Safe Lock (TCriticalSection)
   }
-  TLKDictionary<TKey, TValue> = class(TDictionary<TKey, TValue>)
-  private
-    FLock: TCriticalSection;
-  public
-    constructor Create(ACapacity: Integer = 0); reintroduce; overload;
-    constructor Create(const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
-    constructor Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
-    constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>); reintroduce; overload;
-    constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
-    destructor Destroy; override;
+  {$IFDEF FPC}
+    TLKDictionary<TKey, TValue> = class(TFPGMap<TKey, TValue>);
+  {$ELSE}
+    TLKDictionary<TKey, TValue> = class(TDictionary<TKey, TValue>)
+    private
+      FLock: TCriticalSection;
+    public
+      constructor Create(ACapacity: Integer = 0); reintroduce; overload;
+      constructor Create(const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+      constructor Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+      constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>); reintroduce; overload;
+      constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+      destructor Destroy; override;
 
-    procedure Lock; inline;
-    procedure Unlock; inline;
-  end;
+      procedure Lock; inline;
+      procedure Unlock; inline;
+    end;
+  {$ENDIF FPC}
 
   {
     TLKListBase<T>
@@ -148,7 +168,9 @@ type
   private
     type
       TArrayOfT = Array of T;
-      TIterateCallbackAnon = reference to procedure(const AIndex: Integer; const AItem: T);
+      {$IFDEF SUPPORTS_REFERENCETOMETHOD}
+        TIterateCallbackAnon = reference to procedure(const AIndex: Integer; const AItem: T);
+      {$ENDIF SUPPORTS_REFERENCETOMETHOD}
       TIterateCallbackOfObject = procedure(const AIndex: Integer; const AItem: T) of object;
       TIterateCallbackUnbound = procedure(const AIndex: Integer; const AItem: T);
   private
@@ -201,8 +223,10 @@ type
     function Remove(const AItem: T): Integer; overload;
     procedure Remove(const AItems: TArrayOfT); overload;
 
-    procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}
+      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
+      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
     procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection = ldRight); overload;
     procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer); overload;
     procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection = ldRight); overload;
@@ -298,6 +322,7 @@ type
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
+{$IFNDEF FPC}
   {
     TLKCenteredList
       - A special Generic List object which allows the use of both positive and NEGATIVE indices!
@@ -445,7 +470,6 @@ type
     property OwnsObjects: Boolean read FOwnsObjects write FOwnsObjects;
   end;
 
-
   {
     TLKTreeNode<T>
       - A special Generic Tree Object with thread-safe Locks
@@ -453,7 +477,11 @@ type
   }
   TLKTreeNode<T> = class(TLKObject)
   private type
-    TLKValueCallback<V> = reference to procedure(const Value: V);
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}
+      TLKValueCallback<V> = reference to procedure(const Value: V);
+    {$ELSE}
+      TLKValueCallback<V> = procedure(const Value: V);
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
   private
     FParent: TLKTreeNode<T>;
     FChildren: TLKObjectList<TLKTreeNode<T>>;
@@ -535,7 +563,7 @@ type
 
     property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
   end;
-
+{$ENDIF FPC}
   {
     TLKSortHandler<T>
       - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
@@ -986,46 +1014,49 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer);
-var
-  I: Integer;
-begin
-  Lock;
-  try
-    if ValidateRangeInArray(AFrom, ATo) then
-    begin
-      if AFrom < ATo then
+{$IFDEF SUPPORTS_REFERENCETOMETHOD}
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer);
+  var
+    I: Integer;
+  begin
+    Lock;
+    try
+      if ValidateRangeInArray(AFrom, ATo) then
       begin
-        for I := AFrom to ATo do
-          AIterateCallback(I, FArray[I]);
-      end else
-      begin
-        for I := ATo downto AFrom do
-          AIterateCallback(I, FArray[I]);
+        if AFrom < ATo then
+        begin
+          for I := AFrom to ATo do
+            AIterateCallback(I, FArray[I]);
+        end else
+        begin
+          for I := ATo downto AFrom do
+            AIterateCallback(I, FArray[I]);
+        end;
       end;
+    finally
+      Unlock;
     end;
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight);
-var
-  I: Integer;
-begin
-  Lock;
-  try
-    case AIterateDirection of
-      ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
-      ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight);
+  var
+    I: Integer;
+  begin
+    Lock;
+    try
+      case AIterateDirection of
+        ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
+        ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
+      end;
+    finally
+      Unlock;
     end;
-  finally
-    Unlock;
   end;
-end;
+{$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
 procedure TLKListBase<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
 begin
+
   System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
 end;
 
@@ -1343,437 +1374,479 @@ begin
     Unlock;
   end;
 end;
+{$IFNDEF FPC}
+  { TLKCenteredList<T> }
 
-{ TLKCenteredList<T> }
-
-function TLKCenteredList<T>.Add(const AItem: T; const ADirection: TLKListDirection): Integer;
-begin
-  case ADirection of
-    ldLeft: Result := AddLeft(AItem);
-    ldRight: Result := AddRight(Aitem);
+  function TLKCenteredList<T>.Add(const AItem: T; const ADirection: TLKListDirection): Integer;
+  begin
+    case ADirection of
+      ldLeft: Result := AddLeft(AItem);
+      ldRight: Result := AddRight(Aitem);
+    end;
   end;
-end;
 
-procedure TLKCenteredList<T>.Add(const AItems: TArrayOfT; const ADirection: TLKListDirection);
-var
-  I: Integer;
-begin
-  for I := System.Low(AItems) to System.High(AItems) do
-    Add(AItems[I], ADirection);
-end;
+  procedure TLKCenteredList<T>.Add(const AItems: TArrayOfT; const ADirection: TLKListDirection);
+  var
+    I: Integer;
+  begin
+    for I := System.Low(AItems) to System.High(AItems) do
+      Add(AItems[I], ADirection);
+  end;
 
-function TLKCenteredList<T>.AddLeft(const AItem: T): Integer;
-begin
-  if (TryCenterAvailable(AItem)) then
-    Result := 0
-  else
+  function TLKCenteredList<T>.AddLeft(const AItem: T): Integer;
+  begin
+    if (TryCenterAvailable(AItem)) then
+      Result := 0
+    else
+    begin
+      LockLeft;
+      try
+        Result := FCountLeft;
+        FArrayLeft[Result] := AItem;
+        Inc(FCountLeft);
+        CheckCapacityLeft;
+      finally
+        UnlockLeft;
+      end;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.AddLeft(const AItems: TArrayOfT);
+  var
+    I: Integer;
+  begin
+    for I := System.Low(AItems) to System.High(AItems) do
+      AddLeft(AItems[I]);
+  end;
+
+  function TLKCenteredList<T>.AddRight(const AItem: T): Integer;
+  begin
+    if (TryCenterAvailable(AItem)) then
+      Result := 0
+    else
+    begin
+      LockRight;
+      try
+        Result := FCountRight;
+        FArrayRight[Result] := AItem;
+        Inc(FCountRight);
+        CheckCapacityRight;
+      finally
+        UnlockRight;
+      end;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.AddRight(const AItems: TArrayOfT);
+  var
+    I: Integer;
+  begin
+    for I := System.Low(AItems) to System.High(AItems) do
+      AddRight(AItems[I]);
+  end;
+
+  procedure TLKCenteredList<T>.CheckCapacityLeft;
   begin
     LockLeft;
     try
-      Result := FCountLeft;
-      FArrayLeft[Result] := AItem;
-      Inc(FCountLeft);
-      CheckCapacityLeft;
+      if ((Length(FArrayLeft) - FCountLeft) < FCapacityThreshold) then
+        SetLength(FArrayLeft, Round(Length(FArrayLeft) * FCapacityMultiplier));
     finally
       UnlockLeft;
     end;
   end;
-end;
 
-procedure TLKCenteredList<T>.AddLeft(const AItems: TArrayOfT);
-var
-  I: Integer;
-begin
-  for I := System.Low(AItems) to System.High(AItems) do
-    AddLeft(AItems[I]);
-end;
+  procedure TLKCenteredList<T>.CheckCapacityRight;
+  begin
+    LockRight;
+    try
+      if ((Length(FArrayRight) - FCountRight) < FCapacityThreshold) then
+        SetLength(FArrayRight, Round(Length(FArrayRight) * FCapacityMultiplier));
+    finally
+      UnlockRight;
+    end;
+  end;
 
-function TLKCenteredList<T>.AddRight(const AItem: T): Integer;
-begin
-  if (TryCenterAvailable(AItem)) then
-    Result := 0
-  else
+  procedure TLKCenteredList<T>.Compact;
+  begin
+    Lock;
+    try
+      SetLength(FArrayLeft, (Length(FArrayLeft) - FCountLeft) + FCapacityThreshold + 1);
+      SetLength(FArrayRight, (Length(FArrayRight) - FCountRight) + FCapacityThreshold + 1);
+    finally
+      Unlock;
+    end;
+  end;
+
+  constructor TLKCenteredList<T>.Create;
+  begin
+    inherited Create;
+    FCenterAssigned := False;
+    FCountLeft := 0;
+    FCountRight := 0;
+    FLockLeft := TCriticalSection.Create;
+    FLockRight := TCriticalSection.Create;
+    FLockCenter := TCriticalSection.Create;
+    // We default the Capacity of the Left and Right Arrays to 10 each.
+    // This equates to 21 default Capacity (including Center)
+    SetLength(FArrayLeft, LKSL_LIST_CAPACITY_DEFAULT);
+    SetLength(FArrayRight, LKSL_LIST_CAPACITY_DEFAULT);
+    FCapacityThreshold := LKSL_LIST_THRESHOLD_DEFAULT;
+    FCapacityMultiplier := LKSL_LIST_MULTIPLIER_DEFAULT;
+  end;
+
+  procedure TLKCenteredList<T>.Delete(const AIndex: Integer);
+  begin
+    if AIndex = 0 then
+    begin
+      if ValidateDeleteCenter then
+        DeleteCenter
+    end
+    else if AIndex < 0 then
+    begin
+      if ValidateDeleteLeft((-AIndex) - 1) then
+        DeleteLeft((-AIndex) - 1) // Invert AIndex to provide a positive index
+    end
+    else
+    begin
+      if ValidateDeleteRight(AIndex - 1) then
+        DeleteRight(AIndex - 1);
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.Delete(const AIndices: array of Integer);
+  var
+    I, LOffset: Integer;
+  begin
+    LOffset := 0;
+    Lock;
+    try
+      for I := System.Low(AIndices) to System.High(AIndices) do
+      begin
+        if I = 0 then
+          LOffset := 0;
+        Delete(AIndices[I - LOffset]);
+        Inc(LOffset);
+      end;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.DeleteCenter;
+  var
+    I: Integer;
+  begin
+    LockCenter;
+    try
+      LockRight;
+      try
+        if FCountRight > 0 then
+        begin
+          FCenter := FArrayRight[0];
+          FCenterAssigned := True;
+          if FCountRight > 1 then
+          begin
+            Dec(FCountRight);
+            Move(FArrayRight, 1, 0, FCountRight);
+            Finalize(FArrayRight, FCountRight, 1);
+          end else
+          begin
+            Dec(FCountRight);
+            Finalize(FArrayRight, 0, 1); // Finalize the Right Array
+          end;
+        end else
+        begin
+          System.FillChar(FCenter, SizeOf(T), 0); // Finalize the Center
+          FCenterAssigned := False;
+        end;
+      finally
+        UnlockRight;
+      end;
+    finally
+      UnlockCenter;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.DeleteLeft(const AIndex: Integer);
+  var
+    I: Integer;
+  begin
+    LockLeft;
+    try
+      Dec(FCountLeft);
+      Move(FArrayLeft, AIndex + 1, AIndex, FCountLeft - AIndex);
+      Finalize(FArrayLeft, FCountLeft, 1);
+    finally
+      UnlockLeft;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.DeleteRange(const ALow, AHigh: Integer);
+  var
+    I, LOffset: Integer;
+  begin
+    LOffset := 0;
+    Lock;
+    try
+      for I := ALow to AHigh do
+      begin
+        if I = 0 then
+          LOffset := 0;
+        Delete(I - LOffset);
+        Inc(LOffset);
+      end;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.DeleteRight(const AIndex: Integer);
+  var
+    I: Integer;
+  begin
+    LockRight;
+    try
+      Dec(FCountRight);
+      Move(FArrayRight, AIndex + 1, AIndex, FCountRight - AIndex);
+      Finalize(FArrayRight, FCountRight, 1);
+    finally
+      UnlockRight;
+    end;
+  end;
+
+  destructor TLKCenteredList<T>.Destroy;
+  begin
+    FLockLeft.Free;
+    FLockRight.Free;
+    FLockCenter.Free;
+    inherited;
+  end;
+
+  procedure TLKCenteredList<T>.Finalize(var AArray: TArrayOfT; const AIndex, ACount: Integer);
+  begin
+    System.FillChar(AArray[AIndex], ACount * SizeOf(T), 0);
+  end;
+
+  function TLKCenteredList<T>.GetCapacity: Integer;
+  begin
+    Result := Length(FArrayLeft) + Length(FArrayRight) + 1;
+  end;
+
+  function TLKCenteredList<T>.GetCapacityLeft: Integer;
+  begin
+    LockLeft;
+    try
+      Result := Length(FArrayLeft);
+    finally
+      UnlockLeft;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCapacityMultiplier: Single;
+  begin
+    Lock;
+    try
+      Result := FCapacityMultiplier;
+    finally
+      Unlock;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCapacityRight: Integer;
+  begin
+    LockRight;
+    try
+      Result := Length(FArrayRight);
+    finally
+      UnlockRight;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCapacityThreshold: Integer;
+  begin
+    Lock;
+    try
+      Result := FCapacityThreshold;
+    finally
+      Unlock;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCount: Integer;
+  const
+    // Ordinarily, if Center isn't assigned, then the Count will be 0 anyway!
+    // There is the possibility of exceptions to this general rule, however!
+    CENTER_ADDITION: Array[Boolean] of Integer = (0, 1);
+  begin
+    Lock;
+    try
+      Result := GetCountLeft + GetCountRight + CENTER_ADDITION[FCenterAssigned];
+    finally
+      Unlock;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCountLeft: Integer;
+  begin
+    LockLeft;
+    try
+      Result := FCountLeft;
+    finally
+      UnlockLeft;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetCountRight: Integer;
   begin
     LockRight;
     try
       Result := FCountRight;
-      FArrayRight[Result] := AItem;
-      Inc(FCountRight);
-      CheckCapacityRight;
     finally
       UnlockRight;
     end;
   end;
-end;
 
-procedure TLKCenteredList<T>.AddRight(const AItems: TArrayOfT);
-var
-  I: Integer;
-begin
-  for I := System.Low(AItems) to System.High(AItems) do
-    AddRight(AItems[I]);
-end;
-
-procedure TLKCenteredList<T>.CheckCapacityLeft;
-begin
-  LockLeft;
-  try
-    if ((Length(FArrayLeft) - FCountLeft) < FCapacityThreshold) then
-      SetLength(FArrayLeft, Round(Length(FArrayLeft) * FCapacityMultiplier));
-  finally
-    UnlockLeft;
-  end;
-end;
-
-procedure TLKCenteredList<T>.CheckCapacityRight;
-begin
-  LockRight;
-  try
-    if ((Length(FArrayRight) - FCountRight) < FCapacityThreshold) then
-      SetLength(FArrayRight, Round(Length(FArrayRight) * FCapacityMultiplier));
-  finally
-    UnlockRight;
-  end;
-end;
-
-procedure TLKCenteredList<T>.Compact;
-begin
-  Lock;
-  try
-    SetLength(FArrayLeft, (Length(FArrayLeft) - FCountLeft) + FCapacityThreshold + 1);
-    SetLength(FArrayRight, (Length(FArrayRight) - FCountRight) + FCapacityThreshold + 1);
-  finally
-    Unlock;
-  end;
-end;
-
-constructor TLKCenteredList<T>.Create;
-begin
-  inherited Create;
-  FCenterAssigned := False;
-  FCountLeft := 0;
-  FCountRight := 0;
-  FLockLeft := TCriticalSection.Create;
-  FLockRight := TCriticalSection.Create;
-  FLockCenter := TCriticalSection.Create;
-  // We default the Capacity of the Left and Right Arrays to 10 each.
-  // This equates to 21 default Capacity (including Center)
-  SetLength(FArrayLeft, LKSL_LIST_CAPACITY_DEFAULT);
-  SetLength(FArrayRight, LKSL_LIST_CAPACITY_DEFAULT);
-  FCapacityThreshold := LKSL_LIST_THRESHOLD_DEFAULT;
-  FCapacityMultiplier := LKSL_LIST_MULTIPLIER_DEFAULT;
-end;
-
-procedure TLKCenteredList<T>.Delete(const AIndex: Integer);
-begin
-  if AIndex = 0 then
+  function TLKCenteredList<T>.GetItemByIndex(const AIndex: Integer): T;
   begin
-    if ValidateDeleteCenter then
-      DeleteCenter
-  end
-  else if AIndex < 0 then
-  begin
-    if ValidateDeleteLeft((-AIndex) - 1) then
-      DeleteLeft((-AIndex) - 1) // Invert AIndex to provide a positive index
-  end
-  else
-  begin
-    if ValidateDeleteRight(AIndex - 1) then
-      DeleteRight(AIndex - 1);
+    if AIndex = 0 then
+      Result := GetItemCenter
+    else if AIndex < 0 then
+      Result := GetItemLeft((-AIndex) - 1)
+    else
+      Result := GetItemRight(AIndex - 1);
   end;
-end;
 
-procedure TLKCenteredList<T>.Delete(const AIndices: array of Integer);
-var
-  I, LOffset: Integer;
-begin
-  LOffset := 0;
-  Lock;
-  try
-    for I := System.Low(AIndices) to System.High(AIndices) do
-    begin
-      if I = 0 then
-        LOffset := 0;
-      Delete(AIndices[I - LOffset]);
-      Inc(LOffset);
+  function TLKCenteredList<T>.GetItemCenter: T;
+  begin
+    LockCenter;
+    try
+      if FCenterAssigned then
+        Result := FCenter
+      else
+        raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0');
+    finally
+      UnlockCenter;
     end;
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKCenteredList<T>.DeleteCenter;
-var
-  I: Integer;
-begin
-  LockCenter;
-  try
+  function TLKCenteredList<T>.GetItemLeft(const AIndex: Integer): T;
+  begin
+    LockLeft;
+    try
+      if AIndex < FCountLeft then
+        Result := FArrayLeft[AIndex]
+      else
+        raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
+    finally
+      UnlockLeft;
+    end;
+  end;
+
+  function TLKCenteredList<T>.GetItemRight(const AIndex: Integer): T;
+  begin
     LockRight;
     try
-      if FCountRight > 0 then
-      begin
-        FCenter := FArrayRight[0];
-        FCenterAssigned := True;
-        if FCountRight > 1 then
-        begin
-          Dec(FCountRight);
-          Move(FArrayRight, 1, 0, FCountRight);
-          Finalize(FArrayRight, FCountRight, 1);
-        end else
-        begin
-          Dec(FCountRight);
-          Finalize(FArrayRight, 0, 1); // Finalize the Right Array
-        end;
-      end else
-      begin
-        System.FillChar(FCenter, SizeOf(T), 0); // Finalize the Center
-        FCenterAssigned := False;
-      end;
+      if AIndex < FCountRight then
+        Result := FArrayRight[AIndex]
+      else
+        raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
     finally
       UnlockRight;
     end;
-  finally
-    UnlockCenter;
   end;
-end;
 
-procedure TLKCenteredList<T>.DeleteLeft(const AIndex: Integer);
-var
-  I: Integer;
-begin
-  LockLeft;
-  try
-    Dec(FCountLeft);
-    Move(FArrayLeft, AIndex + 1, AIndex, FCountLeft - AIndex);
-    Finalize(FArrayLeft, FCountLeft, 1);
-  finally
-    UnlockLeft;
-  end;
-end;
-
-procedure TLKCenteredList<T>.DeleteRange(const ALow, AHigh: Integer);
-var
-  I, LOffset: Integer;
-begin
-  LOffset := 0;
-  Lock;
-  try
-    for I := ALow to AHigh do
-    begin
-      if I = 0 then
-        LOffset := 0;
-      Delete(I - LOffset);
-      Inc(LOffset);
+  function TLKCenteredList<T>.GetRangeHigh: Integer;
+  begin
+    LockRight;
+    try
+      Result := FCountRight;
+      if (not FCenterAssigned) then
+        Dec(Result);
+    finally
+      UnlockRight;
     end;
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKCenteredList<T>.DeleteRight(const AIndex: Integer);
-var
-  I: Integer;
-begin
-  LockRight;
-  try
-    Dec(FCountRight);
-    Move(FArrayRight, AIndex + 1, AIndex, FCountRight - AIndex);
-    Finalize(FArrayRight, FCountRight, 1);
-  finally
-    UnlockRight;
+  function TLKCenteredList<T>.GetRangeLow: Integer;
+  begin
+    LockLeft;
+    try
+      Result := -FCountLeft;
+    finally
+      UnlockLeft;
+    end;
   end;
-end;
 
-destructor TLKCenteredList<T>.Destroy;
-begin
-  FLockLeft.Free;
-  FLockRight.Free;
-  FLockCenter.Free;
-  inherited;
-end;
-
-procedure TLKCenteredList<T>.Finalize(var AArray: TArrayOfT; const AIndex, ACount: Integer);
-begin
-  System.FillChar(AArray[AIndex], ACount * SizeOf(T), 0);
-end;
-
-function TLKCenteredList<T>.GetCapacity: Integer;
-begin
-  Result := Length(FArrayLeft) + Length(FArrayRight) + 1;
-end;
-
-function TLKCenteredList<T>.GetCapacityLeft: Integer;
-begin
-  LockLeft;
-  try
-    Result := Length(FArrayLeft);
-  finally
-    UnlockLeft;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCapacityMultiplier: Single;
-begin
-  Lock;
-  try
-    Result := FCapacityMultiplier;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCapacityRight: Integer;
-begin
-  LockRight;
-  try
-    Result := Length(FArrayRight);
-  finally
-    UnlockRight;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCapacityThreshold: Integer;
-begin
-  Lock;
-  try
-    Result := FCapacityThreshold;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCount: Integer;
-const
-  // Ordinarily, if Center isn't assigned, then the Count will be 0 anyway!
-  // There is the possibility of exceptions to this general rule, however!
-  CENTER_ADDITION: Array[Boolean] of Integer = (0, 1);
-begin
-  Lock;
-  try
-    Result := GetCountLeft + GetCountRight + CENTER_ADDITION[FCenterAssigned];
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCountLeft: Integer;
-begin
-  LockLeft;
-  try
-    Result := FCountLeft;
-  finally
-    UnlockLeft;
-  end;
-end;
-
-function TLKCenteredList<T>.GetCountRight: Integer;
-begin
-  LockRight;
-  try
-    Result := FCountRight;
-  finally
-    UnlockRight;
-  end;
-end;
-
-function TLKCenteredList<T>.GetItemByIndex(const AIndex: Integer): T;
-begin
-  if AIndex = 0 then
-    Result := GetItemCenter
-  else if AIndex < 0 then
-    Result := GetItemLeft((-AIndex) - 1)
-  else
-    Result := GetItemRight(AIndex - 1);
-end;
-
-function TLKCenteredList<T>.GetItemCenter: T;
-begin
-  LockCenter;
-  try
-    if FCenterAssigned then
-      Result := FCenter
+  procedure TLKCenteredList<T>.Insert(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+  begin
+    if AIndex = 0 then
+      InsertCenter(AItem, AShiftDirection)
+    else if AIndex < 0 then
+      InsertLeft(AItem, (-AIndex) - 1, AShiftDirection)
     else
-      raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0');
-  finally
-    UnlockCenter;
+      InsertRight(AItem, AIndex - 1, AShiftDirection);
   end;
-end;
 
-function TLKCenteredList<T>.GetItemLeft(const AIndex: Integer): T;
-begin
-  LockLeft;
-  try
-    if AIndex < FCountLeft then
-      Result := FArrayLeft[AIndex]
+  procedure TLKCenteredList<T>.InsertCenter(const AItem: T; const AShiftDirection: TLKListDirection = ldRight);
+  begin
+    LockCenter;
+    try
+      if not (TryCenterAvailable(AItem)) then
+      begin
+        case AShiftDirection of
+          ldLeft: begin
+                    LockLeft;
+                    try
+                      if FCountLeft > 0 then
+                      begin
+                        Move(FArrayLeft, 0, 1, FCountLeft);
+                        FArrayLeft[0] := FCenter;
+                        Inc(FCountLeft);
+                        CheckCapacityLeft;
+                      end;
+                    finally
+                      UnlockLeft;
+                    end;
+                  end;
+          ldRight: begin
+                     LockRight;
+                     try
+                       if FCountRight > 0 then
+                       begin
+                         Move(FArrayRight, 0, 1, FCountRight);
+                         FArrayRight[0] := FCenter;
+                         Inc(FCountRight);
+                         CheckCapacityRight;
+                       end;
+                     finally
+                       UnlockRight;
+                     end;
+                   end;
+        end;
+        FCenter := AItem;
+        FCenterAssigned := True;
+      end;
+    finally
+      UnlockCenter;
+    end;
+  end;
+
+  procedure TLKCenteredList<T>.InsertLeft(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
+  begin
+    if AIndex > FCountLeft then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [-(AIndex + 1)])
     else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
-  finally
-    UnlockLeft;
-  end;
-end;
-
-function TLKCenteredList<T>.GetItemRight(const AIndex: Integer): T;
-begin
-  LockRight;
-  try
-    if AIndex < FCountRight then
-      Result := FArrayRight[AIndex]
-    else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
-  finally
-    UnlockRight;
-  end;
-end;
-
-function TLKCenteredList<T>.GetRangeHigh: Integer;
-begin
-  LockRight;
-  try
-    Result := FCountRight;
-    if (not FCenterAssigned) then
-      Dec(Result);
-  finally
-    UnlockRight;
-  end;
-end;
-
-function TLKCenteredList<T>.GetRangeLow: Integer;
-begin
-  LockLeft;
-  try
-    Result := -FCountLeft;
-  finally
-    UnlockLeft;
-  end;
-end;
-
-procedure TLKCenteredList<T>.Insert(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
-begin
-  if AIndex = 0 then
-    InsertCenter(AItem, AShiftDirection)
-  else if AIndex < 0 then
-    InsertLeft(AItem, (-AIndex) - 1, AShiftDirection)
-  else
-    InsertRight(AItem, AIndex - 1, AShiftDirection);
-end;
-
-procedure TLKCenteredList<T>.InsertCenter(const AItem: T; const AShiftDirection: TLKListDirection = ldRight);
-begin
-  LockCenter;
-  try
-    if not (TryCenterAvailable(AItem)) then
     begin
       case AShiftDirection of
         ldLeft: begin
                   LockLeft;
                   try
-                    if FCountLeft > 0 then
-                    begin
-                      Move(FArrayLeft, 0, 1, FCountLeft);
-                      FArrayLeft[0] := FCenter;
-                      Inc(FCountLeft);
-                      CheckCapacityLeft;
-                    end;
+                    // We're actually shifting to the RIGHT (remember, it's inverted)
+                    Move(FArrayLeft, AIndex, AIndex + 1, FCountLeft - AIndex);
+                    FArrayLeft[AIndex] := AItem;
+                    Inc(FCountLeft);
+                    CheckCapacityLeft;
                   finally
                     UnlockLeft;
                   end;
@@ -1781,655 +1854,613 @@ begin
         ldRight: begin
                    LockRight;
                    try
-                     if FCountRight > 0 then
-                     begin
-                       Move(FArrayRight, 0, 1, FCountRight);
-                       FArrayRight[0] := FCenter;
-                       Inc(FCountRight);
-                       CheckCapacityRight;
+                     // We're actually shifting to the LEFT (remember, it's inverted)
+                     LockCenter;
+                     try
+                       InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
+                       FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
+                       FCenterAssigned := True;
+                     finally
+                       UnlockCenter;
                      end;
+                     Move(FArrayLeft, 1, 0, AIndex);
+                     FArrayLeft[AIndex] := AItem; // Assign the Item to the index
+                     CheckCapacityRight;
                    finally
                      UnlockRight;
                    end;
                  end;
       end;
-      FCenter := AItem;
-      FCenterAssigned := True;
     end;
-  finally
-    UnlockCenter;
   end;
-end;
 
-procedure TLKCenteredList<T>.InsertLeft(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
-begin
-  if AIndex > FCountLeft then
-    raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [-(AIndex + 1)])
-  else
+  procedure TLKCenteredList<T>.InsertRight(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
   begin
-    case AShiftDirection of
-      ldLeft: begin
-                LockLeft;
-                try
-                  // We're actually shifting to the RIGHT (remember, it's inverted)
-                  Move(FArrayLeft, AIndex, AIndex + 1, FCountLeft - AIndex);
-                  FArrayLeft[AIndex] := AItem;
-                  Inc(FCountLeft);
-                  CheckCapacityLeft;
-                finally
-                  UnlockLeft;
-                end;
-              end;
-      ldRight: begin
-                 LockRight;
-                 try
-                   // We're actually shifting to the LEFT (remember, it's inverted)
-                   LockCenter;
-                   try
-                     InsertRight(FCenter, 0); // Move the Center to position 0 of the RIGHT Array
-                     FCenter := FArrayLeft[0]; // Move the Right-most item in the Left Array to Center
-                     FCenterAssigned := True;
-                   finally
-                     UnlockCenter;
-                   end;
-                   Move(FArrayLeft, 1, 0, AIndex);
-                   FArrayLeft[AIndex] := AItem; // Assign the Item to the index
-                   CheckCapacityRight;
-                 finally
-                   UnlockRight;
-                 end;
-               end;
-    end;
-  end;
-end;
-
-procedure TLKCenteredList<T>.InsertRight(const AItem: T; const AIndex: Integer; const AShiftDirection: TLKListDirection = ldRight);
-begin
-  if AIndex > FCountRight then
-    raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [AIndex + 1])
-  else
-  begin
-    case AShiftDirection of
-      ldLeft: begin
-                LockLeft;
-                try
-                  LockCenter;
-                  try
-                    InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
-                    FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
-                    FCenterAssigned := True;
-                  finally
-                    UnlockCenter;
-                  end;
-                  Move(FArrayRight, 1, 0, AIndex);
-                  FArrayRight[AIndex] := AItem;
-                  CheckCapacityLeft;
-                finally
-                  UnlockLeft;
-                end;
-              end;
-      ldRight: begin
-                 LockRight;
-                 try
-                   Move(FArrayRight, AIndex, AIndex + 1, FCountRight - AIndex);
-                   FArrayRight[AIndex] := AItem;
-                   Inc(FCountRight);
-                   CheckCapacityRight;
-                 finally
-                   UnlockRight;
-                 end;
-               end;
-    end;
-  end;
-end;
-
-procedure TLKCenteredList<T>.Lock;
-begin
-  LockCenter;
-  LockLeft;
-  LockRight;
-end;
-
-procedure TLKCenteredList<T>.LockCenter;
-begin
-  FLockCenter.Acquire;
-end;
-
-procedure TLKCenteredList<T>.LockLeft;
-begin
-  FLockLeft.Acquire;
-end;
-
-procedure TLKCenteredList<T>.LockRight;
-begin
-  FLockRight.Acquire;
-end;
-
-procedure TLKCenteredList<T>.Move(var AArray: TArrayOfT; const AFromIndex, AToIndex, ACount: Integer);
-begin
-  System.Move(AArray[AFromIndex], AArray[AToIndex], ACount * SizeOf(T));
-end;
-
-procedure TLKCenteredList<T>.SetCapacityMultiplier(const AMultiplier: Single);
-begin
-  // Sanity Check on Multiplier
-  if AMultiplier < LKSL_LIST_MULTIPLIER_MINIMUM then
-    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MINIMUM])
-  else if AMultiplier > LKSL_LIST_MULTIPLIER_MAXIMUM then
-    raise ELKGenericCollectionsLimitException.CreateFmt('Maximum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MAXIMUM]);
-  // If we got this far, we're ready to change our Multiplier
-  Lock;
-  try
-    FCapacityMultiplier := AMultiplier;
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKCenteredList<T>.SetCapacityThreshold(const AThreshold: Integer);
-begin
-  // Sanity Check on Threshold
-  if AThreshold < LKSL_LIST_THRESHOLD_MINIMUM then
-    raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Threshold is %d', [LKSL_LIST_THRESHOLD_MINIMUM]);
-  // If we got this far, we're ready to change our Threshold
-  Lock;
-  try
-    FCapacityThreshold := AThreshold;
-    CheckCapacityLeft; // Adjust the Left Array Capacity if necessary
-    CheckCapacityRight; // Adjust the Right Array Capacity if necessary
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKCenteredList<T>.SetItemByIndex(const AIndex: Integer; const AItem: T);
-begin
-  if AIndex = 0 then
-    SetItemCenter(AItem)
-  else if AIndex < 0 then
-    SetItemLeft((-AIndex) - 1, AItem)
-  else
-    SetItemRight(AIndex - 1, AItem);
-end;
-
-procedure TLKCenteredList<T>.SetItemCenter(const AItem: T);
-begin
-  LockCenter;
-  try
-    FCenter := AItem;
-    FCenterAssigned := True;
-  finally
-    UnlockCenter;
-  end;
-end;
-
-procedure TLKCenteredList<T>.SetItemLeft(const AIndex: Integer; const AItem: T);
-begin
-  LockLeft;
-  try
-    if AIndex < FCountLeft then
-      FArrayLeft[AIndex] := AItem
+    if AIndex > FCountRight then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Bounds.', [AIndex + 1])
     else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Range: %d', [-(AIndex + 1)]);
-  finally
-    UnlockLeft;
-  end;
-end;
-
-procedure TLKCenteredList<T>.SetItemRight(const AIndex: Integer; const AItem: T);
-begin
-  LockRight;
-  try
-    if AIndex < FCountRight then
-      FArrayRight[AIndex] := AItem
-    else
-      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
-  finally
-    UnlockRight;
-  end;
-end;
-
-procedure TLKCenteredList<T>.Swap(const AFrom, ATo: Integer);
-var
-  LTemp: T;
-  LFrom, LTo: ^T;
-begin
-  if AFrom = 0 then
-    LFrom := @FCenter
-  else if AFrom < 0 then
-    LFrom := @FArrayLeft[-(AFrom) - 1]
-  else
-    LFrom := @FArrayRight[AFrom - 1];
-
-  if ATo = 0 then
-    LTo := @FCenter
-  else if ATo < 0 then
-    LTo := @FArrayLeft[-(ATo) - 1]
-  else
-    LTo := @FArrayRight[ATo - 1];
-
-    LTemp := LFrom^;
-    LFrom^ := LTo^;
-    LTo^ := LTemp;
-end;
-
-function TLKCenteredList<T>.TryCenterAvailable(const AItem: T): Boolean;
-begin
-  Result := False;
-  LockCenter;
-  try
-    if not (FCenterAssigned) then
     begin
-      Result := True;
-      FCenter := AItem;
-      FCenterAssigned := True;
+      case AShiftDirection of
+        ldLeft: begin
+                  LockLeft;
+                  try
+                    LockCenter;
+                    try
+                      InsertLeft(FCenter, 0, ldLeft); // Move the Center position to 0 of the LEFT Array
+                      FCenter := FArrayRight[0]; // Move the left-most item in the Left Array to Center
+                      FCenterAssigned := True;
+                    finally
+                      UnlockCenter;
+                    end;
+                    Move(FArrayRight, 1, 0, AIndex);
+                    FArrayRight[AIndex] := AItem;
+                    CheckCapacityLeft;
+                  finally
+                    UnlockLeft;
+                  end;
+                end;
+        ldRight: begin
+                   LockRight;
+                   try
+                     Move(FArrayRight, AIndex, AIndex + 1, FCountRight - AIndex);
+                     FArrayRight[AIndex] := AItem;
+                     Inc(FCountRight);
+                     CheckCapacityRight;
+                   finally
+                     UnlockRight;
+                   end;
+                 end;
+      end;
     end;
-  finally
-    UnlockCenter;
   end;
-end;
 
-procedure TLKCenteredList<T>.Unlock;
-begin
-  UnlockCenter;
-  UnlockLeft;
-  UnlockRight;
-end;
-
-procedure TLKCenteredList<T>.UnlockCenter;
-begin
-  FLockCenter.Release;
-end;
-
-procedure TLKCenteredList<T>.UnlockLeft;
-begin
-  FLockLeft.Release;
-end;
-
-procedure TLKCenteredList<T>.UnlockRight;
-begin
-  FLockRight.Release;
-end;
-
-function TLKCenteredList<T>.ValidateDeleteCenter: Boolean;
-begin
-  Result := FCenterAssigned;
-  if not (Result) then
-    raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0')
-end;
-
-function TLKCenteredList<T>.ValidateDeleteLeft(const AIndex: Integer): Boolean;
-begin
-  Result := (AIndex < FCountLeft);
-  if (not Result) then
-    raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
-end;
-
-function TLKCenteredList<T>.ValidateDeleteRight(const AIndex: Integer): Boolean;
-begin
-  Result := (AIndex < FCountRight);
-  if (not Result) then
-    raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex + 1]);
-end;
-
-{ TLKCenteredObjectList<T> }
-
-constructor TLKCenteredObjectList<T>.Create(const AOwnsObjects: Boolean);
-begin
-  inherited Create;
-  FOwnsObjects := AOwnsObjects;
-end;
-
-procedure TLKCenteredObjectList<T>.DeleteCenter;
-begin
-  if FOwnsObjects then
-    FCenter.DisposeOf;
-  inherited;
-end;
-
-procedure TLKCenteredObjectList<T>.DeleteLeft(const AIndex: Integer);
-begin
-  if FOwnsObjects then
-    FArrayLeft[AIndex].DisposeOf;
-  inherited;
-end;
-
-procedure TLKCenteredObjectList<T>.DeleteRight(const AIndex: Integer);
-begin
-  if FOwnsObjects then
-    FArrayRight[AIndex].DisposeOf;
-  inherited;
-end;
-
-{ TLKTreeNode<T> }
-
-constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
-begin
-  inherited Create;
-
-  FParent := AParent;
-  FChildren := TLKObjectList<TLKTreeNode<T>>.Create;
-  FValue := AValue;
-end;
-
-constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>);
-begin
-  Create(AParent, Default(T));
-end;
-
-constructor TLKTreeNode<T>.Create(const AValue: T);
-begin
-  Create(nil, AValue);
-end;
-
-constructor TLKTreeNode<T>.Create;
-begin
-  Create(nil, Default(T));
-end;
-
-destructor TLKTreeNode<T>.Destroy;
-begin
-  FChildren.Free;
-
-  inherited;
-end;
-
-procedure TLKTreeNode<T>.DoAncestorChanged;
-begin
-  PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
-               begin
-                 Node.AncestorChanged;
-               end);
-end;
-
-function TLKTreeNode<T>.GetRootNode: TLKTreeNode<T>;
-begin
-  Lock;
-  try
-    if IsRoot then
-      Result := Self
-    else
-      Result := Parent.RootNode;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetChildCount: Integer;
-begin
-  Lock;
-  try
-    Result := FChildren.Count;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetChildren(const AIndex: Integer): TLKTreeNode<T>;
-begin
-  Lock;
-  try
-    Result := FChildren[AIndex];
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetIndexAsChild: Integer;
-begin
-  if Parent = nil then
-    Result := -1
-  else
+  procedure TLKCenteredList<T>.Lock;
   begin
+    LockCenter;
+    LockLeft;
+    LockRight;
+  end;
+
+  procedure TLKCenteredList<T>.LockCenter;
+  begin
+    FLockCenter.Acquire;
+  end;
+
+  procedure TLKCenteredList<T>.LockLeft;
+  begin
+    FLockLeft.Acquire;
+  end;
+
+  procedure TLKCenteredList<T>.LockRight;
+  begin
+    FLockRight.Acquire;
+  end;
+
+  procedure TLKCenteredList<T>.Move(var AArray: TArrayOfT; const AFromIndex, AToIndex, ACount: Integer);
+  begin
+    System.Move(AArray[AFromIndex], AArray[AToIndex], ACount * SizeOf(T));
+  end;
+
+  procedure TLKCenteredList<T>.SetCapacityMultiplier(const AMultiplier: Single);
+  begin
+    // Sanity Check on Multiplier
+    if AMultiplier < LKSL_LIST_MULTIPLIER_MINIMUM then
+      raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MINIMUM])
+    else if AMultiplier > LKSL_LIST_MULTIPLIER_MAXIMUM then
+      raise ELKGenericCollectionsLimitException.CreateFmt('Maximum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MAXIMUM]);
+    // If we got this far, we're ready to change our Multiplier
     Lock;
     try
-      Result := Parent.IndexOf(Self);
+      FCapacityMultiplier := AMultiplier;
     finally
       Unlock;
     end;
   end;
-end;
 
-function TLKTreeNode<T>.GetIsRoot: Boolean;
-begin
-  Lock;
-  try
-    Result := Parent = nil;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetIsBranch: Boolean;
-begin
-  Lock;
-  try
-    Result := (not GetIsRoot) and (not GetIsLeaf);
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetIsLeaf: Boolean;
-begin
-  Lock;
-  try
-    Result := FChildren.Count = 0;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKTreeNode<T>.GetDepth: Integer;
-var
-  Ancestor: TLKTreeNode<T>;
-begin
-  Lock;
-  try
-    Ancestor := Parent;
-    Result := 0;
-
-    while Ancestor <> nil do
-    begin
-      Inc(Result);
-      Ancestor := Ancestor.Parent;
+  procedure TLKCenteredList<T>.SetCapacityThreshold(const AThreshold: Integer);
+  begin
+    // Sanity Check on Threshold
+    if AThreshold < LKSL_LIST_THRESHOLD_MINIMUM then
+      raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Threshold is %d', [LKSL_LIST_THRESHOLD_MINIMUM]);
+    // If we got this far, we're ready to change our Threshold
+    Lock;
+    try
+      FCapacityThreshold := AThreshold;
+      CheckCapacityLeft; // Adjust the Left Array Capacity if necessary
+      CheckCapacityRight; // Adjust the Right Array Capacity if necessary
+    finally
+      Unlock;
     end;
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKTreeNode<T>.Destroying;
-begin
-  FDestroying := True;
-end;
-
-procedure TLKTreeNode<T>.AddChild(const AIndex: Integer; const AChild: TLKTreeNode<T>);
-begin
-  if AIndex < 0 then
-    FChildren.Add(AChild)
-  else
-    FChildren.Insert(AChild, AIndex);
-end;
-
-procedure TLKTreeNode<T>.RemoveChild(const AChild: TLKTreeNode<T>);
-begin
-  FChildren.Remove(AChild);
-end;
-
-procedure TLKTreeNode<T>.SetValue(const AValue: T);
-begin
-  Lock;
-  try
-    FValue := AValue;
-  finally
-    Unlock;
+  procedure TLKCenteredList<T>.SetItemByIndex(const AIndex: Integer; const AItem: T);
+  begin
+    if AIndex = 0 then
+      SetItemCenter(AItem)
+    else if AIndex < 0 then
+      SetItemLeft((-AIndex) - 1, AItem)
+    else
+      SetItemRight(AIndex - 1, AItem);
   end;
-end;
 
-procedure TLKTreeNode<T>.AfterConstruction;
-begin
-  inherited;
+  procedure TLKCenteredList<T>.SetItemCenter(const AItem: T);
+  begin
+    LockCenter;
+    try
+      FCenter := AItem;
+      FCenterAssigned := True;
+    finally
+      UnlockCenter;
+    end;
+  end;
 
-  if Parent <> nil then
-    Parent.AddChild(-1, Self);
+  procedure TLKCenteredList<T>.SetItemLeft(const AIndex: Integer; const AItem: T);
+  begin
+    LockLeft;
+    try
+      if AIndex < FCountLeft then
+        FArrayLeft[AIndex] := AItem
+      else
+        raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Range: %d', [-(AIndex + 1)]);
+    finally
+      UnlockLeft;
+    end;
+  end;
 
-  DoAncestorChanged;
-end;
+  procedure TLKCenteredList<T>.SetItemRight(const AIndex: Integer; const AItem: T);
+  begin
+    LockRight;
+    try
+      if AIndex < FCountRight then
+        FArrayRight[AIndex] := AItem
+      else
+        raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
+    finally
+      UnlockRight;
+    end;
+  end;
 
-procedure TLKTreeNode<T>.AncestorChanged;
-begin
-  // Do nothing (yet)
-end;
+  procedure TLKCenteredList<T>.Swap(const AFrom, ATo: Integer);
+  var
+    LTemp: T;
+    LFrom, LTo: ^T;
+  begin
+    if AFrom = 0 then
+      LFrom := @FCenter
+    else if AFrom < 0 then
+      LFrom := @FArrayLeft[-(AFrom) - 1]
+    else
+      LFrom := @FArrayRight[AFrom - 1];
 
-procedure TLKTreeNode<T>.BeforeDestruction;
-begin
-  inherited;
+    if ATo = 0 then
+      LTo := @FCenter
+    else if ATo < 0 then
+      LTo := @FArrayLeft[-(ATo) - 1]
+    else
+      LTo := @FArrayRight[ATo - 1];
 
-  if not IsDestroying then
-    PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
-                 begin
-                   Node.Destroying;
-                 end);
+      LTemp := LFrom^;
+      LFrom^ := LTo^;
+      LTo^ := LTemp;
+  end;
 
-  if (Parent <> nil) and (not Parent.IsDestroying) then
-    Parent.RemoveChild(Self);
-end;
-
-procedure TLKTreeNode<T>.MoveTo(const ANewParent: TLKTreeNode<T>; const AIndex: Integer = -1);
-begin
-  if (Parent = nil) and (ANewParent = nil) then
-    Exit;
-
-  Lock;
-  try
-    if Parent = ANewParent then
-    begin
-      if AIndex <> IndexAsChild then
+  function TLKCenteredList<T>.TryCenterAvailable(const AItem: T): Boolean;
+  begin
+    Result := False;
+    LockCenter;
+    try
+      if not (FCenterAssigned) then
       begin
-        Parent.FChildren.Remove(Self);
-        if AIndex < 0 then
-          Parent.FChildren.Add(Self)
-        else
-          Parent.FChildren.Insert(Self, AIndex);
+        Result := True;
+        FCenter := AItem;
+        FCenterAssigned := True;
       end;
-    end else
-    begin
-      if Parent <> nil then
-        Parent.RemoveChild(Self);
-
-      FParent := ANewParent;
-
-      if Parent <> nil then
-        Parent.AddChild(AIndex, Self);
-
-      DoAncestorChanged;
+    finally
+      UnlockCenter;
     end;
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKTreeNode<T>.MoveTo(const AIndex: Integer);
-begin
-  MoveTo(Parent, AIndex);
-end;
-
-function TLKTreeNode<T>.IndexOf(const AChild: TLKTreeNode<T>): Integer;
-begin
-  Lock;
-  try
-    Result := FChildren.IndexOf(AChild);
-  finally
-    Unlock;
+  procedure TLKCenteredList<T>.Unlock;
+  begin
+    UnlockCenter;
+    UnlockLeft;
+    UnlockRight;
   end;
-end;
 
-procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
-var
-  Index: Integer;
-begin
-  Lock;
-  try
-    AAction(Self);
-    for Index := 0 to ChildCount-1 do
-      Children[Index].PreOrderWalk(AAction);
-  finally
-    Unlock;
+  procedure TLKCenteredList<T>.UnlockCenter;
+  begin
+    FLockCenter.Release;
   end;
-end;
 
-procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<T>);
-begin
-  Lock;
-  try
+  procedure TLKCenteredList<T>.UnlockLeft;
+  begin
+    FLockLeft.Release;
+  end;
+
+  procedure TLKCenteredList<T>.UnlockRight;
+  begin
+    FLockRight.Release;
+  end;
+
+  function TLKCenteredList<T>.ValidateDeleteCenter: Boolean;
+  begin
+    Result := FCenterAssigned;
+    if not (Result) then
+      raise ELKGenericCollectionsRangeException.Create('Index Out of Bounds: 0')
+  end;
+
+  function TLKCenteredList<T>.ValidateDeleteLeft(const AIndex: Integer): Boolean;
+  begin
+    Result := (AIndex < FCountLeft);
+    if (not Result) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [-(AIndex + 1)]);
+  end;
+
+  function TLKCenteredList<T>.ValidateDeleteRight(const AIndex: Integer): Boolean;
+  begin
+    Result := (AIndex < FCountRight);
+    if (not Result) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex + 1]);
+  end;
+
+  { TLKCenteredObjectList<T> }
+
+  constructor TLKCenteredObjectList<T>.Create(const AOwnsObjects: Boolean);
+  begin
+    inherited Create;
+    FOwnsObjects := AOwnsObjects;
+  end;
+
+  procedure TLKCenteredObjectList<T>.DeleteCenter;
+  begin
+    if FOwnsObjects then
+      FCenter.DisposeOf;
+    inherited;
+  end;
+
+  procedure TLKCenteredObjectList<T>.DeleteLeft(const AIndex: Integer);
+  begin
+    if FOwnsObjects then
+      FArrayLeft[AIndex].DisposeOf;
+    inherited;
+  end;
+
+  procedure TLKCenteredObjectList<T>.DeleteRight(const AIndex: Integer);
+  begin
+    if FOwnsObjects then
+      FArrayRight[AIndex].DisposeOf;
+    inherited;
+  end;
+
+  { TLKTreeNode<T> }
+
+  constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
+  begin
+    inherited Create;
+
+    FParent := AParent;
+    FChildren := TLKObjectList<TLKTreeNode<T>>.Create;
+    FValue := AValue;
+  end;
+
+  constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>);
+  begin
+    Create(AParent, Default(T));
+  end;
+
+  constructor TLKTreeNode<T>.Create(const AValue: T);
+  begin
+    Create(nil, AValue);
+  end;
+
+  constructor TLKTreeNode<T>.Create;
+  begin
+    Create(nil, Default(T));
+  end;
+
+  destructor TLKTreeNode<T>.Destroy;
+  begin
+    FChildren.Free;
+
+    inherited;
+  end;
+
+  procedure TLKTreeNode<T>.DoAncestorChanged;
+  begin
     PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
                  begin
-                   AAction(Node.Value);
+                   Node.AncestorChanged;
                  end);
-  finally
-    Unlock;
   end;
-end;
 
-procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
-var
-  LIndex: Integer;
-begin
-  Lock;
-  try
-    for LIndex := 0 to ChildCount-1 do
-      Children[LIndex].PostOrderWalk(AAction);
-    AAction(Self);
-  finally
-    Unlock;
+  function TLKTreeNode<T>.GetRootNode: TLKTreeNode<T>;
+  begin
+    Lock;
+    try
+      if IsRoot then
+        Result := Self
+      else
+        Result := Parent.RootNode;
+    finally
+      Unlock;
+    end;
   end;
-end;
 
-procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<T>);
-begin
-  Lock;
-  try
-    PostOrderWalk(procedure(const Node: TLKTreeNode<T>)
-                  begin
-                    AAction(Node.Value);
-                  end);
-  finally
-    Unlock;
+  function TLKTreeNode<T>.GetChildCount: Integer;
+  begin
+    Lock;
+    try
+      Result := FChildren.Count;
+    finally
+      Unlock;
+    end;
   end;
-end;
 
-{ TLKTreeObjectNode<T> }
+  function TLKTreeNode<T>.GetChildren(const AIndex: Integer): TLKTreeNode<T>;
+  begin
+    Lock;
+    try
+      Result := FChildren[AIndex];
+    finally
+      Unlock;
+    end;
+  end;
 
-constructor TLKTreeObjectNode<T>.Create;
-begin
-  inherited;
-  FOwnsObject := True;
-end;
+  function TLKTreeNode<T>.GetIndexAsChild: Integer;
+  begin
+    if Parent = nil then
+      Result := -1
+    else
+    begin
+      Lock;
+      try
+        Result := Parent.IndexOf(Self);
+      finally
+        Unlock;
+      end;
+    end;
+  end;
 
-constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
-begin
-  inherited;
-  FOwnsObject := True;
-end;
+  function TLKTreeNode<T>.GetIsRoot: Boolean;
+  begin
+    Lock;
+    try
+      Result := Parent = nil;
+    finally
+      Unlock;
+    end;
+  end;
 
-constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>);
-begin
-  inherited;
-  FOwnsObject := True;
-end;
+  function TLKTreeNode<T>.GetIsBranch: Boolean;
+  begin
+    Lock;
+    try
+      Result := (not GetIsRoot) and (not GetIsLeaf);
+    finally
+      Unlock;
+    end;
+  end;
 
-constructor TLKTreeObjectNode<T>.Create(const AValue: T);
-begin
-  inherited;
-  FOwnsObject := True;
-end;
+  function TLKTreeNode<T>.GetIsLeaf: Boolean;
+  begin
+    Lock;
+    try
+      Result := FChildren.Count = 0;
+    finally
+      Unlock;
+    end;
+  end;
 
-destructor TLKTreeObjectNode<T>.Destroy;
-begin
-  if FOwnsObject then
-    FValue.DisposeOf;
-  inherited;
-end;
+  function TLKTreeNode<T>.GetDepth: Integer;
+  var
+    Ancestor: TLKTreeNode<T>;
+  begin
+    Lock;
+    try
+      Ancestor := Parent;
+      Result := 0;
 
+      while Ancestor <> nil do
+      begin
+        Inc(Result);
+        Ancestor := Ancestor.Parent;
+      end;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.Destroying;
+  begin
+    FDestroying := True;
+  end;
+
+  procedure TLKTreeNode<T>.AddChild(const AIndex: Integer; const AChild: TLKTreeNode<T>);
+  begin
+    if AIndex < 0 then
+      FChildren.Add(AChild)
+    else
+      FChildren.Insert(AChild, AIndex);
+  end;
+
+  procedure TLKTreeNode<T>.RemoveChild(const AChild: TLKTreeNode<T>);
+  begin
+    FChildren.Remove(AChild);
+  end;
+
+  procedure TLKTreeNode<T>.SetValue(const AValue: T);
+  begin
+    Lock;
+    try
+      FValue := AValue;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.AfterConstruction;
+  begin
+    inherited;
+
+    if Parent <> nil then
+      Parent.AddChild(-1, Self);
+
+    DoAncestorChanged;
+  end;
+
+  procedure TLKTreeNode<T>.AncestorChanged;
+  begin
+    // Do nothing (yet)
+  end;
+
+  procedure TLKTreeNode<T>.BeforeDestruction;
+  begin
+    inherited;
+
+    if not IsDestroying then
+      PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                   begin
+                     Node.Destroying;
+                   end);
+
+    if (Parent <> nil) and (not Parent.IsDestroying) then
+      Parent.RemoveChild(Self);
+  end;
+
+  procedure TLKTreeNode<T>.MoveTo(const ANewParent: TLKTreeNode<T>; const AIndex: Integer = -1);
+  begin
+    if (Parent = nil) and (ANewParent = nil) then
+      Exit;
+
+    Lock;
+    try
+      if Parent = ANewParent then
+      begin
+        if AIndex <> IndexAsChild then
+        begin
+          Parent.FChildren.Remove(Self);
+          if AIndex < 0 then
+            Parent.FChildren.Add(Self)
+          else
+            Parent.FChildren.Insert(Self, AIndex);
+        end;
+      end else
+      begin
+        if Parent <> nil then
+          Parent.RemoveChild(Self);
+
+        FParent := ANewParent;
+
+        if Parent <> nil then
+          Parent.AddChild(AIndex, Self);
+
+        DoAncestorChanged;
+      end;
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.MoveTo(const AIndex: Integer);
+  begin
+    MoveTo(Parent, AIndex);
+  end;
+
+  function TLKTreeNode<T>.IndexOf(const AChild: TLKTreeNode<T>): Integer;
+  begin
+    Lock;
+    try
+      Result := FChildren.IndexOf(AChild);
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
+  var
+    Index: Integer;
+  begin
+    Lock;
+    try
+      AAction(Self);
+      for Index := 0 to ChildCount-1 do
+        Children[Index].PreOrderWalk(AAction);
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<T>);
+  begin
+    Lock;
+    try
+      PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                   begin
+                     AAction(Node.Value);
+                   end);
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
+  var
+    LIndex: Integer;
+  begin
+    Lock;
+    try
+      for LIndex := 0 to ChildCount-1 do
+        Children[LIndex].PostOrderWalk(AAction);
+      AAction(Self);
+    finally
+      Unlock;
+    end;
+  end;
+
+  procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<T>);
+  begin
+    Lock;
+    try
+      PostOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                    begin
+                      AAction(Node.Value);
+                    end);
+    finally
+      Unlock;
+    end;
+  end;
+
+  { TLKTreeObjectNode<T> }
+
+  constructor TLKTreeObjectNode<T>.Create;
+  begin
+    inherited;
+    FOwnsObject := True;
+  end;
+
+  constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
+  begin
+    inherited;
+    FOwnsObject := True;
+  end;
+
+  constructor TLKTreeObjectNode<T>.Create(const AParent: TLKTreeNode<T>);
+  begin
+    inherited;
+    FOwnsObject := True;
+  end;
+
+  constructor TLKTreeObjectNode<T>.Create(const AValue: T);
+  begin
+    inherited;
+    FOwnsObject := True;
+  end;
+
+  destructor TLKTreeObjectNode<T>.Destroy;
+  begin
+    if FOwnsObject then
+      FValue.DisposeOf;
+    inherited;
+  end;
+{$ENDIF FPC}
 end.

@@ -5,8 +5,7 @@ unit Demo.EventThreadPooling.MainForm;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
-  LKSL.Streams.Types;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs;
 
 { TForm1 }
 

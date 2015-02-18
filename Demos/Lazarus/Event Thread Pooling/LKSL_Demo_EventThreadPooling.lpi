@@ -242,7 +242,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\..\Bin\Lazarus\Win32\Debug\LKSL_Demo_EventThreadPooling"/>
+      <Filename Value="..\..\..\Bin\Lazarus\Win32\Debug\LKSL_Demo_EventThreadPooling" ApplyConventions="False"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
@@ -283,8 +283,6 @@
         <ShowUsedFiles Value="True"/>
         <ShowTriedFiles Value="True"/>
         <ShowCompProc Value="True"/>
-        <ShowCond Value="True"/>
-        <ShowExecInfo Value="True"/>
         <ShowSummary Value="True"/>
         <ShowHintsForUnusedUnitsInMainSrc Value="True"/>
         <ShowHintsForSenderNotUsed Value="True"/>
