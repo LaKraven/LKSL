@@ -61,88 +61,69 @@ uses
 // Delete Methods
 procedure StreamDeleteTPoint(const AStream: TStream); overload;
 procedure StreamDeleteTPoint(const AStream: TStream; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTPointF(const AStream: TStream); overload;
-  procedure StreamDeleteTPointF(const AStream: TStream; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamDeleteTRect(const AStream: TStream); overload;
 procedure StreamDeleteTRect(const AStream: TStream; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTRectF(const AStream: TStream); overload;
-  procedure StreamDeleteTRectF(const AStream: TStream; const APosition: Int64); overload;
-  {$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamDeleteTSize(const AStream: TStream); overload;
 procedure StreamDeleteTSize(const AStream: TStream; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTSizeF(const AStream: TStream); overload;
-  procedure StreamDeleteTSizeF(const AStream: TStream; const APosition: Int64); overload;
-  {$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamDeleteTSmallPoint(const AStream: TStream); overload;
 procedure StreamDeleteTSmallPoint(const AStream: TStream; const APosition: Int64); overload;
 // Insert Methods
 procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint); overload;
 procedure StreamInsertTPoint(const AStream: TStream; const AValue: TPoint; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF); overload;
-  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect); overload;
 procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF); overload;
-  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize); overload;
 procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF); overload;
-  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint); overload;
 procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64); overload;
 // Read Methods
 function StreamReadTPoint(const AStream: TStream): TPoint; overload;
 function StreamReadTPoint(const AStream: TStream; const APosition: Int64): TPoint; overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTPointF(const AStream: TStream): TPointF; overload;
-  function StreamReadTPointF(const AStream: TStream; const APosition: Int64): TPointF; overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 function StreamReadTRect(const AStream: TStream): TRect; overload;
 function StreamReadTRect(const AStream: TStream; const APosition: Int64): TRect; overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTRectF(const AStream: TStream): TRectF; overload;
-  function StreamReadTRectF(const AStream: TStream; const APosition: Int64): TRectF; overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 function StreamReadTSize(const AStream: TStream): TSize; overload;
 function StreamReadTSize(const AStream: TStream; const APosition: Int64): TSize; overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTSizeF(const AStream: TStream): TSizeF; overload;
-  function StreamReadTSizeF(const AStream: TStream; const APosition: Int64): TSizeF; overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 function StreamReadTSmallPoint(const AStream: TStream): TSmallPoint; overload;
 function StreamReadTSmallPoint(const AStream: TStream; const APosition: Int64): TSmallPoint; overload;
 // Write Methods
 procedure StreamWriteTPoint(const AStream: TStream; const AValue: TPoint); overload;
 procedure StreamWriteTPoint(const AStream: TStream; const AValue: TPoint; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF); overload;
-  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamWriteTRect(const AStream: TStream; const AValue: TRect); overload;
 procedure StreamWriteTRect(const AStream: TStream; const AValue: TRect; const APosition: Int64); overload;
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF); overload;
-  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64); overload;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamWriteTSize(const AStream: TStream; const AValue: TSize); overload;
 procedure StreamWriteTSize(const AStream: TStream; const AValue: TSize; const APosition: Int64); overload;
+procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint); overload;
+procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64); overload;
 {$IFDEF SUPPORTS_FIREMONKEY}
+  // Delete Methods
+  procedure StreamDeleteTPointF(const AStream: TStream); overload;
+  procedure StreamDeleteTPointF(const AStream: TStream; const APosition: Int64); overload;
+  procedure StreamDeleteTRectF(const AStream: TStream); overload;
+  procedure StreamDeleteTRectF(const AStream: TStream; const APosition: Int64); overload;
+  procedure StreamDeleteTSizeF(const AStream: TStream); overload;
+  procedure StreamDeleteTSizeF(const AStream: TStream; const APosition: Int64); overload;
+  // Insert Methods
+  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF); overload;
+  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64); overload;
+  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF); overload;
+  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64); overload;
+  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF); overload;
+  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64); overload;
+  // Read Methods
+  function StreamReadTPointF(const AStream: TStream): TPointF; overload;
+  function StreamReadTPointF(const AStream: TStream; const APosition: Int64): TPointF; overload;
+  function StreamReadTRectF(const AStream: TStream): TRectF; overload;
+  function StreamReadTRectF(const AStream: TStream; const APosition: Int64): TRectF; overload;
+  function StreamReadTSizeF(const AStream: TStream): TSizeF; overload;
+  function StreamReadTSizeF(const AStream: TStream; const APosition: Int64): TSizeF; overload;
+  // Write Methods
+  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF); overload;
+  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64); overload;
+  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF); overload;
+  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64); overload;
   procedure StreamWriteTSizeF(const AStream: TStream; const AValue: TSizeF); overload;
   procedure StreamWriteTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64); overload;
 {$ENDIF SUPPORTS_FIREMONKEY}
-procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint); overload;
-procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64); overload;
-
 implementation
 
 uses
@@ -160,17 +141,6 @@ begin
   StreamClearSpace(AStream, APosition, SizeOf(TPoint));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTPointF(const AStream: TStream);
-  begin
-    StreamDeleteTPointF(AStream, AStream.Position);
-  end;
-
-  procedure StreamDeleteTPointF(const AStream: TStream; const APosition: Int64);
-  begin
-    StreamClearSpace(AStream, APosition, SizeOf(TPointF));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
 procedure StreamDeleteTRect(const AStream: TStream);
 begin
   StreamDeleteTRect(AStream, AStream.Position);
@@ -181,18 +151,6 @@ begin
   StreamClearSpace(AStream, APosition, SizeOf(TRect));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTRectF(const AStream: TStream);
-  begin
-    StreamDeleteTRectF(AStream, AStream.Position);
-  end;
-
-  procedure StreamDeleteTRectF(const AStream: TStream; const APosition: Int64);
-  begin
-    StreamClearSpace(AStream, APosition, SizeOf(TRectF));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 procedure StreamDeleteTSize(const AStream: TStream);
 begin
   StreamDeleteTSize(AStream, AStream.Position);
@@ -202,18 +160,6 @@ procedure StreamDeleteTSize(const AStream: TStream; const APosition: Int64);
 begin
   StreamClearSpace(AStream, APosition, SizeOf(TSize));
 end;
-
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamDeleteTSizeF(const AStream: TStream);
-  begin
-    StreamDeleteTSizeF(AStream, AStream.Position);
-  end;
-
-  procedure StreamDeleteTSizeF(const AStream: TStream; const APosition: Int64);
-  begin
-    StreamClearSpace(AStream, APosition, SizeOf(TSizeF));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
 
 procedure StreamDeleteTSmallPoint(const AStream: TStream);
 begin
@@ -238,19 +184,6 @@ begin
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF);
-  begin
-    StreamInsertTPointF(AStream, AValue, AStream.Position);
-  end;
-
-  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64);
-  begin
-    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
-    AStream.Write(AValue, SizeOf(AValue));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 procedure StreamInsertTRect(const AStream: TStream; const AValue: TRect);
 begin
   StreamInsertTRect(AStream, AValue, AStream.Position);
@@ -262,19 +195,6 @@ begin
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF);
-  begin
-    StreamInsertTRectF(AStream, AValue, AStream.Position);
-  end;
-
-  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64);
-  begin
-    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
-    AStream.Write(AValue, SizeOf(AValue));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 procedure StreamInsertTSize(const AStream: TStream; const AValue: TSize);
 begin
   StreamInsertTSize(AStream, AValue, AStream.Position);
@@ -285,19 +205,6 @@ begin
   StreamMakeSpace(AStream, APosition, SizeOf(AValue));
   AStream.Write(AValue, SizeOf(AValue));
 end;
-
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF);
-  begin
-    StreamInsertTSizeF(AStream, AValue, AStream.Position);
-  end;
-
-  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64);
-  begin
-    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
-    AStream.Write(AValue, SizeOf(AValue));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
 
 procedure StreamInsertTSmallPoint(const AStream: TStream; const AValue: TSmallPoint);
 begin
@@ -323,19 +230,6 @@ begin
   AStream.Read(Result, SizeOf(Result));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTPointF(const AStream: TStream): TPointF;
-  begin
-    Result := StreamReadTPointF(AStream, AStream.Position);
-  end;
-
-  function StreamReadTPointF(const AStream: TStream; const APosition: Int64): TPointF;
-  begin
-    AStream.Position := APosition;
-    AStream.Read(Result, SizeOf(Result));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 function StreamReadTRect(const AStream: TStream): TRect;
 begin
   Result := StreamReadTRect(AStream, AStream.Position);
@@ -347,19 +241,6 @@ begin
   AStream.Read(Result, SizeOf(Result));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTRectF(const AStream: TStream): TRectF;
-  begin
-    Result := StreamReadTRectF(AStream, AStream.Position);
-  end;
-
-  function StreamReadTRectF(const AStream: TStream; const APosition: Int64): TRectF;
-  begin
-    AStream.Position := APosition;
-    AStream.Read(Result, SizeOf(Result));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 function StreamReadTSize(const AStream: TStream): TSize;
 begin
   Result := StreamReadTSize(AStream, AStream.Position);
@@ -370,19 +251,6 @@ begin
   AStream.Position := APosition;
   AStream.Read(Result, SizeOf(Result));
 end;
-
-{$IFDEF SUPPORTS_FIREMONKEY}
-  function StreamReadTSizeF(const AStream: TStream): TSizeF;
-  begin
-    Result := StreamReadTSizeF(AStream, AStream.Position);
-  end;
-
-  function StreamReadTSizeF(const AStream: TStream; const APosition: Int64): TSizeF;
-  begin
-    AStream.Position := APosition;
-    AStream.Read(Result, SizeOf(Result));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
 
 function StreamReadTSmallPoint(const AStream: TStream): TSmallPoint;
 begin
@@ -408,19 +276,6 @@ begin
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF);
-  begin
-    StreamWriteTPointF(AStream, AValue, AStream.Size);
-  end;
-
-  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64);
-  begin
-    AStream.Position := APosition;
-    AStream.Write(AValue, SizeOf(AValue));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
-
 procedure StreamWriteTRect(const AStream: TStream; const AValue: TRect);
 begin
   StreamWriteTRect(AStream, AValue, AStream.Size);
@@ -431,19 +286,6 @@ begin
   AStream.Position := APosition;
   AStream.Write(AValue, SizeOf(AValue));
 end;
-
-{$IFDEF SUPPORTS_FIREMONKEY}
-  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF);
-  begin
-    StreamWriteTRectF(AStream, AValue, AStream.Size);
-  end;
-
-  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64);
-  begin
-    AStream.Position := APosition;
-    AStream.Write(AValue, SizeOf(AValue));
-  end;
-{$ENDIF SUPPORTS_FIREMONKEY}
 
 procedure StreamWriteTSize(const AStream: TStream; const AValue: TSize);
 begin
@@ -456,7 +298,136 @@ begin
   AStream.Write(AValue, SizeOf(AValue));
 end;
 
+procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint);
+begin
+  StreamWriteTSmallPoint(AStream, AValue, AStream.Size);
+end;
+
+procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64);
+begin
+  AStream.Position := APosition;
+  AStream.Write(AValue, SizeOf(AValue));
+end;
+
 {$IFDEF SUPPORTS_FIREMONKEY}
+  procedure StreamDeleteTPointF(const AStream: TStream);
+  begin
+    StreamDeleteTPointF(AStream, AStream.Position);
+  end;
+
+  procedure StreamDeleteTPointF(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(TPointF));
+  end;
+
+  procedure StreamDeleteTRectF(const AStream: TStream);
+  begin
+    StreamDeleteTRectF(AStream, AStream.Position);
+  end;
+
+  procedure StreamDeleteTRectF(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(TRectF));
+  end;
+
+  procedure StreamDeleteTSizeF(const AStream: TStream);
+  begin
+    StreamDeleteTSizeF(AStream, AStream.Position);
+  end;
+
+  procedure StreamDeleteTSizeF(const AStream: TStream; const APosition: Int64);
+  begin
+    StreamClearSpace(AStream, APosition, SizeOf(TSizeF));
+  end;
+
+  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF);
+  begin
+    StreamInsertTPointF(AStream, AValue, AStream.Position);
+  end;
+
+  procedure StreamInsertTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64);
+  begin
+    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
+    AStream.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF);
+  begin
+    StreamInsertTRectF(AStream, AValue, AStream.Position);
+  end;
+
+  procedure StreamInsertTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64);
+  begin
+    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
+    AStream.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF);
+  begin
+    StreamInsertTSizeF(AStream, AValue, AStream.Position);
+  end;
+
+  procedure StreamInsertTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64);
+  begin
+    StreamMakeSpace(AStream, APosition, SizeOf(AValue));
+    AStream.Write(AValue, SizeOf(AValue));
+  end;
+
+  function StreamReadTPointF(const AStream: TStream): TPointF;
+  begin
+    Result := StreamReadTPointF(AStream, AStream.Position);
+  end;
+
+  function StreamReadTPointF(const AStream: TStream; const APosition: Int64): TPointF;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(Result, SizeOf(Result));
+  end;
+
+  function StreamReadTRectF(const AStream: TStream): TRectF;
+  begin
+    Result := StreamReadTRectF(AStream, AStream.Position);
+  end;
+
+  function StreamReadTRectF(const AStream: TStream; const APosition: Int64): TRectF;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(Result, SizeOf(Result));
+  end;
+
+  function StreamReadTSizeF(const AStream: TStream): TSizeF;
+  begin
+    Result := StreamReadTSizeF(AStream, AStream.Position);
+  end;
+
+  function StreamReadTSizeF(const AStream: TStream; const APosition: Int64): TSizeF;
+  begin
+    AStream.Position := APosition;
+    AStream.Read(Result, SizeOf(Result));
+  end;
+
+  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF);
+  begin
+    StreamWriteTPointF(AStream, AValue, AStream.Size);
+  end;
+
+  procedure StreamWriteTPointF(const AStream: TStream; const AValue: TPointF; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF);
+  begin
+    StreamWriteTRectF(AStream, AValue, AStream.Size);
+  end;
+
+  procedure StreamWriteTRectF(const AStream: TStream; const AValue: TRectF; const APosition: Int64);
+  begin
+    AStream.Position := APosition;
+    AStream.Write(AValue, SizeOf(AValue));
+  end;
+
   procedure StreamWriteTSizeF(const AStream: TStream; const AValue: TSizeF);
   begin
     StreamWriteTSizeF(AStream, AValue, AStream.Size);
@@ -468,16 +439,5 @@ end;
     AStream.Write(AValue, SizeOf(AValue));
   end;
 {$ENDIF SUPPORTS_FIREMONKEY}
-
-procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint);
-begin
-  StreamWriteTSmallPoint(AStream, AValue, AStream.Size);
-end;
-
-procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoint; const APosition: Int64);
-begin
-  AStream.Position := APosition;
-  AStream.Write(AValue, SizeOf(AValue));
-end;
 
 end.

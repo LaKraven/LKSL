@@ -141,10 +141,7 @@ type
     TLKDictionary<TKey, TValue>
       - Provides a Thread-Safe Lock (TCriticalSection)
   }
-  {$IFDEF FPC}
-    TLKDictionary<TKey, TValue> = class(TFPGMap<TKey, TValue>);
-  {$ELSE}
-    TLKDictionary<TKey, TValue> = class(TDictionary<TKey, TValue>)
+  TLKDictionary<TKey, TValue> = class({$IFDEF FPC}TFPGMap{$ELSE}TDictionary{$ENDIF FPC}<TKey, TValue>)
     private
       FLock: TCriticalSection;
     public
@@ -158,7 +155,6 @@ type
       procedure Lock; inline;
       procedure Unlock; inline;
     end;
-  {$ENDIF FPC}
 
   {
     TLKListBase<T>

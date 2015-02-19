@@ -56,11 +56,11 @@ interface
 {$ENDIF FPC}
 
 uses
-    {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-      {$IFDEF POSIX}Posix.Unistd,{$ENDIF} System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
-    {$ELSE}
-      Classes, SysUtils, Math, SyncObjs, {$IFDEF FPC}LKSL.Common.Stopwatch,{$ELSE}Diagnostics,{$ENDIF FPC}
-    {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
+    {$IFDEF POSIX}Posix.Unistd,{$ENDIF} System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
+  {$ELSE}
+    Classes, SysUtils, Math, SyncObjs, {$IFDEF FPC}LKSL.Common.Stopwatch, {$ELSE}Diagnostics,{$ENDIF FPC}
+  {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types;
 
   {$IFNDEF FPC}
