@@ -61,7 +61,7 @@ type
 const
   LK_CONVERSION_TABLE_SI: Array[TLKUnitSI, TLKUnitSI] of LKFloat = (
                                                                    //  Yocto   Zepto   Atto    Femto   Pico    Nano    Micro   Milli   Centi   Deci    One     Deca    Hecto   Kilo    Mega    Giga    Tera    Peta    Exa     Zetta   Yotta
-                                                             {Yocto}  (1,      1e1,    1e2,    1e3,    1e6,    1e9,    1e12,   1e15,   1e18,   1e21,   1e24,   1e27,   1e30,   1e33,   1e36,   1e39,   1e42,   1e45,   1e48,   1e51,   1e55),
+                                                             {Yocto}  (1,      1e1,    1e2,    1e3,    1e6,    1e9,    1e12,   1e15,   1e18,   1e21,   1e24,   1e27,   1e30,   1e33,   1e36,   1e39,   1e42,   1e45,   1e48,   1e51,   1e54),
                                                              {Zepto}  (1e-1,   1,      1e1,    1e2,    1e3,    1e6,    1e9,    1e12,   1e15,   1e18,   1e21,   1e24,   1e27,   1e30,   1e33,   1e36,   1e39,   1e42,   1e45,   1e48,   1e51),
                                                               {Atto}  (1e-2,   1e-1,   1,      1e1,    1e2,    1e3,    1e6,    1e9,    1e12,   1e15,   1e18,   1e21,   1e24,   1e27,   1e30,   1e33,   1e36,   1e39,   1e42,   1e45,   1e48),
                                                              {Femto}  (1e-3,   1e-2,   1e-1,   1,      1e1,    1e2,    1e3,    1e6,    1e9,    1e12,   1e15,   1e18,   1e21,   1e24,   1e27,   1e30,   1e33,   1e36,   1e39,   1e42,   1e45),
