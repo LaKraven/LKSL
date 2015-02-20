@@ -2,33 +2,29 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 248
-  ClientWidth = 475
+  ClientHeight = 331
+  ClientWidth = 633
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
+  Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  PixelsPerInch = 96
-  TextHeight = 12
+  PixelsPerInch = 120
+  TextHeight = 16
   object memLog: TMemo
     AlignWithMargins = True
-    Left = 2
-    Top = 25
-    Width = 471
-    Height = 196
-    Margins.Left = 2
-    Margins.Top = 2
-    Margins.Right = 2
-    Margins.Bottom = 2
+    Left = 3
+    Top = 34
+    Width = 627
+    Height = 260
     Align = alClient
     Font.Charset = OEM_CHARSET
     Font.Color = clWindowText
-    Font.Height = -15
+    Font.Height = -20
     Font.Name = 'Terminal'
     Font.Style = []
     ParentFont = False
@@ -37,14 +33,10 @@ object Form1: TForm1
   end
   object btnDispatchEvent: TButton
     AlignWithMargins = True
-    Left = 2
-    Top = 2
-    Width = 471
-    Height = 19
-    Margins.Left = 2
-    Margins.Top = 2
-    Margins.Right = 2
-    Margins.Bottom = 2
+    Left = 3
+    Top = 3
+    Width = 627
+    Height = 25
     Align = alTop
     Caption = 'Dispatch an Event for Processing'
     TabOrder = 1
@@ -52,15 +44,16 @@ object Form1: TForm1
   end
   object Button1: TButton
     Left = 0
-    Top = 223
-    Width = 475
-    Height = 25
+    Top = 297
+    Width = 633
+    Height = 34
+    Margins.Left = 4
+    Margins.Top = 4
+    Margins.Right = 4
+    Margins.Bottom = 4
     Align = alBottom
     Caption = 'Button1'
     TabOrder = 2
     OnClick = Button1Click
-    ExplicitLeft = 208
-    ExplicitTop = 128
-    ExplicitWidth = 75
   end
 end
