@@ -53,16 +53,38 @@ uses
   {$I LKSL_RTTI.inc}
 
 type
-
   { Enum Types }
-  TLKUnitSI = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci, siOne,
+  TLKUnitNotation = (unShort, unLong);
+
+  TLKUnitSI = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci,
+               siOne,
                siDeca, siHecto, siKilo, siMega, siGiga, siTera, siPeta, siExa, siZetta, siYotta);
 
 const
-  LK_UNIT_NAMES_SI: Array[TLKUnitSI] of String = ('Yocto', 'Zepto', 'Atto', 'Femto', 'Pico', 'Nano', 'Micro', 'Milli', 'Centi', 'Deci',
-                                                  '',
-                                                  'Deca', 'Hecto', 'Kilo', 'Mega', 'Giga', 'Tera', 'Peta', 'Exa', 'Zetta', 'Yotta'
-                                                 );
+  LK_UNIT_NAMES_SI: Array[TLKUnitSI, TLKUnitNotation] of String = (
+                                                                     ('y', 'Yocto'),
+                                                                     ('z', 'Zepto'),
+                                                                     ('a', 'Atto'),
+                                                                     ('f', 'Femto'),
+                                                                     ('p', 'Pico'),
+                                                                     ('n', 'Nano'),
+                                                                     ('µ', 'Micro'),
+                                                                     ('m', 'Milli'),
+                                                                     ('c', 'Centi'),
+                                                                     ('d', 'Deci'),
+                                                                     ('', ''),
+                                                                     ('da', 'Deca'),
+                                                                     ('h', 'Hecto'),
+                                                                     ('k', 'Kilo'),
+                                                                     ('M', 'Mega'),
+                                                                     ('G', 'Giga'),
+                                                                     ('T', 'Tera'),
+                                                                     ('P', 'Peta'),
+                                                                     ('E', 'Exa'),
+                                                                     ('Z', 'Zetta'),
+                                                                     ('Y', 'Yotta')
+                                                                  );
+
   LK_CONVERSION_TABLE_SI_MAGNITUDE: Array[TLKUnitSI, TLKUnitSI] of LKFloat = (
                                                                              //  Yocto   Zepto   Atto    Femto   Pico    Nano    Micro   Milli   Centi   Deci    One     Deca    Hecto   Kilo    Mega    Giga    Tera    Peta    Exa     Zetta   Yotta
                                                                        {Yocto}  (1,      1e-3,   1e-6,   1e-9,   1e-12,  1e-15,  1e-18,  1e-21,  1e-22,  1e-23,  1e-24,  1e-25,  1e-26,  1e-27,  1e-30,  1e-33,  1e-36,  1e-39,  1e-42,  1e-45,  1e-48),
@@ -97,7 +119,7 @@ implementation
 
 function SIUnitConvert(const ASourceValue: LKFloat; const AInputUnit, AOutputUnit: TLKUnitSI): LKFloat;
 begin
-  Result := ASourceValue * LK_CONVERSION_TABLE_SI[AInputUnit, AOutputUnit];
+  Result := ASourceValue * LK_CONVERSION_TABLE_SI_MAGNITUDE[AInputUnit, AOutputUnit];
 end;
 
 end.

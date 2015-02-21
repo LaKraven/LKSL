@@ -56,18 +56,18 @@ var
   X, Y: TLKUnitSI;
   LLine: String;
 begin
-  LLine := LeftPad('', ' ', 25);
+  LLine := LeftPad('', ' ', 30);
   for X := Low(OOM) to High(OOM) do
-    LLine := LLine + LeftPad(LK_UNIT_NAMES_SI[X], ' ', 25);
+    LLine := LLine + LeftPad(LK_UNIT_NAMES_SI[X, unLong], ' ', 30);
 
   memLog.Lines.Add(LLine);
 
   for X := Low(OOM) to High(OOM) do
   begin
-    LLine := LeftPad(LK_UNIT_NAMES_SI[X], ' ', 25);
+    LLine := LeftPad(LK_UNIT_NAMES_SI[X, unLong], ' ', 30);
     for Y := Low(OOM) to High(OOM) do
       //LLine := LLine + Format('%n' + #9, [SIUnitConvert(1, X, Y)]);
-      LLine := LLine + LeftPad(Format('%s', [FormatFloat('###,###,###,###,###,###,###.#######################', SIUnitConvert(1, X, Y))]), ' ',25);
+      LLine := LLine + LeftPad(Format('%s', [FormatFloat('#######################.#######################', SIUnitConvert(1, X, Y))]), ' ', 30);
 
     memLog.Lines.Add(LLine);
   end;
