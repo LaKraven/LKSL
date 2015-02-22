@@ -100,7 +100,7 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Base.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Common.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Length.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas"/>

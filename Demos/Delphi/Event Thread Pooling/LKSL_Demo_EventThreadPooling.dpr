@@ -10,7 +10,7 @@ uses
   LKSL.Events.Base in '..\..\..\Source\Lib\Pascal\LKSL.Events.Base.pas',
   LKSL.Events.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
   LKSL.Generics.Collections in '..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
-  LKSL.Math.Base in '..\..\..\Source\Lib\Pascal\LKSL.Math.Base.pas',
+  LKSL.Math.SIUnits in '..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
   LKSL.Math.Common in '..\..\..\Source\Lib\Pascal\LKSL.Math.Common.pas',
   LKSL.Math.Length in '..\..\..\Source\Lib\Pascal\LKSL.Math.Length.pas',
   LKSL.Math.Time in '..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas',

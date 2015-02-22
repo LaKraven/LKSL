@@ -30,12 +30,12 @@ implementation
 
 {$R *.dfm}
 
-uses LKSL.Math.Base;
+uses LKSL.Math.SIUnits;
 
 procedure TForm1.btnDispatchEventClick(Sender: TObject);
 begin
   TLKDemoEvent.Create.Queue;
-  ShowMessage(Format('%g', [SIUnitConvert(1, siZepto, siAtto)]));
+  ShowMessage(Format('%g', [SIMagnitude.Convert(1, siZepto, siAtto)]));
 end;
 
 function LeftPad(S: string; Ch: Char; Len: Integer): string;
@@ -50,24 +50,24 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 const
-  OOM: Array[TLKUnitSI] of TLKUnitSI = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci, siOne,
+  OOM: Array[TLKSIMagnitudes] of TLKSIMagnitudes = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci, siOne,
                siDeca, siHecto, siKilo, siMega, siGiga, siTera, siPeta, siExa, siZetta, siYotta);
 var
-  X, Y: TLKUnitSI;
+  X, Y: TLKSIMagnitudes;
   LLine: String;
 begin
   LLine := LeftPad('', ' ', 30);
   for X := Low(OOM) to High(OOM) do
-    LLine := LLine + LeftPad(LK_UNIT_NAMES_SI[X, unLong], ' ', 30);
+    LLine := LLine + LeftPad(LK_UNIT_MAGNITUDE_NAMES_SI[X, unLong], ' ', 30);
 
   memLog.Lines.Add(LLine);
 
   for X := Low(OOM) to High(OOM) do
   begin
-    LLine := LeftPad(LK_UNIT_NAMES_SI[X, unLong], ' ', 30);
+    LLine := LeftPad(LK_UNIT_MAGNITUDE_NAMES_SI[X, unLong], ' ', 30);
     for Y := Low(OOM) to High(OOM) do
       //LLine := LLine + Format('%n' + #9, [SIUnitConvert(1, X, Y)]);
-      LLine := LLine + LeftPad(Format('%s', [FormatFloat('#######################.#######################', SIUnitConvert(1, X, Y))]), ' ', 30);
+      LLine := LLine + LeftPad(Format('%s', [FormatFloat('#######################.#######################', SIMagnitude.Convert(1337, X, Y))]), ' ', 30);
 
     memLog.Lines.Add(LLine);
   end;

@@ -35,7 +35,7 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-unit LKSL.Math.Base;
+unit LKSL.Math.SIUnits;
 
 interface
 
@@ -54,14 +54,22 @@ uses
 
 type
   { Enum Types }
-  TLKUnitNotation = (unShort, unLong);
+  TLKSIUnitNotation = (unShort, unLong);
+  TLKSIMagnitudes = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci,
+                     siOne,
+                     siDeca, siHecto, siKilo, siMega, siGiga, siTera, siPeta, siExa, siZetta, siYotta);
 
-  TLKUnitSI = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci,
-               siOne,
-               siDeca, siHecto, siKilo, siMega, siGiga, siTera, siPeta, siExa, siZetta, siYotta);
+  ///  <summary><c>Provides operations for SI Numerical Unit's Orders of Magnitude.</c></summary>
+  ///  <remarks><c>Part of the International System of Units.</c></remarks>
+  TLKSIMagnitude = record
+    function GetNotationText(const AMagnitude: TLKSIMagnitudes; const ANotation: TLKSIUnitNotation): String; inline;
+    function Convert(const ASourceValue: LKFloat; const AFromMagnitude, AToMagnitude: TLKSIMagnitudes): LKFloat; inline;
+    procedure ToBest(const AInValue: LKFloat; const AInMagnitude: TLKSIMagnitudes; var AOutValue: LKFloat; var AOutMagnitude: TLKSIMagnitudes); overload; inline;
+    procedure ToBest(var AValue: LKFloat; var AOutMagnitude: TLKSIMagnitudes); overload; inline;
+  end;
 
 const
-  LK_UNIT_NAMES_SI: Array[TLKUnitSI, TLKUnitNotation] of String = (
+  LK_UNIT_MAGNITUDE_NAMES_SI: Array[TLKSIMagnitudes, TLKSIUnitNotation] of String = (
                                                                      ('y', 'Yocto'),
                                                                      ('z', 'Zepto'),
                                                                      ('a', 'Atto'),
@@ -85,7 +93,7 @@ const
                                                                      ('Y', 'Yotta')
                                                                   );
 
-  LK_CONVERSION_TABLE_SI_MAGNITUDE: Array[TLKUnitSI, TLKUnitSI] of LKFloat = (
+  LK_UNIT_MAGNITUDE_CONVERSIONTABLE_SI: Array[TLKSIMagnitudes, TLKSIMagnitudes] of LKFloat = (
                                                                              //  Yocto   Zepto   Atto    Femto   Pico    Nano    Micro   Milli   Centi   Deci    One     Deca    Hecto   Kilo    Mega    Giga    Tera    Peta    Exa     Zetta   Yotta
                                                                        {Yocto}  (1,      1e-3,   1e-6,   1e-9,   1e-12,  1e-15,  1e-18,  1e-21,  1e-22,  1e-23,  1e-24,  1e-25,  1e-26,  1e-27,  1e-30,  1e-33,  1e-36,  1e-39,  1e-42,  1e-45,  1e-48),
                                                                        {Zepto}  (1e3,    1,      1e-3,   1e-6,   1e-9,   1e-12,  1e-15,  1e-18,  1e-19,  1e-20,  1e-21,  1e-22,  1e-23,  1e-24,  1e-27,  1e-30,  1e-33,  1e-36,  1e-39,  1e-42,  1e-45),
@@ -110,17 +118,36 @@ const
                                                                        {Yotta}  (1e48,   1e45,   1e42,   1e39,   1e36,   1e33,   1e30,   1e27,   1e26,   1e25,   1e24,   1e23,   1e22,   1e21,   1e18,   1e15,   1e12,   1e9,    1e6,    1e3,    1)
                                                                              );
 
-// ? To ?
-function SIUnitConvert(const ASourceValue: LKFloat; const AInputUnit, AOutputUnit: TLKUnitSI): LKFloat; inline;
+var
+  ///  <summary><c>Namespace containing methods related to Orders of Magnitude</c></summary>
+  ///  <remarks><c>Part of the International System of Units.</c></remarks>
+  SIMagnitude: TLKSIMagnitude;
 
 implementation
 
-// ? to ?
+{ LKUnitConversionSI }
 
-function SIUnitConvert(const ASourceValue: LKFloat; const AInputUnit, AOutputUnit: TLKUnitSI): LKFloat;
+function TLKSIMagnitude.Convert(const ASourceValue: LKFloat; const AFromMagnitude, AToMagnitude: TLKSIMagnitudes): LKFloat;
 begin
-  Result := ASourceValue * LK_CONVERSION_TABLE_SI_MAGNITUDE[AInputUnit, AOutputUnit];
+  Result := ASourceValue * LK_UNIT_MAGNITUDE_CONVERSIONTABLE_SI[AFromMagnitude, AToMagnitude];
+end;
+
+function TLKSIMagnitude.GetNotationText(const AMagnitude: TLKSIMagnitudes; const ANotation: TLKSIUnitNotation): String;
+begin
+  Result := LK_UNIT_MAGNITUDE_NAMES_SI[AMagnitude, ANotation];
+end;
+
+procedure TLKSIMagnitude.ToBest(var AValue: LKFloat; var AOutMagnitude: TLKSIMagnitudes);
+begin
+  { TODO -oSJS-cSI Units : Implement method to determine most appropriate Order of Magnitude to represent given value }
+end;
+
+procedure TLKSIMagnitude.ToBest(const AInValue: LKFloat; const AInMagnitude: TLKSIMagnitudes; var AOutValue: LKFloat; var AOutMagnitude: TLKSIMagnitudes);
+begin
+  // Presume that no conversion is required.
+  AOutValue := AInValue;
+  AOutMagnitude := AInMagnitude;
+  ToBest(AOutValue, AOutMagnitude);
 end;
 
 end.
-LK_CONVERSION_TABLE_SI_MAGNITUDE
