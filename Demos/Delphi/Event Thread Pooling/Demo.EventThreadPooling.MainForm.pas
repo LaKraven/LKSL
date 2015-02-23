@@ -35,7 +35,7 @@ uses LKSL.Math.SIUnits;
 procedure TForm1.btnDispatchEventClick(Sender: TObject);
 begin
   TLKDemoEvent.Create.Queue;
-  ShowMessage(Format('%g', [SIMagnitude.Convert(1, siZepto, siAtto)]));
+  ShowMessage(Format('%g', [SIMagnitudeConvert(1, simZepto, simAtto)]));
 end;
 
 function LeftPad(S: string; Ch: Char; Len: Integer): string;
@@ -50,10 +50,10 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 const
-  OOM: Array[TLKSIMagnitudes] of TLKSIMagnitudes = (siYocto, siZepto, siAtto, siFemto, siPico, siNano, siMicro, siMilli, siCenti, siDeci, siOne,
-               siDeca, siHecto, siKilo, siMega, siGiga, siTera, siPeta, siExa, siZetta, siYotta);
+  OOM: Array[TLKSIMagnitude] of TLKSIMagnitude = (simYocto, simZepto, simAtto, simFemto, simPico, simNano, siMmicro, simMilli, simCenti, simDeci, simOne,
+               simDeca, simHecto, simKilo, simMega, simGiga, simTera, simPeta, simExa, simZetta, simYotta);
 var
-  X, Y: TLKSIMagnitudes;
+  X, Y: TLKSIMagnitude;
   LLine: String;
 begin
   LLine := LeftPad('', ' ', 30);
@@ -67,7 +67,7 @@ begin
     LLine := LeftPad(LK_UNIT_MAGNITUDE_NAMES_SI[X, unLong], ' ', 30);
     for Y := Low(OOM) to High(OOM) do
       //LLine := LLine + Format('%n' + #9, [SIUnitConvert(1, X, Y)]);
-      LLine := LLine + LeftPad(Format('%s', [FormatFloat('#######################.#######################', SIMagnitude.Convert(1337, X, Y))]), ' ', 30);
+      LLine := LLine + LeftPad(Format('%s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(1337, X, Y))]), ' ', 30);
 
     memLog.Lines.Add(LLine);
   end;
