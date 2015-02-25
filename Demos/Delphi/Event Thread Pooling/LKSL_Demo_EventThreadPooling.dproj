@@ -101,13 +101,12 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Common.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Length.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streamables.Base.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Threads.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

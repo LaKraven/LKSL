@@ -47,8 +47,7 @@ uses
   {$ELSE}
     Classes, SysUtils, Math,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  LKSL.Common.Types,
-  LKSL.Math.Common;
+  LKSL.Common.Types;
 
   {$I LKSL_RTTI.inc}
 
