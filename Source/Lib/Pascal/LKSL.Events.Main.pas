@@ -100,6 +100,9 @@ type
     ///  <summary><c>The Duration of Time after which the Event will Expire once Dispatched.</c></summary>
     ///  <remarks><c>Default will be 0.00 (Never Expires)</c></remarks>
     FExpiresAfter: LKFloat;
+    ///  <summary><c>Dictates whether the Event Engine should take control of this Event's Lifetime</c></summary>
+    ///  <remarks><c>Default =</c> elcAutomatic</remarks>
+    FLifetimeControl: TLKEventLifetimeControl;
     ///  <summary><c>Where this Event came from.</c></summary>
     FOrigin: TLKEventOrigin;
     ///  <summary><c>The Reference Time at which the Event was First Processed.</c></summary>
@@ -124,7 +127,7 @@ type
     function GetDefaultDispatchTargets: TLKEventDispatchTargets; virtual;
     function GetDefaultExpiresAfter: LKFloat; virtual;
   public
-    constructor Create; override;
+    constructor Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); reintroduce;
     destructor Destroy; override;
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
@@ -144,7 +147,7 @@ implementation
 
 { TLKEvent }
 
-constructor TLKEvent.Create;
+constructor TLKEvent.Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
   inherited Create;
   FCreatedTime := GetReferenceTime; // We've just created it...
@@ -152,6 +155,7 @@ begin
   FDispatchTime := 0; // We haven't dispatched it yet...
   FDispatchTargets := GetDefaultDispatchTargets; // We request the default defined Targets for its Type...
   FExpiresAfter := GetDefaultExpiresAfter; // We request the default expiration for its Type...
+  FLifetimeControl := ALifetimeControl; // Define who is responsible for Lifetime Control...
   FOrigin := eoInternal; // We presume it originates internally...
   FProcessedTime := 0; // We haven't processed it yet (it hasn't even been dispatched)...
 end;
@@ -240,6 +244,8 @@ end;
 procedure TLKEvent.Unref;
 begin
   AtomicDecrement(FRefCount);
+  if (FLifetimeControl = elcAutomatic) and (FRefCount = 0) then
+    Free;
 end;
 
 end.
