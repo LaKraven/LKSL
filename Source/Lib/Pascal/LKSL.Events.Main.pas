@@ -67,6 +67,9 @@ type
   { Forward Declarations }
   TLKEvent = class;
 
+  { Class References }
+  TLKEventClass = class of TLKEvent;
+
   { Enum Types }
   ///  <summary><c>The Method by which the Event was Dispatched.</c></summary>
   TLKEventDispatchMethod = (edmNotDispatched, edmQueue, edmStack);
@@ -75,16 +78,21 @@ type
   ///  <summary><c>The means by which the Lifetime of a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance is managed.</c></summary>
   ///  <remarks>
   ///    <para>elcAutomatic <c>= Dispatched Events are Reference Counted and destroyed once processed.</c></para>
-  ///    <para>elcManual <c>= Dispatched Events are NOT Reference Counted, and must be destroyed by the implementing developer's code.</c></para>
+  ///    <para>elcManual <c>= Dispatched Events are NOT Reference Counted, and must be destroyed by the implementing developer's code (very carefully, of course).</c></para>
   ///  </remarks>
   TLKEventLifetimeControl = (elcAutomatic, elcManual);
   ///  <summary><c>Defined Origins for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance.</c></summary>
   TLKEventOrigin = (eoInternal, eoReplay, eoRemote, eoUnknown);
+  ///  <summary><c>The current State of an Event.</c></summary>
+  TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
 
   { Set Types }
   TLKEventDispatchTargets = set of TLKEventDispatchTarget;
 
   ///  <summary><c>Abstract Base Class for all Event Types</c></summary>
+  ///  <remarks>
+  ///    <para><c>Don't implement behaviour on your descendants. Events are intended to provide raw information only, not functionality.</c></para>
+  ///  </remarks
   TLKEvent = class abstract(TLKPersistent)
   private
     ///  <summary><c>The Time at which the Event was Created.</c></summary>
@@ -109,11 +117,14 @@ type
     FProcessedTime: LKFloat;
     ///  <summary><c>Reference Count for when Lifetime Control is owned by the Event Engine.</c></summary>
     FRefCount: Integer;
+    ///  <summary><c>Current State of this Event.</c></summary>
+    FState: TLKEventState;
 
     function GetDispatchTargets: TLKEventDispatchTargets;
     function GetDispatchTime: LKFloat;
     function GetExpiresAfter: LKFloat;
     function GetProcessedTime: LKFloat;
+    function GetState: TLKEventState;
 
     procedure SetDispatchTargets(const ADispatchTargets: TLKEventDispatchTargets);
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
@@ -124,19 +135,30 @@ type
     ///  <remarks><c>If the resulting Count = 0, the Event is Freed.</c></remarks>
     procedure Unref;
   protected
+    ///  <summary><c>Override if you want your Event Type to only dispatch to specific Targets.</c></summary>
     function GetDefaultDispatchTargets: TLKEventDispatchTargets; virtual;
+    ///  <summary><c>Override if you want your Event Type to Expire after a specific amount of time.</c></summary>
     function GetDefaultExpiresAfter: LKFloat; virtual;
   public
     constructor Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); reintroduce;
     destructor Destroy; override;
+
+    class function GetEventType: TLKEventClass;
+
+    procedure Queue; overload;
+    procedure Queue(const AExpiresAfter: LKFloat); overload;
+    procedure Stack; overload;
+    procedure Stack(const AExpiresAfter: LKFloat); overload;
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
     property DispatchMethod: TLKEventDispatchMethod read FDispatchMethod; // ATOMIC OPERATION
     property DispatchTargets: TLKEventDispatchTargets read GetDispatchTargets write SetDispatchTargets;
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
+    property LifetimeControl: TLKEventLifetimeControl read FLifetimeControl; // SET ON CONSTRUCTION ONLY
     property Origin: TLKEventOrigin read FOrigin; // SET ON CONSTRUCTION ONLY
     property ProcessedTime: LKFloat read GetProcessedTime;
+    property State: TLKEventState read GetState;
   end;
 
 const
@@ -158,6 +180,7 @@ begin
   FLifetimeControl := ALifetimeControl; // Define who is responsible for Lifetime Control...
   FOrigin := eoInternal; // We presume it originates internally...
   FProcessedTime := 0; // We haven't processed it yet (it hasn't even been dispatched)...
+  FState := esNotDispatched; // We haven't dispatched it yet...
 end;
 
 destructor TLKEvent.Destroy;
@@ -196,6 +219,11 @@ begin
   end;
 end;
 
+class function TLKEvent.GetEventType: TLKEventClass;
+begin
+  Result := TLKEventClass(Self);
+end;
+
 function TLKEvent.GetExpiresAfter: LKFloat;
 begin
   Lock;
@@ -214,6 +242,26 @@ begin
   finally
     Unlock;
   end;
+end;
+
+function TLKEvent.GetState: TLKEventState;
+begin
+  Lock;
+  try
+    Result := FState;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEvent.Queue(const AExpiresAfter: LKFloat);
+begin
+
+end;
+
+procedure TLKEvent.Queue;
+begin
+
 end;
 
 procedure TLKEvent.Ref;
@@ -239,6 +287,16 @@ begin
   finally
     Unlock;
   end;
+end;
+
+procedure TLKEvent.Stack(const AExpiresAfter: LKFloat);
+begin
+
+end;
+
+procedure TLKEvent.Stack;
+begin
+
 end;
 
 procedure TLKEvent.Unref;
