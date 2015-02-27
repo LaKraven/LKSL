@@ -101,7 +101,8 @@ type
   TLKEventList = class(TLKObjectList<TLKEvent>);
   TLKEventListenerList = class(TLKObjectList<TLKEventListener>);
   TLKEventPreProcessorClassArray = TArray<TLKEventPreProcessorClass>;
-  TLKEventPreProcessorList = TLKObjectList<TLKEventPreProcessor>;
+  TLKEventPreProcessorList = class(TLKObjectList<TLKEventPreProcessor>);
+  TLKEventThreadList = class(TLKObjectList<TLKEventThread>);
 
   ///  <summary><c>Abstract Base Class for all Event Types</c></summary>
   ///  <remarks>
@@ -293,10 +294,14 @@ type
 
   TLKEventEngine = class(TLKEventContainer)
   private
+    FEventThreads: TLKEventThreadList;
     FPreProcessors: TLKEventPreProcessorList;
   public
     constructor Create; override;
     destructor Destroy; override;
+
+    procedure RegiterPreProcessor(const APreProcessor: TLKEventPreProcessor);
+    procedure UnregiterPreProcessor(const APreProcessor: TLKEventPreProcessor);
   end;
 
 var
@@ -624,13 +629,30 @@ end;
 constructor TLKEventEngine.Create;
 begin
   inherited;
+  FEventThreads := TLKEventThreadList.Create(False);
   FPreProcessors := TLKEventPreProcessorList.Create(False);
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
   FPreProcessors.Free;
+  FEventThreads.Free;
   inherited;
+end;
+
+procedure TLKEventEngine.RegiterPreProcessor(const APreProcessor: TLKEventPreProcessor);
+begin
+  if (not FPreProcessors.Contains(APreProcessor)) then
+    FPreProcessors.Add(APreProcessor);
+end;
+
+procedure TLKEventEngine.UnregiterPreProcessor(const APreProcessor: TLKEventPreProcessor);
+var
+  LIndex: Integer;
+begin
+  LIndex := FPreProcessors.IndexOf(APreProcessor);
+  if LIndex > -1 then
+    FPreProcessors.Delete(LIndex);
 end;
 
 initialization
