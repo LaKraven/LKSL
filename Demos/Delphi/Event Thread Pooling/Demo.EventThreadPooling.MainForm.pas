@@ -4,10 +4,29 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Demo.EventThreadPooling.Events,
-  Vcl.StdCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
+  LKSL.Events.Main;
 
 type
+  TTestEvent = class(TLKEvent)
+  private
+    FFoo: String;
+  public
+    constructor Create(const AFoo: String); reintroduce;
+    property Foo: String read FFoo;
+  end;
+
+  TTestEventListener = class(TLKEventListener<TTestEvent>);
+
+  TTestEventThread = class(TLKEventThread)
+  private
+    FListener: TTestEventListener;
+    procedure DoEvent(const AEvent: TTestEvent);
+  protected
+    procedure InitializeListeners; override;
+    procedure FinalizeListeners; override;
+  end;
+
   TForm1 = class(TForm)
     memLog: TMemo;
     btnDispatchEvent: TButton;
@@ -17,10 +36,12 @@ type
     procedure Button1Click(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
-    FResponseListener: TLKDemoResponseEventListener;
-    procedure DoResponseEvent(const AEvent: TLKDemoResponseEvent);
+    FTestThread: TTestEventThread;
+//    FResponseListener: TLKDemoResponseEventListener;
+//    procedure DoResponseEvent(const AEvent: TLKDemoResponseEvent);
   public
-    { Public declarations }
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
   end;
 
 var
@@ -30,12 +51,37 @@ implementation
 
 {$R *.dfm}
 
-uses LKSL.Math.SIUnits;
+uses
+  LKSL.Math.SIUnits;
+
+{ TTestEventThread }
+
+procedure TTestEventThread.DoEvent(const AEvent: TTestEvent);
+begin
+  SYNCHRONIZE(procedure begin
+                Form1.memLog.Lines.Add(AEvent.Foo);
+              end);
+end;
+
+procedure TTestEventThread.FinalizeListeners;
+begin
+  inherited;
+  FListener.Free;
+end;
+
+procedure TTestEventThread.InitializeListeners;
+begin
+  inherited;
+  FListener := TTestEventListener.Create(Self, DoEvent);
+end;
+
+{ TForm1 }
 
 procedure TForm1.btnDispatchEventClick(Sender: TObject);
 begin
-  TLKDemoEvent.Create.Queue;
-  ShowMessage(Format('%g', [SIMagnitudeConvert(1, simZepto, simAtto)]));
+  TTestEvent.Create('Bar').Queue;
+//  TLKDemoEvent.Create.Queue;
+//  ShowMessage(Format('%g', [SIMagnitudeConvert(1, simZepto, simAtto)]));
 end;
 
 function LeftPad(S: string; Ch: Char; Len: Integer): string;
@@ -73,21 +119,41 @@ begin
   end;
 end;
 
-procedure TForm1.DoResponseEvent(const AEvent: TLKDemoResponseEvent);
+constructor TForm1.Create(AOwner: TComponent);
 begin
-  memLog.Lines.Add(Format('%n', [AEvent.DispatchTime]));
+  inherited;
+  FTestThread := TTestEventThread.Create;
 end;
+
+destructor TForm1.Destroy;
+begin
+  FTestThread.Kill;
+  inherited;
+end;
+
+//procedure TForm1.DoResponseEvent(const AEvent: TLKDemoResponseEvent);
+//begin
+//  memLog.Lines.Add(Format('%n', [AEvent.DispatchTime]));
+//end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  FResponseListener := TLKDemoResponseEventListener.Create(DoResponseEvent);
-  FResponseListener.CallUIThread := True;
-  FResponseListener.Subscribe;
+//  FResponseListener := TLKDemoResponseEventListener.Create(DoResponseEvent);
+//  FResponseListener.CallUIThread := True;
+//  FResponseListener.Subscribe;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  FResponseListener.Free;
+//  FResponseListener.Free;
+end;
+
+{ TTestEvent }
+
+constructor TTestEvent.Create(const AFoo: String);
+begin
+  inherited Create;
+  FFoo := AFoo;
 end;
 
 end.

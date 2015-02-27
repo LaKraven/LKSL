@@ -101,6 +101,9 @@ type
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FYieldAccumulatedTime: Boolean;
 
+    function GetLockAcquired: Boolean; inline;
+    function GetLockAvailable: Boolean; inline;
+
     function GetNextTickTime: LKFloat;
     function GetThreadState: TLKThreadState;
     function GetTickRate: LKFloat;
@@ -174,9 +177,13 @@ type
     // "Lock" locks the Thread's global "Critical Section" using a "Spinlock"
     // (Public just in case you need to call it externally for some reason)
     procedure Lock; inline;
+    function LockIfAvailable: Boolean; inline;
     // "Unlock" unlocks the Thread's global "Critical Section"
     // (Public just in case you need to call it externally for some reason)
     procedure Unlock; inline;
+
+    property LockAcquired: Boolean read GetLockAcquired;
+    property LockAvailable: Boolean read GetLockAvailable;
 
     property NextTickTime: LKFloat read GetNextTickTime;
     property ThreadState: TLKThreadState read GetThreadState write SetThreadState;
@@ -374,6 +381,16 @@ begin
   Result := tsRunning;
 end;
 
+function TLKThread.GetLockAcquired: Boolean;
+begin
+  Result := FLock.LockAcquired;
+end;
+
+function TLKThread.GetLockAvailable: Boolean;
+begin
+  Result := FLock.LockAvailable;
+end;
+
 function TLKThread.GetNextTickTime: LKFloat;
 begin
   Lock;
@@ -504,6 +521,11 @@ end;
 procedure TLKThread.Lock;
 begin
   FLock.Acquire;
+end;
+
+function TLKThread.LockIfAvailable: Boolean;
+begin
+  Result := FLock.TryEnter;
 end;
 
 procedure TLKThread.PreTick(const ADelta, AStartTime: LKFloat);

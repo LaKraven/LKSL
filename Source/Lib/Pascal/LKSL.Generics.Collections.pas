@@ -181,6 +181,7 @@ type
     function GetCapacityThreshold: Integer;
     // Getters - Other
     function GetCount: Integer;
+    function GetIsEmpty: Boolean;
     function GetItemByIndex(const AIndex: Integer): T;
 
     // Setters - Capacity
@@ -238,6 +239,7 @@ type
     property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
     property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
     property Count: Integer read GetCount;
+    property IsEmpty: Boolean read GetIsEmpty;
     property Items[const AIndex: Integer]: T read GetItemByIndex; default;
   end;
 
@@ -885,6 +887,11 @@ begin
   finally
     Unlock;
   end;
+end;
+
+function TLKListBase<T>.GetIsEmpty: Boolean;
+begin
+  Result := (Count = 0);
 end;
 
 function TLKListBase<T>.GetItemByIndex(const AIndex: Integer): T;
