@@ -5,6 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
+  LKSL.Common.Types,
   LKSL.Events.Main;
 
 type
@@ -52,15 +53,19 @@ implementation
 {$R *.dfm}
 
 uses
-  LKSL.Math.SIUnits;
+  LKSL.Math.SIUnits, LKSL.Threads.Base;
 
 { TTestEventThread }
 
 procedure TTestEventThread.DoEvent(const AEvent: TTestEvent);
+var
+  LDelta: LKFloat;
 begin
+  LDelta := GetReferenceTime - AEvent.DispatchTime;
   SYNCHRONIZE(procedure begin
-                Form1.memLog.Lines.Add(AEvent.Foo);
+                Form1.memLog.Lines.Add(Format('%sms - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMilli)), AEvent.Foo]));
               end);
+//  AEvent.Queue;
 end;
 
 procedure TTestEventThread.FinalizeListeners;

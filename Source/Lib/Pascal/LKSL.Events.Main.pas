@@ -175,12 +175,13 @@ type
 
     ///  <summary><c>Dispatch the Event through the Queue.</c></summary>
     procedure Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
-    ///  <summary><c>Dispatch the Event through the Queue with an Expiry time (T + AExpiresAfter).</c></summary>
-    procedure Queue(const AExpiresAfter: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
     ///  <summary><c>Dispatch the Event through the Stack.</c></summary>
     procedure Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
-    ///  <summary><c>Dispatch the Event through the Stack with an Expiry time (T + AExpiresAfter).</c></summary>
-    procedure Stack(const AExpiresAfter: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
+
+    ///  <summary><c>Schedule the Event to be Dispatched through the Queue</c></summary>
+    procedure ScheduleQueue(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+    ///  <summary><c>Schedule the Event to be Dispatched through the Stack</c></summary>
+    procedure ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 
     ///  <summary><c>Override the Type-defined default Dispatch Targets for a speciifc Instance.</c></summary>
     procedure SetDispatchTargets(const ADispatchTargets: TLKEventPreProcessorClassArray);
@@ -487,19 +488,9 @@ begin
   end;
 end;
 
-procedure TLKEvent.Queue(const AExpiresAfter: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
-begin
-  Lock;
-  try
-    FExpiresAfter := AExpiresAfter;
-  finally
-    Unlock;
-  end;
-  Queue(ALifetimeControl);
-end;
-
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
+  FDispatchTime := GetReferenceTime;
   FLifetimeControl := ALifetimeControl;
   FState := esDispatched;
   FDispatchMethod := edmQueue;
@@ -509,6 +500,22 @@ end;
 procedure TLKEvent.Ref;
 begin
   AtomicIncrement(FRefCount);
+end;
+
+procedure TLKEvent.ScheduleQueue(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
+begin
+  FDispatchTime := GetReferenceTime;
+  FLifetimeControl := ALifetimeControl;
+  { TODO -oSJS -cEvent Engine (Redux) : Implement Event Scheduler }
+  Queue(ALifetimeControl); // TEMPORARY!
+end;
+
+procedure TLKEvent.ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
+begin
+  FDispatchTime := GetReferenceTime;
+  FLifetimeControl := ALifetimeControl;
+  { TODO -oSJS -cEvent Engine (Redux) : Implement Event Scheduler }
+  Stack(ALifetimeControl); // TEMPORARY!
 end;
 
 procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventPreProcessorClassArray);
@@ -527,19 +534,9 @@ begin
   end;
 end;
 
-procedure TLKEvent.Stack(const AExpiresAfter: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
-begin
-  Lock;
-  try
-    FExpiresAfter := AExpiresAfter;
-  finally
-    Unlock;
-  end;
-  Stack(ALifetimeControl);
-end;
-
 procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
+  FDispatchTime := GetReferenceTime;
   FLifetimeControl := ALifetimeControl;
   FState := esDispatched;
   FDispatchMethod := edmStack;

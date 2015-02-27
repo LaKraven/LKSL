@@ -352,7 +352,11 @@ begin
         end;
       end;
     end else
-      TThread.Sleep(1);
+      {$IF Defined(MSWINDOWS)}
+        TThread.Sleep(1);
+      {$ELSEIF Defined(POSIX)}
+        usleep(1);
+      {$ENDIF POSIX}
   end;
 end;
 
