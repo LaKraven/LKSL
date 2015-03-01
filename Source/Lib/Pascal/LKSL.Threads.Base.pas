@@ -276,41 +276,41 @@ begin
   LAverageTicks := 0;
   while (not Terminated) do
   begin
-    // Read once so we don't have to keep Acquiring the Lock!
-    Lock;
-    try
-      LTickRateLimit := FTickRateLimit;
-      LTickRateDesired := FTickRateDesired;
-    finally
-      Unlock;
-    end;
-    LCurrentTime := GetReferenceTime;
-    LDelta := (LCurrentTime - FNextTickTime);
-
-    // Rate Limiter
-    if (LTickRateLimit > 0.00) then
-      if (LDelta < ( 1 / LTickRateLimit)) then
-        LDelta := (1 / LTickRateLimit);
-
-    // Calculate INSTANT Tick Rate
-    if LDelta > 0 then
-    begin
-      LTickRate := 1 / LDelta; // Calculate the current Tick Rate
-
-      SetTickRate(LTickRate);
-
-      // Calculate EXTRA time
-      if LTickRateDesired > 0.00 then
-        SetTickRateExtraTicks(LTickRate - LTickRateDesired)
-      else
-        SetTickRateExtraTicks(0.00);
-    end;
-
-    // Call "PreTick"
-    PreTick(LDelta, LCurrentTime);
-
     if ThreadState = tsRunning then
     begin
+      // Read once so we don't have to keep Acquiring the Lock!
+      Lock;
+      try
+        LTickRateLimit := FTickRateLimit;
+        LTickRateDesired := FTickRateDesired;
+      finally
+        Unlock;
+      end;
+      LCurrentTime := GetReferenceTime;
+      LDelta := (LCurrentTime - FNextTickTime);
+
+      // Rate Limiter
+      if (LTickRateLimit > 0.00) then
+        if (LDelta < ( 1 / LTickRateLimit)) then
+          LDelta := (1 / LTickRateLimit);
+
+      // Calculate INSTANT Tick Rate
+      if LDelta > 0 then
+      begin
+        LTickRate := 1 / LDelta; // Calculate the current Tick Rate
+
+        SetTickRate(LTickRate);
+
+        // Calculate EXTRA time
+        if LTickRateDesired > 0.00 then
+          SetTickRateExtraTicks(LTickRate - LTickRateDesired)
+        else
+          SetTickRateExtraTicks(0.00);
+      end;
+
+      // Call "PreTick"
+      PreTick(LDelta, LCurrentTime);
+
       // Tick or Wait...
       if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0.00)) or (LTickRateLimit = 0.00) then
       begin
@@ -360,10 +360,7 @@ begin
         end;
       end;
     end else
-    begin
       FWakeUp.WaitFor(1);
-      FNextTickTime := GetReferenceTime;
-    end;
   end;
 end;
 

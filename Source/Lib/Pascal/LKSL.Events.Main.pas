@@ -285,7 +285,7 @@ type
     ///  <remarks>
     ///    <para><c>A small delay is good when performance is critical.</c></para>
     ///    <para><c>Value is presented in Seconds.</c></para>
-    ///    <para><c>Default =</c> 1.00 <c>seconds</c></para>
+    ///    <para><c>Default =</c> 0.50 <c>seconds</c></para>
     ///  </remarks>
     function GetDefaultPauseDelay: LKFloat; virtual;
     ///  <summary><c>Should this Thread self-Wake when a new Event is placed into the Stack or Queue?</c></summary>
@@ -332,8 +332,6 @@ type
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
 
     { TLKEventContainer Overrides }
-    function GetPauseOnNoEvent: Boolean; override;
-    function GetWakeOnEvent: Boolean; override;
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
 
     { Overrideables }
@@ -693,7 +691,7 @@ end;
 
 function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
 begin
-  Result := 10;
+  Result := 0.5;
 end;
 
 function TLKEventContainer.GetDefaultYieldAccumulatedTime: Boolean;
@@ -845,18 +843,6 @@ end;
 procedure TLKEventThread.FinalizeListeners;
 begin
   // Do nothing (yet)
-end;
-
-function TLKEventThread.GetPauseOnNoEvent: Boolean;
-begin
-  // We process Events on PreTick in Event Threads, so the Thread's Running State is irrelevant here!
-  Result := False;
-end;
-
-function TLKEventThread.GetWakeOnEvent: Boolean;
-begin
-  // We process Events on PreTick in Event Threads, so the Thread's Running State is irrelevant here!
-  Result := False;
 end;
 
 procedure TLKEventThread.InitializeListeners;
