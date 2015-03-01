@@ -374,14 +374,9 @@ type
   end;
 
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
-  TLKEventEngine = class(TLKEventContainer)
+  TLKEventEngine = class(TLKPersistent)
   private
     FPreProcessors: TLKEventPreProcessorList;
-  protected
-    { TLKThread Overrides }
-    procedure Tick(const ADelta, AStartTime: LKFloat); override;
-    { TLKEventContainer Overrides }
-    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -390,6 +385,9 @@ type
 
     procedure RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
     procedure UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
+
+    procedure QueueEvent(const AEvent: TLKEvent);
+    procedure StackEvent(const AEvent: TLKEvent);
   end;
 
 var
@@ -695,7 +693,7 @@ end;
 
 function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
 begin
-  Result := 1;
+  Result := 10;
 end;
 
 function TLKEventContainer.GetDefaultYieldAccumulatedTime: Boolean;
@@ -743,14 +741,10 @@ begin
   begin
     if (FEventStack.IsEmpty) and (FEventQueue.IsEmpty) then
     begin
-      if GetPauseOnNoEvent then
-      begin
-        if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
-          ThreadState := tsPaused
-        else if FPauseAt = 0 then
-          FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
-      end else
-        ThreadState := tsPaused;
+      if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
+        Rest
+      else if FPauseAt = 0 then
+        FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
     end;
   end;
 end;
@@ -761,7 +755,7 @@ begin
   FEventQueue.Add(AEvent);
   if GetWakeOnEvent then
   begin
-    ThreadState := tsRunning; // Wake up this Thread
+    Wake; // Wake up this Thread
     FPauseAt := 0;
   end;
 end;
@@ -772,14 +766,14 @@ begin
   FEventStack.Add(AEvent);
   if GetWakeOnEvent then
   begin
-    ThreadState := tsRunning; // Wake up this Thread
+    Wake; // Wake up this Thread
     FPauseAt := 0;
   end;
 end;
 
 procedure TLKEventContainer.Tick(const ADelta, AStartTime: LKFloat);
 begin
-  // Do nothing!
+  // Do nothing
 end;
 
 { TLKEventPreProcessor }
@@ -1000,7 +994,7 @@ begin
   inherited;
 end;
 
-procedure TLKEventEngine.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
+procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
 var
   I: Integer;
 begin
@@ -1009,10 +1003,7 @@ begin
     for I := 0 to FPreProcessors.Count - 1 do
       if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
         if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
-          case AEvent.FDispatchMethod of
-            edmQueue: FPreProcessors[I].QueueEvent(AEvent);
-            edmStack: FPreProcessors[I].StackEvent(AEvent);
-          end;
+          FPreProcessors[I].QueueEvent(AEvent)
   finally
     FPreProcessors.Unlock;
   end;
@@ -1029,9 +1020,19 @@ begin
   end;
 end;
 
-procedure TLKEventEngine.Tick(const ADelta, AStartTime: LKFloat);
+procedure TLKEventEngine.StackEvent(const AEvent: TLKEvent);
+var
+  I: Integer;
 begin
-  ProcessEvents(ADelta, AStartTime);
+  FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  try
+    for I := 0 to FPreProcessors.Count - 1 do
+      if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
+        if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
+          FPreProcessors[I].StackEvent(AEvent);
+  finally
+    FPreProcessors.Unlock;
+  end;
 end;
 
 procedure TLKEventEngine.UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
@@ -1053,6 +1054,6 @@ initialization
   ThreadPreProcessor := TLKEventThreadPreProcessor.Create;
 finalization
   ThreadPreProcessor.Kill;
-  EventEngine.Kill; // Free this LAST
+  EventEngine.Free; // Free this LAST
 
 end.

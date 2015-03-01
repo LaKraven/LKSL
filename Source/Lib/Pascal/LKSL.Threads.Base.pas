@@ -100,6 +100,7 @@ type
     FTickRateExtraAverageTime: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FYieldAccumulatedTime: Boolean;
+    FWakeUp: TEvent;
 
     function GetLockAcquired: Boolean; inline;
     function GetLockAvailable: Boolean; inline;
@@ -182,6 +183,9 @@ type
     // (Public just in case you need to call it externally for some reason)
     procedure Unlock; inline;
 
+    procedure Rest;
+    procedure Wake;
+
     property LockAcquired: Boolean read GetLockAcquired;
     property LockAvailable: Boolean read GetLockAvailable;
 
@@ -230,6 +234,8 @@ begin
 end;
 
 constructor TLKThread.Create;
+const
+  THREAD_STATES: Array[TLKThreadState] of Boolean = (True, False);
 begin
   inherited Create(False);
   FLock := TLKCriticalSection.Create;
@@ -239,10 +245,12 @@ begin
   FTickRateAverageOver := GetDefaultTickRateAverageOver;
   FYieldAccumulatedTime := GetDefaultYieldAccumulatedTime;
   FTickRateDesired := GetDefaultTickRateDesired;
+  FWakeUp := TEvent.Create(nil, True, THREAD_STATES[FThreadState], Format('LKThreadWakeUp%d', [ThreadID]));
 end;
 
 destructor TLKThread.Destroy;
 begin
+  FWakeUp.Free;
   FLock.Free;
   inherited;
 end;
@@ -352,11 +360,10 @@ begin
         end;
       end;
     end else
-      {$IF Defined(MSWINDOWS)}
-        TThread.Sleep(1);
-      {$ELSEIF Defined(POSIX)}
-        usleep(1);
-      {$ENDIF POSIX}
+    begin
+      FWakeUp.WaitFor(1);
+      FNextTickTime := GetReferenceTime;
+    end;
   end;
 end;
 
@@ -517,6 +524,7 @@ end;
 
 procedure TLKThread.Kill;
 begin
+  FWakeUp.SetEvent;
   Terminate;
   WaitFor;
   Free;
@@ -537,11 +545,26 @@ begin
   // Do nothing by default
 end;
 
+procedure TLKThread.Rest;
+begin
+  Lock;
+  try
+    FThreadState := tsPaused;
+    FWakeUp.ResetEvent;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKThread.SetThreadState(const AThreadState: TLKThreadState);
 begin
   Lock;
   try
     FThreadState := AThreadState;
+    case AThreadState of
+      tsRunning: FWakeUp.SetEvent;
+      tsPaused: FWakeUp.ResetEvent;
+    end;
   finally
     Unlock;
   end;
@@ -646,6 +669,17 @@ end;
 procedure TLKThread.Unlock;
 begin
   FLock.Release;
+end;
+
+procedure TLKThread.Wake;
+begin
+  Lock;
+  try
+    FThreadState := tsRunning;
+    FWakeUp.SetEvent;
+  finally
+    Unlock;
+  end;
 end;
 
 initialization
