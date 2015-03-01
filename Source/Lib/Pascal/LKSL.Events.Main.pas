@@ -263,22 +263,34 @@ type
   private
     FEventQueue: TLKEventList;
     FEventStack: TLKEventList;
+    FPauseAt: LKFloat;
 
     function GetEventCount: Integer;
     function GetEventCountQueue: Integer;
     function GetEventCountStack: Integer;
     procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
+    procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
   protected
     { TLKThread overrides }
     function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     function GetInitialThreadState: TLKThreadState; override;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
     { Overrideables }
+    ///  <summary><c>You MUST override "ProcessEvent" to define what action is to take place when the Event Stack and Queue are being processed.</c></summary>
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); virtual; abstract;
+    ///  <summary><c>Should this Thread self-Pause when there are no Events in the Stack or Queue?</c></summary>
+    ///  <remarks><c>Default =</c> True</remarks>
     function GetPauseOnNoEvent: Boolean; virtual;
+    ///  <summary><c>How long should the Thread wait for new Events before self-Pausing?</c></summary>
+    ///  <remarks>
+    ///    <para><c>A small delay is good when performance is critical.</c></para>
+    ///    <para><c>Value is presented in Seconds.</c></para>
+    ///    <para><c>Default =</c> 1.00 <c>seconds</c></para>
+    ///  </remarks>
+    function GetDefaultPauseDelay: LKFloat; virtual;
+    ///  <summary><c>Should this Thread self-Wake when a new Event is placed into the Stack or Queue?</c></summary>
+    ///  <remarks><c>Default =</c> True</remarks>
     function GetWakeOnEvent: Boolean; virtual;
-    { Callables }
-    procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -681,6 +693,11 @@ begin
   end;
 end;
 
+function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
+begin
+  Result := 1;
+end;
+
 function TLKEventContainer.GetDefaultYieldAccumulatedTime: Boolean;
 begin
   // We must NOT yield all Accumulated Time on Event-enabled Threads.
@@ -725,7 +742,16 @@ begin
   if GetPauseOnNoEvent then
   begin
     if (FEventStack.IsEmpty) and (FEventQueue.IsEmpty) then
-      ThreadState := tsPaused;
+    begin
+      if GetPauseOnNoEvent then
+      begin
+        if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
+          ThreadState := tsPaused
+        else if FPauseAt = 0 then
+          FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
+      end else
+        ThreadState := tsPaused;
+    end;
   end;
 end;
 
@@ -734,7 +760,10 @@ begin
   AEvent.Ref; // Add a Reference to the Event
   FEventQueue.Add(AEvent);
   if GetWakeOnEvent then
+  begin
     ThreadState := tsRunning; // Wake up this Thread
+    FPauseAt := 0;
+  end;
 end;
 
 procedure TLKEventContainer.StackEvent(const AEvent: TLKEvent);
@@ -742,7 +771,10 @@ begin
   AEvent.Ref; // Add a Reference to the Event
   FEventStack.Add(AEvent);
   if GetWakeOnEvent then
+  begin
     ThreadState := tsRunning; // Wake up this Thread
+    FPauseAt := 0;
+  end;
 end;
 
 procedure TLKEventContainer.Tick(const ADelta, AStartTime: LKFloat);
