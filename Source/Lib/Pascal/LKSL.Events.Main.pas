@@ -288,7 +288,6 @@ type
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
   protected
     { TLKThread overrides }
-    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     function GetInitialThreadState: TLKThreadState; override;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
     { Overrideables }
@@ -745,13 +744,6 @@ end;
 function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
 begin
   Result := 0.5;
-end;
-
-function TLKEventContainer.GetDefaultYieldAccumulatedTime: Boolean;
-begin
-  // We must NOT yield all Accumulated Time on Event-enabled Threads.
-  // Doing so would prevent the Event Queue being processed
-  Result := False;
 end;
 
 function TLKEventContainer.GetEventCount: Integer;

@@ -479,7 +479,6 @@ type
     procedure SetFinalizationMode(const AFinalizationMode: TLKEventFinalizationMode);
   protected
     function GetDefaultFinalizationMode: TLKEventFinalizationMode; virtual;
-    function GetDefaultYieldAccumulatedTime: Boolean; override; final;
     // "ProcessEvents" is overriden by TLKEventThread, TLKEventQueue and TLKEventStack,
     // which individually dictate how to process Events from the Events Array.
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); virtual; abstract;
@@ -1516,13 +1515,6 @@ function TLKEventThreadBase.GetDefaultFinalizationMode: TLKEventFinalizationMode
 begin
   // Discard by Default
   Result := efmDiscardPending;
-end;
-
-function TLKEventThreadBase.GetDefaultYieldAccumulatedTime: Boolean;
-begin
-  // We must NOT yield all Accumulated Time on Event-enabled Threads.
-  // Doing so would prevent the Event Queue being processed
-  Result := False;
 end;
 
 function TLKEventThreadBase.GetFinalizationMode: TLKEventFinalizationMode;

@@ -99,7 +99,6 @@ type
     FTickRateExtraAverage: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateExtraAverageTime: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
-    FYieldAccumulatedTime: Boolean;
     FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
@@ -118,7 +117,6 @@ type
     function GetTickRateExtraTimeAverage: LKFloat;
     function GetTickRateLimit: LKFloat;
     function GetWakeInterval: Cardinal;
-    function GetYieldAccumulatedTime: Boolean; deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
     procedure SetTickRate(const ATickRate: LKFloat); // Used internally!
@@ -129,7 +127,6 @@ type
     procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKFloat); // Used internally!
     procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
     procedure SetWakeInterval(const AInterval: Cardinal);
-    procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean); deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
   protected
     ///  <summary><c>Override if you wish your inherited Type to enforce a Tick Rate Limit by Default.</c></summary>
     ///  <remarks>
@@ -137,10 +134,10 @@ type
     ///    <para><c>Default = </c>0</para>
     ///  </remarks>
     function GetDefaultTickRateLimit: LKFloat; virtual;
-    // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
+    // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2 seconds)
     ///  <summary><c>Override if you wish to change the default Tick Rate Averaging Time.</c></summary>
     ///  <remarks>
-    ///    <para><c>Value is in Seconds (1.00 = 1 second)</c></para>
+    ///    <para><c>Value is in Seconds (1 = 1 second)</c></para>
     ///    <para><c>Default = </c>2</para>
     ///  </remarks>
     function GetDefaultTickRateAverageOver: LKFloat; virtual;
@@ -153,12 +150,6 @@ type
     ///  <summary><c>Override if you wish to specify a custom Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
     ///  <remarks><c>Default = </c>10000 <c>(10 seconds)</c></remarks>
     function GetDefaultWakeInterval: Cardinal; virtual;
-    ///  <summary><c>Defines whether or not to yield all Accumulated (excess) Time in a Single Block.</c></summary>
-    ///  <remarks>
-    ///    <para><c>Default = </c>True</para>
-    ///    <para>Deprecated</para>
-    ///  </remarks>
-    function GetDefaultYieldAccumulatedTime: Boolean; virtual; deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
     ///  <summary><c>Defines whether the Thread should be Running or Paused upon Construction.</c></summary>
     ///  <remarks><c>Default = </c>tsRunning</remarks>
     function GetInitialThreadState: TLKThreadState; virtual;
@@ -177,7 +168,6 @@ type
     ///    <para><c>Ignores any Tick Rate Limits.</c></para>
     ///  </remarks>
     procedure PreTick(const ADelta, AStartTime: LKFloat); virtual;
-
     ///  <summary><c>Override to implement your Thread's operational code.</c></summary>
     ///  <param name="ADelta"><c>The time differential ("Delta") between the current Tick and the previous Tick.</c></param>
     ///  <param name="AStartTime"><c>The Reference Time at which the current Tick began.</c></param>
@@ -255,8 +245,6 @@ type
     property TickRateLimit: LKFloat read GetTickRateLimit write SetTickRateLimit;
     ///  <summary><c>The Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
     property WakeInterval: Cardinal read GetWakeInterval write SetWakeInterval;
-    ///  <summary>Deprecated</summary>
-    property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
 
 // "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
@@ -300,7 +288,6 @@ begin
   FThreadState := GetInitialThreadState;
   FTickRateLimit := GetDefaultTickRateLimit;
   FTickRateAverageOver := GetDefaultTickRateAverageOver;
-  FYieldAccumulatedTime := GetDefaultYieldAccumulatedTime;
   FTickRateDesired := GetDefaultTickRateDesired;
   FWakeUp := TEvent.Create(nil, True, THREAD_STATES[FThreadState], Format('LKThreadWakeUp%d', [ThreadID]));
 end;
@@ -327,9 +314,9 @@ begin
   finally
     Unlock;
   end;
-  LLastAverageCheckpoint := 0.00;
-  LNextAverageCheckpoint := 0.00;
-  LTickRate := 0.00;
+  LLastAverageCheckpoint := 0;
+  LNextAverageCheckpoint := 0;
+  LTickRate := 0;
   LAverageTicks := 0;
   while (not Terminated) do
   begin
@@ -347,7 +334,7 @@ begin
       LDelta := (LCurrentTime - FNextTickTime);
 
       // Rate Limiter
-      if (LTickRateLimit > 0.00) then
+      if (LTickRateLimit > 0) then
         if (LDelta < ( 1 / LTickRateLimit)) then
           LDelta := (1 / LTickRateLimit);
 
@@ -359,17 +346,17 @@ begin
         SetTickRate(LTickRate);
 
         // Calculate EXTRA time
-        if LTickRateDesired > 0.00 then
+        if LTickRateDesired > 0 then
           SetTickRateExtraTicks(LTickRate - LTickRateDesired)
         else
-          SetTickRateExtraTicks(0.00);
+          SetTickRateExtraTicks(0);
       end;
 
       // Call "PreTick"
       PreTick(LDelta, LCurrentTime);
 
       // Tick or Wait...
-      if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0.00)) or (LTickRateLimit = 0.00) then
+      if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0)) or (LTickRateLimit = 0) then
       begin
 
         // Calculate AVEARAGE Tick Rate
@@ -380,14 +367,14 @@ begin
           LAverageTicks := -1;
         end;
         Inc(LAverageTicks);
-        if (LCurrentTime - LLastAverageCheckpoint > 0.00) then
+        if (LCurrentTime - LLastAverageCheckpoint > 0) then
         begin
           LTickRateAverage := LAverageTicks / (LCurrentTime - LLastAverageCheckpoint);
           SetTickRateAverage(LTickRateAverage);
-          if LTickRateDesired > 0.00 then
+          if LTickRateDesired > 0 then
             SetTickRateExtraTicksAverage(LTickRateAverage - LTickRateDesired)
           else
-            SetTickRateExtraTicksAverage(0.00);
+            SetTickRateExtraTicksAverage(0);
         end else
         begin
           SetTickRateAverage(LTickRate);
@@ -405,20 +392,8 @@ begin
                                 of the lowest supported value (by the OS) can be wait-blocked
                                 before the thread re-activates to count the remaining discrete
                                 units. }
-        if (not YieldAccumulatedTime) then
+        if (FNextTickTime - GetReferenceTime >= 0.001) then
           {$IFDEF POSIX}usleep(1){$ELSE}Sleep(1){$ENDIF}
-        else
-        begin
-          {$IFNDEF POSIX}
-             // Windows does not support a "Sleep" resolution above 1ms (which sucks)
-            LSleepTime := Floor(1000 * (FNextTickTime - LCurrentTime));
-            if LSleepTime > 0 then
-              TThread.Sleep(LSleepTime);
-          {$ELSE}
-            // POSIX platforms support higher-resolution Sleep times (yay)
-            usleep(Floor((FNextTickTime - LCurrentTime)));
-          {$ENDIF}
-        end;
       end;
     end else
       FWakeUp.WaitFor(GetWakeInterval);
@@ -427,7 +402,7 @@ end;
 
 function TLKThread.GetDefaultTickRateLimit: LKFloat;
 begin
-  Result := 0.00;
+  Result := 0;
 end;
 
 function TLKThread.GetDefaultWakeInterval: Cardinal;
@@ -435,19 +410,14 @@ begin
   Result := 10000;
 end;
 
-function TLKThread.GetDefaultYieldAccumulatedTime: Boolean;
-begin
-  Result := True;
-end;
-
 function TLKThread.GetDefaultTickRateAverageOver: LKFloat;
 begin
-  Result := 2.00;
+  Result := 2;
 end;
 
 function TLKThread.GetDefaultTickRateDesired: LKFloat;
 begin
-  Result := 0.00;
+  Result := 0;
 end;
 
 function TLKThread.GetInitialThreadState: TLKThreadState;
@@ -585,16 +555,6 @@ begin
   end;
 end;
 
-function TLKThread.GetYieldAccumulatedTime: Boolean;
-begin
-  Lock;
-  try
-    Result := FYieldAccumulatedTime;
-  finally
-    Unlock;
-  end;
-end;
-
 procedure TLKThread.Kill;
 begin
   FWakeUp.SetEvent;
@@ -688,12 +648,12 @@ begin
   Lock;
   try
     FTickRateExtra := AExtraTime;
-    if FTickRateExtra > 0.00 then
+    if FTickRateExtra > 0 then
       FTickRateExtraTime := (1 / FTickRate) * FTickRateExtra
-    else if FTickRateExtra < 0.00 then
+    else if FTickRateExtra < 0 then
       FTickRateExtraTime := -((1 / -FTickRate) * FTickRateExtra)
     else
-      FTickRateExtraTime := 0.00;
+      FTickRateExtraTime := 0;
   finally
     Unlock;
   end;
@@ -704,12 +664,12 @@ begin
   Lock;
   try
     FTickRateExtraAverage := AExtraTimeAverage;
-    if FTickRateExtraAverage > 0.00 then
+    if FTickRateExtraAverage > 0 then
       FTickRateExtraAverageTime := (1 / FTickRateAverage) * FTickRateExtraAverage
-    else if FTickRateExtraAverage < 0.00 then
+    else if FTickRateExtraAverage < 0 then
       FTickRateExtraAverageTime := -((1 / -FTickRateAverage) * FTickRateExtraAverage)
     else
-      FTickRateExtraAverageTime := 0.00;
+      FTickRateExtraAverageTime := 0;
   finally
     Unlock;
   end;
@@ -734,16 +694,6 @@ begin
   Lock;
   try
     FWakeInterval := AInterval;
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKThread.SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
-begin
-  Lock;
-  try
-    FYieldAccumulatedTime := AYieldAccumulatedTime;
   finally
     Unlock;
   end;
