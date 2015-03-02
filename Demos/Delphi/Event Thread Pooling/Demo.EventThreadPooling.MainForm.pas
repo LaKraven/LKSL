@@ -63,7 +63,7 @@ var
 begin
   LDelta := GetReferenceTime - AEvent.DispatchTime;
   SYNCHRONIZE(procedure begin
-                Form1.memLog.Lines.Add(Format('%sms - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMilli)), AEvent.Foo]));
+                Form1.memLog.Lines.Add(Format('%s Microseconds - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMicro)), AEvent.Foo]));
               end);
 //  AEvent.Queue;
 end;
@@ -101,7 +101,7 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 const
-  OOM: Array[TLKSIMagnitude] of TLKSIMagnitude = (simYocto, simZepto, simAtto, simFemto, simPico, simNano, siMmicro, simMilli, simCenti, simDeci, simOne,
+  OOM: Array[TLKSIMagnitude] of TLKSIMagnitude = (simYocto, simZepto, simAtto, simFemto, simPico, simNano, simMicro, simMilli, simCenti, simDeci, simOne,
                simDeca, simHecto, simKilo, simMega, simGiga, simTera, simPeta, simExa, simZetta, simYotta);
 var
   X, Y: TLKSIMagnitude;

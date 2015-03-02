@@ -54,7 +54,7 @@ uses
 type
   { Enum Types }
   TLKSIUnitNotation = (unShort, unLong);
-  TLKSIMagnitude = (simYocto, simZepto, simAtto, simFemto, simPico, simNano, siMmicro, simMilli, simCenti, simDeci,
+  TLKSIMagnitude = (simYocto, simZepto, simAtto, simFemto, simPico, simNano, simMicro, simMilli, simCenti, simDeci,
                      simOne,
                      simDeca, simHecto, simKilo, simMega, simGiga, simTera, simPeta, simExa, simZetta, simYotta);
   TLKSIBaseUnitType = (sbtLength, sbtMass, sbtTime, sbtCurrent, sbtTemperature, sbtSubstance, sbtLuminousIntensity);
