@@ -5,7 +5,7 @@ interface
 uses
   System.Classes, System.SyncObjs,
   LKSL.Common.Types,
-  LKSL.Threads.Base,
+  LKSL.Threads.Main,
   LKSL.Events.Base,
   Demo.EventThreadPooling.Events;
 

@@ -53,7 +53,7 @@ implementation
 {$R *.dfm}
 
 uses
-  LKSL.Math.SIUnits, LKSL.Threads.Base;
+  LKSL.Math.SIUnits, LKSL.Threads.Main;
 
 { TTestEventThread }
 

@@ -57,7 +57,7 @@ uses
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
-  LKSL.Threads.Base,
+  LKSL.Threads.Main,
   LKSL.Generics.Collections,
   LKSL.Streamables.Base;
 

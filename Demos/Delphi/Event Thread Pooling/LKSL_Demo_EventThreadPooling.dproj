@@ -105,7 +105,7 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streamables.Base.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Threads.Base.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

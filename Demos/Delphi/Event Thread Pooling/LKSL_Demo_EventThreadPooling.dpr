@@ -15,7 +15,7 @@ uses
   LKSL.Streamables.Base in '..\..\..\Source\Lib\Pascal\LKSL.Streamables.Base.pas',
   LKSL.Streams.System in '..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
   LKSL.Streams.Types in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
-  LKSL.Threads.Base in '..\..\..\Source\Lib\Pascal\LKSL.Threads.Base.pas',
+  LKSL.Threads.Main in '..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',
   LKSL.Events.Main in '..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas';
 
 {$R *.res}

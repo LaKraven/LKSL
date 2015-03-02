@@ -35,7 +35,7 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-unit LKSL.Threads.Base;
+unit LKSL.Threads.Main;
 
 {
   About this unit:
@@ -160,7 +160,7 @@ type
     ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     function CalculateExtraTime: LKFloat;
 
-    ///  <summary><c>You must NOT override "Execute" on descendants. See </c><see DisplayName="Tick" cref="LKSL.Threads.Base|TLKThread.Tick"/><c> instead!</c></summary>
+    ///  <summary><c>You must NOT override "Execute" on descendants. See </c><see DisplayName="Tick" cref="LKSL.Threads.Main|TLKThread.Tick"/><c> instead!</c></summary>
     procedure Execute; override; final;
 
     ///  <summary><c>Override to implement code you need your Thread to perform on EVERY cycle (regardless of any Tick Rate Limit).</c></summary>
@@ -189,29 +189,29 @@ type
     ///  <summary><c>Acquires the Thread's internal Critical Section.</c></summary>
     ///  <remarks>
     ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
-    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Base|TLKThread.Unlock"/><c> also.</c></para>
-    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Base|TLKThread.LockIfAvailable"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Main|TLKThread.Unlock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Main|TLKThread.LockIfAvailable"/><c> also.</c></para>
     ///  </remarks>
     procedure Lock; inline;
     ///  <summary><c>Acquires the Thread's internal Critical Section ONLY IF IT IS AVAILABLE.</c></summary>
     ///  <remarks>
     ///    <para><c>Returns </c>True<c> if the Lock has been successfully Acquired, </c>False<c> if it has NOT been Acquired.</c></para>
     ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
-    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Base|TLKThread.Lock"/><c> also.</c></para>
-    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Base|TLKThread.Unlock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Main|TLKThread.Lock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Main|TLKThread.Unlock"/><c> also.</c></para>
     ///  </remarks>
     function LockIfAvailable: Boolean; inline;
     ///  <summary><c>Releases the Thread's internal Critical Section.</c></summary>
     ///  <remarks>
     ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
-    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Base|TLKThread.Lock"/><c> also.</c></para>
-    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Base|TLKThread.LockIfAvailable"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Main|TLKThread.Lock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Main|TLKThread.LockIfAvailable"/><c> also.</c></para>
     ///  </remarks>
     procedure Unlock; inline;
 
-    ///  <summary><c>Places the Thread in an Inactive state, waiting for the signal to </c><see DisplayName="Wake" cref="LKSL.Threads.Base|TLKThread.Wake"/><c> the Thread.</c></summary>
+    ///  <summary><c>Places the Thread in an Inactive state, waiting for the signal to </c><see DisplayName="Wake" cref="LKSL.Threads.Main|TLKThread.Wake"/><c> the Thread.</c></summary>
     procedure Rest;
-    ///  <summary><c>Wakes the Thread if it is an Inactive state (see </c><see DisplayName="Rest" cref="LKSL.Threads.Base|TLKThread.Rest"/><c> for details)</c></summary>
+    ///  <summary><c>Wakes the Thread if it is an Inactive state (see </c><see DisplayName="Rest" cref="LKSL.Threads.Main|TLKThread.Rest"/><c> for details)</c></summary>
     procedure Wake;
 
     ///  <summary><c>Returns</c> True <c>if the Lock has been acquired (regardless of the acquiring Thread).</c></summary>

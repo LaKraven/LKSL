@@ -75,7 +75,7 @@ __history/
 /Demos/Delphi/Bin/AndroidManifest.template.xml
 /Demos/Delphi/DCU/Android/Debug/LKSL.Demos.HPTMainForm.o
 /Demos/Delphi/DCU/Android/Debug/LKSL.Demos.HPTTestThread.o
-/Demos/Delphi/DCU/Android/Debug/LKSL.Threads.Base.o
+/Demos/Delphi/DCU/Android/Debug/LKSL.Threads.Main.o
 /Demos/Delphi/DCU/Android/Debug/LKSL_DEMO_HPT.o
 
 *.png

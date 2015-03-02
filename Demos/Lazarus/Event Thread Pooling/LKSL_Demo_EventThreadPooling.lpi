@@ -212,7 +212,7 @@
         <UnitName Value="Demo.EventThreadPooling.MainForm"/>
       </Unit1>
       <Unit2>
-        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Threads.Base.pas"/>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
