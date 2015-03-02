@@ -35,7 +35,7 @@
     - Donations can be made via PayPal to PayPal [at] LaKraven (dot) Com
                                           ^  Garbled to prevent spam!  ^
 }
-unit LKSL.Streamables.Base;
+unit LKSL.Streamables.Main;
 
 interface
 

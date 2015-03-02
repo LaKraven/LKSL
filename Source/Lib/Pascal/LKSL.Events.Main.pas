@@ -58,8 +58,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Threads.Main,
-  LKSL.Generics.Collections,
-  LKSL.Streamables.Base;
+  LKSL.Generics.Collections;
 
   {$I LKSL_RTTI.inc}
 

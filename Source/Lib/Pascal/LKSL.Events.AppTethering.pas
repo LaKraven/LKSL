@@ -47,7 +47,7 @@ type
 implementation
 
 uses
-  LKSL.Streamables.Base;
+  LKSL.Streamables.Main;
 
 { TLKEventTethering }
 

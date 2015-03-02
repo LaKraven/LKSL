@@ -12,7 +12,7 @@ uses
   LKSL.Generics.Collections in '..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
   LKSL.Math.SIUnits in '..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
   LKSL.Math.Time in '..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas',
-  LKSL.Streamables.Base in '..\..\..\Source\Lib\Pascal\LKSL.Streamables.Base.pas',
+  LKSL.Streamables.Main in '..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
   LKSL.Streams.System in '..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
   LKSL.Streams.Types in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
   LKSL.Threads.Main in '..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',

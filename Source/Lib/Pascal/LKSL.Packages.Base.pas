@@ -55,7 +55,7 @@ interface
 uses
   System.Classes, System.SysUtils, System.SyncObjs,
   LKSL.Common.Types,
-  LKSL.Streamables.Base;
+  LKSL.Streamables.Main;
 
 type
   { Forward Declarations }

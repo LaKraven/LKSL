@@ -39,6 +39,8 @@ unit LKSL.Events.Base;
 
 interface
 
+{$MESSAGE WARN 'This unit is about to be replaced entirely by LKSL.Events.Main.pas'}
+
 {$I LKSL.inc}
 
 {$REGION 'Unit About'}
@@ -59,7 +61,7 @@ uses
   Generics.Collections, LKSL.Generics.Collections,
   LKSL.Common.Types,
   LKSL.Threads.Main,
-  LKSL.Streamables.Base;
+  LKSL.Streamables.Main;
 
   {$I LKSL_RTTI.inc}
 
