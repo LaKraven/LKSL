@@ -103,3 +103,4 @@ gdbserver
 /Demos/Lazarus/Event Thread Pooling/lib/i386-win32
 /Bin
 /DCU
+*.stat
