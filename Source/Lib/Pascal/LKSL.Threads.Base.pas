@@ -344,6 +344,10 @@ begin
         Tick(LDelta, LCurrentTime);
       end else
       begin
+        { TODO -oSJS -cThreads: Replace this with an algorythm which determines how many units
+                                of the lowest supported value (by the OS) can be wait-blocked
+                                before the thread re-activates to count the remaining discrete
+                                units. }
         if (not YieldAccumulatedTime) then
           {$IFDEF POSIX}usleep(1){$ELSE}Sleep(1){$ENDIF}
         else
@@ -360,7 +364,7 @@ begin
         end;
       end;
     end else
-      FWakeUp.WaitFor(1);
+      FWakeUp.WaitFor(1000); { TODO -oSJS -cThreads: Make the interval per-type and per-instance configureable!}
   end;
 end;
 
