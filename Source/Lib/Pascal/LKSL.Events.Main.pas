@@ -95,6 +95,8 @@ type
   TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
   ///  <summary><c>Describes whether or not an Event-related Type should automatically Register itself on Construction.</c></summary>
   TLKEventRegistrationMode = (ermAutomatic, ermManual);
+  ///  <summary><c>Used to define whether a </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Main|TLKEventListener"/><c> should accept Descendants of the defined </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></summary>
+  TLKEventTypeRestriction = (etrAllowDescendants, etrDefinedTypeOnly);
 
   { Exceptions }
   ELKEventEngineException = class(ELKException);
@@ -211,14 +213,26 @@ type
     FExpireAfter: LKFloat;
     ///  <summary><c>Dictates whether this Listener should be automatically Registered after Construction.</c></summary>
     FRegistrationMode: TLKEventRegistrationMode;
+    ///  <summary><c></c></summary>
+    FTypeRestriction: TLKEventTypeRestriction;
 
     function GetExpireAfter: LKFloat;
+    function GetTypeRestriction: TLKEventTypeRestriction;
 
     procedure SetExpireAfter(const AExpireAfter: LKFloat);
+    procedure SetTypeRestriction(const ATypeRestriction: TLKEventTypeRestriction);
   protected
     ///  <summary><c>Override if you want to make your Event Listener ignore by default any </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance dispatched further back in time than the given value.</c></summary>
     ///  <remarks><c>Default = 0.00</c></remarks>
     function GetDefaultExpireAfter: LKFloat; virtual;
+    ///  <summary><c>Override if you want to make your Event Listener ignore Descendants of the defined Event Type.</c></summary>
+    ///  <remarks><c>Default = </c>etrAllowDescendants</remarks>
+    function GetDefaultTypeRestriction: TLKEventTypeRestriction; virtual;
+    ///  <summary><c>Override if you wish to specify additional (custom) criteria to determine whether the given Event is relevant.</c></summary>
+    ///  <param name="AEvent"><c>The Event to be tested for relevance.</c></param>
+    ///  <returns><c>Default = </c>True</returns>
+    function GetEventRelevant(const AEvent: TLKEvent): Boolean; virtual;
+    ///  <summary><c>You MUST override "DoEvent" to define what action is to take place.</c></summary>
     procedure DoEvent(const AEvent: TLKEvent); virtual; abstract;
   public
     constructor Create(const AEventThread: TLKEventThread; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
@@ -228,10 +242,13 @@ type
     ///  <summary><c>You MUST override this and set the Result to the Top-Level </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type in which this Listener is interested.</c></summary>
     function GetEventClass: TLKEventClass; virtual; abstract;
 
+    ///  <summary><c>Registers the Listener with its parent </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> instance.</c></summary>
     procedure Register;
+    ///  <summary><c>Unregisters the Listener with its parent </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> instance.</c></summary>
     procedure Unregister;
 
     property ExpireAfter: LKFloat read GetExpireAfter write SetExpireAfter;
+    property TypeRestriction: TLKEventTypeRestriction read GetTypeRestriction write SetTypeRestriction;
   end;
 
   ///  <summary><c></c></summary>
@@ -575,6 +592,7 @@ constructor TLKEventListener.Create(const AEventThread: TLKEventThread; const AR
 begin
   inherited Create;
   FExpireAfter := GetDefaultExpireAfter;
+  FTypeRestriction := GetDefaultTypeRestriction;
   FEventThread := AEventThread;
   if FEventThread = nil then
     raise ELKEventListenerNoEventThreadDefined.Create('Event Listeners MUST declare a parent Event Thread.');
@@ -586,11 +604,31 @@ begin
   Result := 0;
 end;
 
+function TLKEventListener.GetDefaultTypeRestriction: TLKEventTypeRestriction;
+begin
+  Result := etrAllowDescendants;
+end;
+
+function TLKEventListener.GetEventRelevant(const AEvent: TLKEvent): Boolean;
+begin
+  Result := True;
+end;
+
 function TLKEventListener.GetExpireAfter: LKFloat;
 begin
   Lock;
   try
     Result := FExpireAfter;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEventListener.GetTypeRestriction: TLKEventTypeRestriction;
+begin
+  Lock;
+  try
+    Result := FTypeRestriction;
   finally
     Unlock;
   end;
@@ -606,6 +644,16 @@ begin
   Lock;
   try
     FExpireAfter := AExpireAfter;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEventListener.SetTypeRestriction(const ATypeRestriction: TLKEventTypeRestriction);
+begin
+  Lock;
+  try
+    FTypeRestriction := ATypeRestriction;
   finally
     Unlock;
   end;
@@ -862,7 +910,10 @@ begin
   try
     for I := 0 to FListeners.Count - 1 do
       if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // We don't want to bother actioning the Event if it has been Cancelled or has Expired
-        if (AEvent is FListeners[I].GetEventClass) then // We want to make sure that the Event is relevant to the Listener
+        if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (AEvent is FListeners[I].GetEventClass)) or
+            ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (AEvent.ClassType = FListeners[I].GetEventClass))) and
+           ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (AEvent.DispatchTime + AEvent.ExpiresAfter))) and
+           (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
           FListeners[I].DoEvent(AEvent);
   finally
     FListeners.Unlock;
