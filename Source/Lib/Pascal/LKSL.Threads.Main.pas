@@ -388,10 +388,6 @@ begin
         Tick(LDelta, LCurrentTime);
       end else
       begin
-        { TODO -oSJS -cThreads: Replace this with an algorythm which determines how many units
-                                of the lowest supported value (by the OS) can be wait-blocked
-                                before the thread re-activates to count the remaining discrete
-                                units. }
         if (FNextTickTime - GetReferenceTime >= 0.001) then
           {$IFDEF POSIX}usleep(1){$ELSE}Sleep(1){$ENDIF}
       end;
