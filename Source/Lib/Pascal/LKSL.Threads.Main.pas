@@ -100,6 +100,7 @@ type
     FTickRateExtraAverageTime: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FYieldAccumulatedTime: Boolean;
+    FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
     function GetLockAcquired: Boolean; inline;
@@ -116,6 +117,7 @@ type
     function GetTickRateExtraTicksAverage: LKFloat;
     function GetTickRateExtraTimeAverage: LKFloat;
     function GetTickRateLimit: LKFloat;
+    function GetWakeInterval: Cardinal;
     function GetYieldAccumulatedTime: Boolean; deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
@@ -126,6 +128,7 @@ type
     procedure SetTickRateExtraTicks(const AExtraTime: LKFloat); // Used internally!
     procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKFloat); // Used internally!
     procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
+    procedure SetWakeInterval(const AInterval: Cardinal);
     procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean); deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
   protected
     ///  <summary><c>Override if you wish your inherited Type to enforce a Tick Rate Limit by Default.</c></summary>
@@ -147,6 +150,9 @@ type
     ///    <para><c>Default = </c>0</para>
     ///  </remarks>
     function GetDefaultTickRateDesired: LKFloat; virtual;
+    ///  <summary><c>Override if you wish to specify a custom Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
+    ///  <remarks><c>Default = </c>10000 <c>(10 seconds)</c></remarks>
+    function GetDefaultWakeInterval: Cardinal; virtual;
     ///  <summary><c>Defines whether or not to yield all Accumulated (excess) Time in a Single Block.</c></summary>
     ///  <remarks>
     ///    <para><c>Default = </c>True</para>
@@ -247,6 +253,9 @@ type
     ///  <summary><c>The Absolute Tick Rate (in Ticks Per Second [T/s]) at which you wish the Thread to operate.</c></summary>
     ///  <remarks><c>There is no guarantee that the rate you specify here will be achievable. Slow hardware or an overloaded running environment may mean the thread operates below the specified rate.</c></remarks>
     property TickRateLimit: LKFloat read GetTickRateLimit write SetTickRateLimit;
+    ///  <summary><c>The Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
+    property WakeInterval: Cardinal read GetWakeInterval write SetWakeInterval;
+    ///  <summary>Deprecated</summary>
     property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
 
@@ -285,6 +294,7 @@ const
   THREAD_STATES: Array[TLKThreadState] of Boolean = (True, False);
 begin
   inherited Create(False);
+  FWakeInterval := GetDefaultWakeInterval;
   FLock := TLKCriticalSection.Create;
   FreeOnTerminate := False;
   FThreadState := GetInitialThreadState;
@@ -411,13 +421,18 @@ begin
         end;
       end;
     end else
-      FWakeUp.WaitFor(1000); { TODO -oSJS -cThreads: Make the interval per-type and per-instance configureable!}
+      FWakeUp.WaitFor(GetWakeInterval);
   end;
 end;
 
 function TLKThread.GetDefaultTickRateLimit: LKFloat;
 begin
   Result := 0.00;
+end;
+
+function TLKThread.GetDefaultWakeInterval: Cardinal;
+begin
+  Result := 10000;
 end;
 
 function TLKThread.GetDefaultYieldAccumulatedTime: Boolean;
@@ -555,6 +570,16 @@ begin
   Lock;
   try
     Result := FTickRateLimit;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKThread.GetWakeInterval: Cardinal;
+begin
+  Lock;
+  try
+    Result := FWakeInterval;
   finally
     Unlock;
   end;
@@ -699,6 +724,16 @@ begin
     // so we match the two.
     if (FTickRateLimit > 0) and (FTickRateLimit < FTickRateDesired) then
       FTickRateDesired := FTickRateLimit;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKThread.SetWakeInterval(const AInterval: Cardinal);
+begin
+  Lock;
+  try
+    FWakeInterval := AInterval;
   finally
     Unlock;
   end;

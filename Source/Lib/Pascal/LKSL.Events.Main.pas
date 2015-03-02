@@ -514,7 +514,7 @@ end;
 
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  if FDispatchMethod <> edmNotDispatched then
+  if FDispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
     FLifetimeControl := ALifetimeControl;
@@ -563,7 +563,7 @@ end;
 
 procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  if FDispatchMethod <> edmNotDispatched then
+  if FDispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
     FLifetimeControl := ALifetimeControl;
