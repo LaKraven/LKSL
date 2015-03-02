@@ -116,7 +116,7 @@ type
     function GetTickRateExtraTicksAverage: LKFloat;
     function GetTickRateExtraTimeAverage: LKFloat;
     function GetTickRateLimit: LKFloat;
-    function GetYieldAccumulatedTime: Boolean;
+    function GetYieldAccumulatedTime: Boolean; deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
     procedure SetTickRate(const ATickRate: LKFloat); // Used internally!
@@ -126,79 +126,126 @@ type
     procedure SetTickRateExtraTicks(const AExtraTime: LKFloat); // Used internally!
     procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKFloat); // Used internally!
     procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
-    procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean);
+    procedure SetYieldAccumulatedTime(const AYieldAccumulatedTime: Boolean); deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
   protected
-    // Override "GetDefaultTickRateLimit" if you want to set a default limit (the default is 0 [no limit])
+    ///  <summary><c>Override if you wish your inherited Type to enforce a Tick Rate Limit by Default.</c></summary>
+    ///  <remarks>
+    ///    <para>0 <c>= No Tick Rate Limit</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
     function GetDefaultTickRateLimit: LKFloat; virtual;
     // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2.00 seconds)
+    ///  <summary><c>Override if you wish to change the default Tick Rate Averaging Time.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Value is in Seconds (1.00 = 1 second)</c></para>
+    ///    <para><c>Default = </c>2</para>
+    ///  </remarks>
     function GetDefaultTickRateAverageOver: LKFloat; virtual;
-    // Override "GetDefaultTickRateDesired" if you want to compute EXTRA Time between Ticks.
-    // This Extra Time can be used during a Tick to selectively perform additional processing during a Tick.
-    // One example in which this is useful is for graphics rendering, where Exta Time can be used for
-    // post-processing computations.
-    // Default = 0.00, which disables Extra Time Calculation
+    ///  <summary><c>Override if you wish your inherited Type to state a desired Tick Rate by Default.</c></summary>
+    ///  <remarks>
+    ///    <para>0 <c>= No Desired Rate</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
     function GetDefaultTickRateDesired: LKFloat; virtual;
-    // Override "GetDefaultYieldAccumulatedTime" if you DON'T want accumulated (excess) time to be yielded in a single block (Default = True)
-    // False = Yield time in small chunks
-    // True = Yield all accumulated time in a single block
-    function GetDefaultYieldAccumulatedTime: Boolean; virtual;
-    // Override "GetInitialThreadState" if you want the Thread to be Paused on construction (the default is Running)
+    ///  <summary><c>Defines whether or not to yield all Accumulated (excess) Time in a Single Block.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Default = </c>True</para>
+    ///    <para>Deprecated</para>
+    ///  </remarks>
+    function GetDefaultYieldAccumulatedTime: Boolean; virtual; deprecated 'The new approach to Rate Limiting will eliminate the need for this setting.';
+    ///  <summary><c>Defines whether the Thread should be Running or Paused upon Construction.</c></summary>
+    ///  <remarks><c>Default = </c>tsRunning</remarks>
     function GetInitialThreadState: TLKThreadState; virtual;
-
+    ///  <summary><c>Calculates how much "Extra Time" is available for the current Tick.</c></summary>
+    ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     function CalculateExtraTime: LKFloat;
 
-    // YOU MUST NOT override the TThread.Execute method in your descendants of TLKThread!!!!!!!!
+    ///  <summary><c>You must NOT override "Execute" on descendants. See </c><see DisplayName="Tick" cref="LKSL.Threads.Base|TLKThread.Tick"/><c> instead!</c></summary>
     procedure Execute; override; final;
 
-    // Override the "PreTick" procedure if your Thread needs to do something on EVERY cycle
-    // NOTE: THIS METHOD IGNORES THE TICK RATE LIMIT!
-    // "PreTick" is implemented by the Event Handler system (because the Event Queue needs to be processed regardless of the Tick Rate Limit)
+    ///  <summary><c>Override to implement code you need your Thread to perform on EVERY cycle (regardless of any Tick Rate Limit).</c></summary>
+    ///  <param name="ADelta"><c>The time differential ("Delta") between the current Tick and the previous Tick.</c></param>
+    ///  <param name="AStartTime"><c>The Reference Time at which the current Tick began.</c></param>
+    ///  <remarks>
+    ///    <para><c>Used extensively by the Event Engine.</c></para>
+    ///    <para><c>Ignores any Tick Rate Limits.</c></para>
+    ///  </remarks>
     procedure PreTick(const ADelta, AStartTime: LKFloat); virtual;
 
-    // Override the "Tick" procedure to implement your Thread's operational code.
-    // ADelta = the time differential ("Delta") between the current Tick and the previous Tick
-    // AStartTime = the Reference Time at which the current Tick began.
-    // DON'T FORGET "INHERITED;" FIRST!!!!
+    ///  <summary><c>Override to implement your Thread's operational code.</c></summary>
+    ///  <param name="ADelta"><c>The time differential ("Delta") between the current Tick and the previous Tick.</c></param>
+    ///  <param name="AStartTime"><c>The Reference Time at which the current Tick began.</c></param>
     procedure Tick(const ADelta, AStartTime: LKFloat); virtual; abstract;
   public
-    // Override "Create" to initialize any custom Members and Starting Values (DON'T FORGET "INHERITED;" FIRST!)
     constructor Create; virtual;
-    // Override "Destroy" to finalize any custom Members (DON'T FORGET "INHERITED;" LAST!)
     destructor Destroy; override;
 
-    // "Bump" forces the "Next Tick Time" to be "bumped up" to RIGHT NOW, forcing a rate-limited Thread waiting
-    // between Ticks to perform a Tick immediately.
-    // NOTE: This method ONLY works if "YieldAccumulatedTime" is set to FALSE!
+    ///  <summary><c>Forces the "Next Tick Time" to be bumped to RIGHT NOW. This will trigger the next Tick immediately regardless of any Rate Limit setting.</c></summary>
     procedure Bump;
 
-    // "Kill" Terminates the Thread, waits for the thread to be Terminated, then Frees it.
-    // It's basically just a way of performing three actions in a single call (sugar-coating, if you like)
+    ///  <summary><c>Called instead of "Free" to property Terminate and Free the Thread.</c></summary>
     procedure Kill; virtual;
 
-    // "Lock" locks the Thread's global "Critical Section" using a "Spinlock"
-    // (Public just in case you need to call it externally for some reason)
+    ///  <summary><c>Acquires the Thread's internal Critical Section.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
+    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Base|TLKThread.Unlock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Base|TLKThread.LockIfAvailable"/><c> also.</c></para>
+    ///  </remarks>
     procedure Lock; inline;
+    ///  <summary><c>Acquires the Thread's internal Critical Section ONLY IF IT IS AVAILABLE.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Returns </c>True<c> if the Lock has been successfully Acquired, </c>False<c> if it has NOT been Acquired.</c></para>
+    ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
+    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Base|TLKThread.Lock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Base|TLKThread.Unlock"/><c> also.</c></para>
+    ///  </remarks>
     function LockIfAvailable: Boolean; inline;
-    // "Unlock" unlocks the Thread's global "Critical Section"
-    // (Public just in case you need to call it externally for some reason)
+    ///  <summary><c>Releases the Thread's internal Critical Section.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
+    ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Base|TLKThread.Lock"/><c> also.</c></para>
+    ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Base|TLKThread.LockIfAvailable"/><c> also.</c></para>
+    ///  </remarks>
     procedure Unlock; inline;
 
+    ///  <summary><c>Places the Thread in an Inactive state, waiting for the signal to </c><see DisplayName="Wake" cref="LKSL.Threads.Base|TLKThread.Wake"/><c> the Thread.</c></summary>
     procedure Rest;
+    ///  <summary><c>Wakes the Thread if it is an Inactive state (see </c><see DisplayName="Rest" cref="LKSL.Threads.Base|TLKThread.Rest"/><c> for details)</c></summary>
     procedure Wake;
 
+    ///  <summary><c>Returns</c> True <c>if the Lock has been acquired (regardless of the acquiring Thread).</c></summary>
     property LockAcquired: Boolean read GetLockAcquired;
+    ///  <summary><c>Returns</c> True <c>if the Lock is available.</c></summary>
     property LockAvailable: Boolean read GetLockAvailable;
 
+    ///  <summary><c>The Absolute Reference Time at which the next Tick will occur.</c></summary>
     property NextTickTime: LKFloat read GetNextTickTime;
+    ///  <summary><c>The current State of the Thread (running or paused).</c></summary>
     property ThreadState: TLKThreadState read GetThreadState write SetThreadState;
+    ///  <summary><c>The Absolute Rate (in Ticks Per Second [T/s]) at which the Thread is executing its Tick method.</c></summary>
     property TickRate: LKFloat read GetTickRate;
+    ///  <summary><c>The Running Average Rate (in Ticks Per Second [T/s]) at which the Thread is executing its Tick method.</c></summary>
     property TickRateAverage: LKFloat read GetTickRateAverage;
+    ///  <summary><c>The Time (in Seconds) over which to calculate the Running Average.</c></summary>
     property TickRateAverageOver: LKFloat read GetTickRateAverageOver write SetTickRateAverageOver;
+    ///  <summary><c>The number of Ticks Per Second [T/s] you would LIKE the Thread to operate at.</c></summary>
+    ///  <remarks><c>This value is used to calculate how much "Extra Time" (if any) is available on the current Tick.</c></remarks>
     property TickRateDesired: LKFloat read GetTickRateDesired write SetTickRateDesired;
+    ///  <summary><c>The number of Ticks in excess of the Desired Tick Rate the Thread has available.</c></summary>
+    ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     property TickRateExtraTicks: LKFloat read GetTickRateExtraTicks;
+    ///  <summary><c>The amount of Extra Time (in Seconds) is available for the current Tick.</c></summary>
+    ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     property TickRateExtraTime: LKFloat read GetTickRateExtraTime;
+    ///  <summary><c>The Average number of Extra Ticks in excess of the Desired Tick Rate the Thread has available.</c></summary>
+    ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     property TickRateExtraTicksAverage: LKFloat read GetTickRateExtraTicksAverage;
+    ///  <summary><c>The Average amount of Extra Time (in Seconds) is available for the current Tick.</c></summary>
+    ///  <remarks><c>Could be a negative number of the Thread is performing BELOW the desired rate!</c></remarks>
     property TickRateExtraTimeAverage: LKFloat read GetTickRateExtraTimeAverage;
+    ///  <summary><c>The Absolute Tick Rate (in Ticks Per Second [T/s]) at which you wish the Thread to operate.</c></summary>
+    ///  <remarks><c>There is no guarantee that the rate you specify here will be achievable. Slow hardware or an overloaded running environment may mean the thread operates below the specified rate.</c></remarks>
     property TickRateLimit: LKFloat read GetTickRateLimit write SetTickRateLimit;
     property YieldAccumulatedTime: Boolean read GetYieldAccumulatedTime write SetYieldAccumulatedTime;
   end;
