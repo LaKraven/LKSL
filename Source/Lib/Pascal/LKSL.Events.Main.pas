@@ -514,11 +514,14 @@ end;
 
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  FDispatchTime := GetReferenceTime;
-  FLifetimeControl := ALifetimeControl;
-  FState := esDispatched;
-  FDispatchMethod := edmQueue;
-  EventEngine.QueueEvent(Self);
+  if FDispatchMethod <> edmNotDispatched then
+  begin
+    FDispatchTime := GetReferenceTime;
+    FLifetimeControl := ALifetimeControl;
+    FState := esDispatched;
+    FDispatchMethod := edmQueue;
+    EventEngine.QueueEvent(Self);
+  end;
 end;
 
 procedure TLKEvent.Ref;
@@ -560,11 +563,14 @@ end;
 
 procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  FDispatchTime := GetReferenceTime;
-  FLifetimeControl := ALifetimeControl;
-  FState := esDispatched;
-  FDispatchMethod := edmStack;
-  EventEngine.StackEvent(Self);
+  if FDispatchMethod <> edmNotDispatched then
+  begin
+    FDispatchTime := GetReferenceTime;
+    FLifetimeControl := ALifetimeControl;
+    FState := esDispatched;
+    FDispatchMethod := edmStack;
+    EventEngine.StackEvent(Self);
+  end;
 end;
 
 procedure TLKEvent.Unref;

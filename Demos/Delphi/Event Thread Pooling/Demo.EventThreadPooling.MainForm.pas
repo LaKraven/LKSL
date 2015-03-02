@@ -65,7 +65,6 @@ begin
   SYNCHRONIZE(procedure begin
                 Form1.memLog.Lines.Add(Format('%s Microseconds - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMicro)), AEvent.Foo]));
               end);
-//  AEvent.Queue;
 end;
 
 procedure TTestEventThread.FinalizeListeners;
