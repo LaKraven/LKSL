@@ -99,7 +99,7 @@ type
     FTickRateExtraAverage: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateExtraAverageTime: LKFloat; // Same as "FTickRateExtraTime" but Averaged over "FTickRateAverageOver"
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
-    FThrottleInterval: Integer; // The current Throttling Interval (in Milliseconds)
+    FThrottleInterval: Cardinal; // The current Throttling Interval (in Milliseconds)
     FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
@@ -117,7 +117,7 @@ type
     function GetTickRateExtraTicksAverage: LKFloat;
     function GetTickRateExtraTimeAverage: LKFloat;
     function GetTickRateLimit: LKFloat;
-    function GetThrottleInterval: Integer;
+    function GetThrottleInterval: Cardinal;
     function GetWakeInterval: Cardinal;
 
     procedure SetThreadState(const AThreadState: TLKThreadState);
@@ -128,7 +128,7 @@ type
     procedure SetTickRateExtraTicks(const AExtraTime: LKFloat); // Used internally!
     procedure SetTickRateExtraTicksAverage(const AExtraTimeAverage: LKFloat); // Used internally!
     procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
-    procedure SetThrottleInterval(const AThrottleInterval: Integer);
+    procedure SetThrottleInterval(const AThrottleInterval: Cardinal);
     procedure SetWakeInterval(const AInterval: Cardinal);
   protected
     ///  <summary><c>Override if you wish your inherited Type to enforce a Tick Rate Limit by Default.</c></summary>
@@ -258,7 +258,7 @@ type
     ///    <para><c>Value is in </c>MILLISECONDS<c> (1 = 0.001 seconds)</c></para>
     ///    <para><c>Minimum value = </c>1</para>
     ///  </remarks>
-    property ThrottleInterval: Integer read GetThrottleInterval write SetThrottleInterval;
+    property ThrottleInterval: Cardinal read GetThrottleInterval write SetThrottleInterval;
     ///  <summary><c>The Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
     property WakeInterval: Cardinal read GetWakeInterval write SetWakeInterval;
   end;
@@ -322,7 +322,7 @@ var
   LTickRate, LTickRateLimit, LTickRateDesired, LTickRateAverage: LKFloat;
   LLastAverageCheckpoint, LNextAverageCheckpoint: LKFloat;
   LAverageTicks: Integer;
-  LThrottleInterval: Integer;
+  LThrottleInterval: Cardinal;
   LWakeInterval: Cardinal;
 begin
   LCurrentTime := GetReferenceTime;
@@ -336,6 +336,7 @@ begin
   LNextAverageCheckpoint := 0;
   LTickRate := 0;
   LAverageTicks := 0;
+  LWakeInterval := GetWakeInterval;
   while (not Terminated) do
   begin
     if ThreadState = tsRunning then
@@ -476,7 +477,7 @@ begin
   end;
 end;
 
-function TLKThread.GetThrottleInterval: Integer;
+function TLKThread.GetThrottleInterval: Cardinal;
 begin
   Lock;
   try
@@ -634,7 +635,7 @@ begin
   end;
 end;
 
-procedure TLKThread.SetThrottleInterval(const AThrottleInterval: Integer);
+procedure TLKThread.SetThrottleInterval(const AThrottleInterval: Cardinal);
 begin
   Lock;
   try
