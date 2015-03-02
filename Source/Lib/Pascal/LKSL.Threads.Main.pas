@@ -323,6 +323,7 @@ var
   LLastAverageCheckpoint, LNextAverageCheckpoint: LKFloat;
   LAverageTicks: Integer;
   LThrottleInterval: Integer;
+  LWakeInterval: Cardinal;
 begin
   LCurrentTime := GetReferenceTime;
   Lock;
@@ -345,6 +346,7 @@ begin
         LTickRateLimit := FTickRateLimit;
         LTickRateDesired := FTickRateDesired;
         LThrottleInterval := FThrottleInterval;
+        LWakeInterval := FWakeInterval;
       finally
         Unlock;
       end;
@@ -410,7 +412,7 @@ begin
           TThread.Sleep(LThrottleInterval);
       end;
     end else
-      FWakeUp.WaitFor(GetWakeInterval);
+      FWakeUp.WaitFor(LWakeInterval);
   end;
 end;
 
