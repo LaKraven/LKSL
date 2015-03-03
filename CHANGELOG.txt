@@ -387,7 +387,7 @@ LKSL.Streams.Types.pas
 	6th September 2014:
 		- Prepared for Release
 
-LKSL.Threads.Base.pas
+LKSL.Threads.Main.pas
 ---------------------
 	27th December 2014:
 		- Time units changed to use LKFloat instead of Double
