@@ -97,7 +97,6 @@
         <DCCReference Include="Demo.EventThreadPooling.EventThreads.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Base.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>

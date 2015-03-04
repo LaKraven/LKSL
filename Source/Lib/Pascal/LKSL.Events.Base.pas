@@ -39,7 +39,7 @@ unit LKSL.Events.Base;
 
 interface
 
-{$MESSAGE WARN 'This unit is about to be replaced entirely by LKSL.Events.Main.pas'}
+{$MESSAGE FATAL 'This unit is supreceded by LKSL.Events.Main.pas and is about to be removed from the repository entirely!'}
 
 {$I LKSL.inc}
 

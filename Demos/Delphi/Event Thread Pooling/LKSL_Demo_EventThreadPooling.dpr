@@ -7,7 +7,6 @@ uses
   Demo.EventThreadPooling.EventThreads in 'Demo.EventThreadPooling.EventThreads.pas',
   LKSL.Common.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas',
   LKSL.Common.Types in '..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas',
-  LKSL.Events.Base in '..\..\..\Source\Lib\Pascal\LKSL.Events.Base.pas',
   LKSL.Events.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
   LKSL.Generics.Collections in '..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
   LKSL.Math.SIUnits in '..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
