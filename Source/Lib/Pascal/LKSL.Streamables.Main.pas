@@ -114,9 +114,6 @@ type
     FBlockSize: Int64;
     FVersion: Double;
   protected
-    class constructor Create;
-    class destructor Destroy;
-    class function GetAutoRegisterClass: Boolean;
     class procedure OnRegistration; virtual;
     class procedure OnUnregistration; virtual;
     // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
@@ -246,7 +243,7 @@ type
 var
   /// <summary><c>Global Streamable Types Manager</c></summary>
   /// <description><c>For Registering Streamable Types, and retreiving the correct Streamable Type from a given Stream or GUID.</c></description>
-  Streamables: TLKStreamables;
+  Streamables: TLKStreamables = nil;
 
 implementation
 
@@ -279,12 +276,6 @@ begin
   LoadFromStream(AStream);
 end;
 
-class constructor TLKStreamable.Create;
-begin
-  if GetAutoRegisterClass then
-    Register;
-end;
-
 constructor TLKStreamable.CreateFromFile(const AFileName: String);
 begin
   inherited Create;
@@ -301,12 +292,6 @@ class procedure TLKStreamable.DeleteFromStream(const AStream: TStream; const APo
 begin
   AStream.Position := APosition;
   DeleteFromStream(AStream);
-end;
-
-class destructor TLKStreamable.Destroy;
-begin
-  if GetAutoRegisterClass then
-    Unregister;
 end;
 
 class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
@@ -326,11 +311,6 @@ begin
     StreamClearSpace(AStream, LBlockSize);
   end else
     raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
-end;
-
-class function TLKStreamable.GetAutoRegisterClass: Boolean;
-begin
-  Result := False;
 end;
 
 class function TLKStreamable.GetTypeVersion: Double;
@@ -393,6 +373,8 @@ end;
 
 class procedure TLKStreamable.Register;
 begin
+  if Streamables = nil then
+    Streamables := TLKStreamables.Create;
   Streamables.Register(Self);
 end;
 

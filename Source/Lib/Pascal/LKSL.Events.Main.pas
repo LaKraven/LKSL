@@ -58,7 +58,8 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Threads.Main,
-  LKSL.Generics.Collections;
+  LKSL.Generics.Collections,
+  LKSL.Streamables.Main;
 
   {$I LKSL_RTTI.inc}
 
@@ -66,6 +67,7 @@ type
   { Forward Declarations }
   TLKEvent = class;
   TLKEventListener = class;
+  TLKEventStreamable = class;
   TLKEventContainer = class;
   TLKEventPreProcessor = class;
   TLKEventThread = class;
@@ -251,7 +253,24 @@ type
     property TypeRestriction: TLKEventTypeRestriction read GetTypeRestriction write SetTypeRestriction;
   end;
 
-  ///  <summary><c></c></summary>
+  ///  <summary><c>Abstract Base Class for all Event Streamable Descriptors</c></summary>
+  ///  <comments>
+  ///    <c>Provides Streamable Handlers for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Override </c><see DisplayName="TLKEventStreamable.GetEventType" cref="LKSL.Events.Main|TLKEventStreamable.GetEventType"/><c> to provide the </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type Reference for which this Streamable Descriptor applies.</c></para>
+  ///    <para><c>Don't forget to override </c><see DisplayName="TLKStreamable.GetTypeGUID" cref="LKSL.Streamables.Main|TLKStreamable.GetTypeGUID"/><c> from </c><see DisplayName="TLKStreamable" cref="LKSL.Streamables.Main|TLKStreamable"/><c> to provide a unique GUID.</c></para>
+  ///    <para><c>Don't forget to Register your descendants with the </c><see DisplayName="Streamables" cref="LKSL.Streamables.Main|Streamables"/><c> Manager!</c></para>
+  ///  </remarks>
+  TLKEventStreamable = class(TLKStreamable)
+  private
+    FEvent: TLKEvent;
+  protected
+    class procedure OnRegistration; override;
+    class procedure OnUnregistration; override;
+  end;
+
+  ///  <summary><c>Generic Layer for </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Main|TLKEventListener"/><c> enabling one-line implementation of a Listener for the given </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></summary>
   TLKEventListener<T: TLKEvent> = class abstract(TLKEventListener)
   private type
     TEventCallbackUnbound = procedure(const AEvent: T);
@@ -404,8 +423,8 @@ type
   end;
 
 var
-  EventEngine: TLKEventEngine;
-  ThreadPreProcessor: TLKEventThreadPreProcessor;
+  EventEngine: TLKEventEngine = nil;
+  ThreadPreProcessor: TLKEventThreadPreProcessor = nil;
 
 { TLKEvent }
 
@@ -1083,9 +1102,25 @@ begin
   end;
 end;
 
+{ TLKEventStreamable }
+
+class procedure TLKEventStreamable.OnRegistration;
+begin
+  inherited;
+
+end;
+
+class procedure TLKEventStreamable.OnUnregistration;
+begin
+  inherited;
+
+end;
+
 initialization
-  EventEngine := TLKEventEngine.Create; // Create this FIRST
-  ThreadPreProcessor := TLKEventThreadPreProcessor.Create;
+  if EventEngine = nil then
+    EventEngine := TLKEventEngine.Create; // Create this FIRST
+  if ThreadPreProcessor = nil then
+    ThreadPreProcessor := TLKEventThreadPreProcessor.Create;
 finalization
   ThreadPreProcessor.Kill;
   EventEngine.Free; // Free this LAST
