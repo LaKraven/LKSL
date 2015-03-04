@@ -6,7 +6,7 @@ uses
   System.Classes, System.SyncObjs,
   LKSL.Common.Types,
   LKSL.Threads.Main,
-  LKSL.Events.Base,
+  LKSL.Events.Main,
   Demo.EventThreadPooling.Events;
 
 type
@@ -15,8 +15,8 @@ type
     FEventListener: TLKDemoEventListener;
     procedure DoEvent(const AEvent: TLKDemoEvent);
   protected
-    procedure RegisterListeners; override;
-    procedure UnregisterListeners; override;
+    procedure InitializeListeners; override;
+    procedure FinalizeListeners; override;
   end;
 
 var
@@ -31,12 +31,12 @@ begin
   TLKDemoResponseEvent.Create.Queue;
 end;
 
-procedure TLKDemoEventThread.RegisterListeners;
+procedure TLKDemoEventThread.InitializeListeners;
 begin
-  FEventListener := TLKDemoEventListener.Create(Self, DoEvent, easAuto);
+  FEventListener := TLKDemoEventListener.Create(Self, DoEvent);
 end;
 
-procedure TLKDemoEventThread.UnregisterListeners;
+procedure TLKDemoEventThread.FinalizeListeners;
 begin
   FEventListener.Free;
 end;

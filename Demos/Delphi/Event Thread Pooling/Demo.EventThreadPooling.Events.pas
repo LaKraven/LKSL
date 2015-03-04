@@ -5,7 +5,7 @@ interface
 uses
   System.Classes,
   LKSL.Common.Types,
-  LKSL.Events.Base;
+  LKSL.Events.Main;
 
 type
   { Forward Declarations }

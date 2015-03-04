@@ -55,7 +55,7 @@ uses
     Classes, SysUtils,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
-  LKSL.Events.Base;
+  LKSL.Events.Main;
 
   {$I LKSL_RTTI.inc}
 
@@ -100,7 +100,7 @@ end;
 
 procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
 const
-  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1);
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1, 2);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(TLKEventDispatchMethod));
     AStream.Write(DISPATCH_METHODS[AValue], SizeOf(Integer));
@@ -115,7 +115,7 @@ end;
 
 function StreamReadTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64): TLKEventDispatchMethod;
 const
-  DISPATCH_METHODS: Array[0..1] of TLKEventDispatchMethod = (edQueue, edStack);
+  DISPATCH_METHODS: Array[0..2] of TLKEventDispatchMethod = (edmNotDispatched, edmQueue, edmStack);
 var
   LDispatchMethod: Integer;
 begin
@@ -133,7 +133,7 @@ end;
 
 procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64);
 const
-  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1);
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Integer = (0, 1, 2);
 begin
   AStream.Position := APosition;
   AStream.Write(DISPATCH_METHODS[AValue], SizeOf(Integer));

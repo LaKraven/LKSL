@@ -114,6 +114,11 @@ type
     FBlockSize: Int64;
     FVersion: Double;
   protected
+    class constructor Create;
+    class destructor Destroy;
+    class function GetAutoRegisterClass: Boolean;
+    class procedure OnRegistration; virtual;
+    class procedure OnUnregistration; virtual;
     // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
@@ -124,8 +129,6 @@ type
     // "WriteToStream" writes an instance of your Streamable Type to the END of the given Stream.
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
     procedure WriteToStream(const AStream: TStream); virtual; abstract;
-    class procedure OnRegistration; virtual;
-    class procedure OnUnregistration; virtual;
   public
     // Creates a BLANK instance of your Streamable
     constructor Create; override;
@@ -276,6 +279,12 @@ begin
   LoadFromStream(AStream);
 end;
 
+class constructor TLKStreamable.Create;
+begin
+  if GetAutoRegisterClass then
+    Register;
+end;
+
 constructor TLKStreamable.CreateFromFile(const AFileName: String);
 begin
   inherited Create;
@@ -292,6 +301,12 @@ class procedure TLKStreamable.DeleteFromStream(const AStream: TStream; const APo
 begin
   AStream.Position := APosition;
   DeleteFromStream(AStream);
+end;
+
+class destructor TLKStreamable.Destroy;
+begin
+  if GetAutoRegisterClass then
+    Unregister;
 end;
 
 class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
@@ -311,6 +326,11 @@ begin
     StreamClearSpace(AStream, LBlockSize);
   end else
     raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
+end;
+
+class function TLKStreamable.GetAutoRegisterClass: Boolean;
+begin
+  Result := False;
 end;
 
 class function TLKStreamable.GetTypeVersion: Double;
@@ -340,14 +360,14 @@ class procedure TLKStreamable.OnRegistration;
 begin
   // Do Nothing!
   // Your descendant Streamable Type may need to do something when it's being Registered
-  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Base.pas
+  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Main.pas
 end;
 
 class procedure TLKStreamable.OnUnregistration;
 begin
   // Do Nothing!
   // Your descendant Streamable Type may need to do something when it's being Unregistered
-  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Base.pas
+  // This is particularly true of "TLKEventStreamable" in LKSL.Events.Main.pas
 end;
 
 procedure TLKStreamable.LoadFromStream(const AStream: TStream);
