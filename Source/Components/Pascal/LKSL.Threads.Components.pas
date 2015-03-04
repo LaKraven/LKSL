@@ -50,7 +50,7 @@ interface
 
 uses
   System.Classes, System.SysUtils,
-  LKSL.Threads.Base;
+  LKSL.Threads.Main;
 
 type
   { Forward Declarations }
