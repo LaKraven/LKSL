@@ -104,6 +104,11 @@ type
 
   { Exceptions }
   ELKEventEngineException = class(ELKException);
+    ELKEventPreProcessorException = class(ELKEventEngineException);
+      ELKEventPreProcessorMapperException = class(ELKEventPreProcessorException);
+        ELKEventPreProcessorMapperGUIDExists = class(ELKEventPreProcessorMapperException);
+        ELKEVentPreProcessorMapperGUIDNotExist = class(ELKEventPreProcessorMapperException);
+        ELKEventPreProcessorMapperValueExists = class(ELKEventPreProcessorMapperException);
     ELKEventListenerException = class(ELKEventEngineException);
       ELKEventListenerNoEventThreadDefined = class(ELKEventListenerException);
 
@@ -393,6 +398,8 @@ type
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
     class function GetPreProcessorClass: TLKEventPreProcessorClass;
+    ///  <summary><c>You MUST override this method and provide a UNIQUE GUID for your PreProcessor Class</c></summary>
+    class function GetTypeGUID: TGUID; virtual; abstract;
     constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; virtual;
     destructor Destroy; override;
 
@@ -403,10 +410,15 @@ type
   end;
 
   ///  <summary><c>A Specialized version of TLKEventPreProcessor designed to handle Events as Streams.</c></summary>
+  ///  <remarks>
+  ///    <para><c>TLKEventRecorder inherits from this class!</c></para>
+  ///  </remarks>
   TLKEventStreamProcessor = class abstract(TLKEventPreProcessor)
   protected
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override; final;
     procedure ProcessEventStream(const AEventStream: TLKEventStreamable; const ADelta, AStartTime: LKFloat); virtual; abstract;
+  public
+    class function GetTypeGUID: TGUID; override;
   end;
 
   ///  <summary><c>A special kind of Thread, designed to operate using Events.</c></summary>
@@ -449,7 +461,11 @@ uses
 type
   { Forward Declarations }
   TLKEventThreadPreProcessor = class;
+  TLKEventPreProcessorTypes = class;
   TLKEventEngine = class;
+
+  { Generic Collections }
+  TLKEventThreadPreProcessorGUIDMap = class(TLKDictionary<TGUID, TLKEventPreProcessorClass>);
 
   ///  <summary><c>Specific Event PreProcessor for </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> descendants.</c></summary>
   TLKEventThreadPreProcessor = class(TLKEventPreProcessor)
@@ -458,6 +474,7 @@ type
   protected
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
   public
+    class function GetTypeGUID: TGUID; override;
     constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); override;
     destructor Destroy; override;
 
@@ -465,10 +482,25 @@ type
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
   end;
 
+  ///  <summary><c>Maps a TGUID to a </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> Type.</c></summary>
+  TLKEventPreProcessorTypes = class(TLKPersistent)
+  private
+    FPreProcessorMap: TLKEventThreadPreProcessorGUIDMap;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    function GetPreProcessorClassFromGUID(const AGUID: TGUID): TLKEventPreProcessorClass;
+
+    procedure RegisterPreProcessorClass(const AGUID: TGUID; const APreProcessorClass: TLKEventPreProcessorClass; AExceptIfExists: Boolean = True);
+    procedure UnregisterPreProcessorClass(const AGUID: TGUID; AExceptIfNotExists: Boolean = True);
+  end;
+
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
   TLKEventEngine = class(TLKPersistent)
   private
     FPreProcessors: TLKEventPreProcessorList;
+    FPreProcessorClassMap: TLKEventPreProcessorTypes;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -480,6 +512,8 @@ type
 
     procedure QueueEvent(const AEvent: TLKEvent);
     procedure StackEvent(const AEvent: TLKEvent);
+
+    property ProcessorClassMap: TLKEventPreProcessorTypes read FPreProcessorClassMap;
   end;
 
 var
@@ -1038,11 +1072,13 @@ end;
 constructor TLKEventPreProcessor.Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic);
 begin
   inherited Create;
+  EventEngine.ProcessorClassMap.RegisterPreProcessorClass(GetTypeGUID, GetPreProcessorClass);
   FRegistrationMode := ARegistrationMode;
 end;
 
 destructor TLKEventPreProcessor.Destroy;
 begin
+  EventEngine.ProcessorClassMap.UnregisterPreProcessorClass(GetTypeGUID);
   Unregister;
   inherited;
 end;
@@ -1068,6 +1104,13 @@ begin
 end;
 
 { TLKEventStreamProcessor }
+
+class function TLKEventStreamProcessor.GetTypeGUID: TGUID;
+const
+  MY_GUID: TGUID = '{DBB860AA-F145-4D35-B856-9EDD7379004B}';
+begin
+  Result := MY_GUID;
+end;
 
 procedure TLKEventStreamProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 begin
@@ -1187,6 +1230,13 @@ begin
   inherited;
 end;
 
+class function TLKEventThreadPreProcessor.GetTypeGUID: TGUID;
+const
+  MY_GUID: TGUID = '{E014F3CA-89BC-46AF-B0CA-602AE19D1957}';
+begin
+  Result := MY_GUID;
+end;
+
 procedure TLKEventThreadPreProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 var
   I: Integer;
@@ -1229,6 +1279,60 @@ begin
   end;
 end;
 
+{ TLKEventPreProcessorTypes }
+
+constructor TLKEventPreProcessorTypes.Create;
+begin
+  inherited;
+  FPreProcessorMap := TLKEventThreadPreProcessorGUIDMap.Create(5);
+end;
+
+destructor TLKEventPreProcessorTypes.Destroy;
+begin
+  FPreProcessorMap.Free;
+  inherited;
+end;
+
+function TLKEventPreProcessorTypes.GetPreProcessorClassFromGUID(const AGUID: TGUID): TLKEventPreProcessorClass;
+begin
+  Lock;
+  try
+    FPreProcessorMap.TryGetValue(AGUID, Result);
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEventPreProcessorTypes.RegisterPreProcessorClass(const AGUID: TGUID; const APreProcessorClass: TLKEventPreProcessorClass; AExceptIfExists: Boolean = True);
+begin
+  Lock;
+  try
+    if FPreProcessorMap.ContainsKey(AGUID) then
+    begin
+      if AExceptIfExists then
+        raise ELKEventPreProcessorMapperGUIDExists.CreateFmt('GUID "%s" Already Registered to Event PreProcessor Class "%s"', [GUIDToString(AGUID), FPreProcessorMap.ExtractPair(AGUID).Value.ClassName]);
+    end else
+    begin
+      FPreProcessorMap.Add(AGUID, APreProcessorClass);
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKEventPreProcessorTypes.UnregisterPreProcessorClass(const AGUID: TGUID; AExceptIfNotExists: Boolean);
+begin
+  Lock;
+  try
+    if FPreProcessorMap.ContainsKey(AGUID) then
+      FPreProcessorMap.Remove(AGUID)
+    else if AExceptIfNotExists then
+      raise ELKEVentPreProcessorMapperGUIDNotExist.CreateFmt('Event PreProcessor with GUID "%s" Not Registered!', [GUIDToString(AGUID)]);
+  finally
+    Unlock;
+  end;
+end;
+
 { TLKEventEngine }
 
 procedure TLKEventEngine.AfterConstruction;
@@ -1240,10 +1344,12 @@ constructor TLKEventEngine.Create;
 begin
   inherited;
   FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
+  FPreProcessorClassMap := TLKEventPreProcessorTypes.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
+  FPreProcessorClassMap.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
 end;
