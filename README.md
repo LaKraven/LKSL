@@ -22,7 +22,9 @@ Current Features
 
 Documentation
 ====
-Comprehensive Documentation (as well as Unit Tests and Demos) are to be reintroduced soon, but in the meantime, educational articles demonstrating the various features of the LKSL can be found at http://otapi.com.
+Feel free to take a look at the <a href="https://github.com/LaKraven/LKSL/wiki">LKSL Wiki</a> to learn how the LKSL can be integrated into your systems (or, as the case may be, how your system can be designed to best utilize the features of the LKSL).
+
+You can also find educational articles demonstrating the various features of the LKSL can be found at http://otapi.com.
 
 Donations
 ====
