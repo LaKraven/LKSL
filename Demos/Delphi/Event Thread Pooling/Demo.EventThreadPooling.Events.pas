@@ -8,21 +8,24 @@ uses
   LKSL.Events.Main;
 
 type
-  { Forward Declarations }
-  TLKDemoEvent = class;
-  TLKDemoResponseEvent = class;
-
-  TLKDemoEvent = class(TLKEvent)
-
+  TTestEvent = class(TLKEvent)
+  private
+    FFoo: String;
+  public
+    constructor Create(const AFoo: String); reintroduce;
+    property Foo: String read FFoo;
   end;
 
-  TLKDemoResponseEvent = class(TLKEvent)
-
-  end;
-
-  TLKDemoEventListener = class(TLKEventListener<TLKDemoEvent>);
-  TLKDemoResponseEventListener = class(TLKEventListener<TLKDemoResponseEvent>);
+  TTestEventListener = class(TLKEventListener<TTestEvent>);
 
 implementation
+
+{ TTestEvent }
+
+constructor TTestEvent.Create(const AFoo: String);
+begin
+  inherited Create;
+  FFoo := AFoo;
+end;
 
 end.

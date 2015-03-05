@@ -3,47 +3,58 @@ unit Demo.EventThreadPooling.EventThreads;
 interface
 
 uses
-  System.Classes, System.SyncObjs,
+  System.Classes, System.SyncObjs, System.SysUtils,
   LKSL.Common.Types,
   LKSL.Threads.Main,
   LKSL.Events.Main,
   Demo.EventThreadPooling.Events;
 
 type
-  TLKDemoEventThread = class(TLKEventThread)
+  TTestEventThread = class(TLKEventThread)
   private
-    FEventListener: TLKDemoEventListener;
-    procedure DoEvent(const AEvent: TLKDemoEvent);
+    FListener: TTestEventListener;
+    procedure DoEvent(const AEvent: TTestEvent);
   protected
     procedure InitializeListeners; override;
     procedure FinalizeListeners; override;
   end;
 
 var
-  DemoEventThread: TLKDemoEventThread;
+  TestEventThread: TTestEventThread;
 
 implementation
 
-{ TLKDemoEventThread }
+uses
+  LKSL.Math.SIUnits,
+  Demo.EventThreadPooling.MainForm;
 
-procedure TLKDemoEventThread.DoEvent(const AEvent: TLKDemoEvent);
+{ TTestEventThread }
+
+procedure TTestEventThread.DoEvent(const AEvent: TTestEvent);
+var
+  LDelta: LKFloat;
 begin
-  TLKDemoResponseEvent.Create.Queue;
+  LDelta := GetReferenceTime - AEvent.DispatchTime;
+  SYNCHRONIZE(procedure begin
+                Form1.memLog.Lines.Add(Format('%s Microseconds - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMicro)), AEvent.Foo]));
+              end);
 end;
 
-procedure TLKDemoEventThread.InitializeListeners;
+procedure TTestEventThread.FinalizeListeners;
 begin
-  FEventListener := TLKDemoEventListener.Create(Self, DoEvent);
+  inherited;
+  FListener.Free;
 end;
 
-procedure TLKDemoEventThread.FinalizeListeners;
+procedure TTestEventThread.InitializeListeners;
 begin
-  FEventListener.Free;
+  inherited;
+  FListener := TTestEventListener.Create(Self, DoEvent);
 end;
 
 initialization
-  DemoEventThread := TLKDemoEventThread.Create;
+  TestEventThread := TTestEventThread.Create;
 finalization
-  DemoEventThread.Kill;
+  TestEventThread.Kill;
 
 end.
