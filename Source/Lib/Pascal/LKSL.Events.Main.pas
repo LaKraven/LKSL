@@ -850,12 +850,18 @@ begin
 end;
 
 procedure TLKEventStreamable.InsertIntoStream(const AStream: TStream);
+var
+  I: Integer;
 begin
   FEvent.Lock;
   try
     StreamInsertLKFloat(AStream, FEvent.FCreatedTime);
     StreamInsertTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
-    //TODO: FEvent.FDispatchTargets
+    // Dispatch Targets Start
+    StreamInsertInteger(AStream, FEvent.FDispatchTargets.Count);
+    for I := 0 to FEvent.FDispatchTargets.Count - 1 do
+      StreamInsertGUID(AStream, FEvent.FDispatchTargets[I].GetTypeGUID);
+    // Dispatch Targets End
     StreamInsertLKFloat(AStream, FEvent.FDispatchTime);
     StreamInsertLKFloat(AStream, FEvent.FExpiresAfter);
     StreamInsertTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
@@ -880,12 +886,24 @@ begin
 end;
 
 procedure TLKEventStreamable.ReadFromStream(const AStream: TStream);
+var
+  I, LCount: Integer;
+  LPreProcessorClass: TLKEventPreProcessorClass;
 begin
   FEvent.Lock;
   try
     FEvent.FCreatedTime := StreamReadLKFloat(AStream);
     FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);
-    //TODO: FEvent.FDispatchTargets
+    // Dispatch Targets Start
+    FEvent.FDispatchTargets.Clear;
+    LCount := StreamReadInteger(AStream);
+    for I := 0 to LCount - 1 do
+    begin
+      LPreProcessorClass := EventEngine.ProcessorClassMap.GetPreProcessorClassFromGUID(StreamReadGUID(AStream));
+      if LPreProcessorClass <> nil then
+        FEvent.FDispatchTargets.Add(LPreProcessorClass);
+    end;
+    // Dispatch Targets End
     FEvent.FDispatchTime := StreamReadLKFloat(AStream);
     FEvent.FExpiresAfter := StreamReadLKFloat(AStream);
     FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(AStream);
@@ -899,12 +917,18 @@ begin
 end;
 
 procedure TLKEventStreamable.WriteToStream(const AStream: TStream);
+var
+  I: Integer;
 begin
   FEvent.Lock;
   try
     StreamWriteLKFloat(AStream, FEvent.FCreatedTime);
     StreamWriteTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
-    //TODO: FEvent.FDispatchTargets
+    // Dispatch Targets Start
+    StreamWriteInteger(AStream, FEvent.FDispatchTargets.Count);
+    for I := 0 to FEvent.FDispatchTargets.Count - 1 do
+      StreamWriteGUID(AStream, FEvent.FDispatchTargets[I].GetTypeGUID);
+    // Dispatch Targets End
     StreamWriteLKFloat(AStream, FEvent.FDispatchTime);
     StreamWriteLKFloat(AStream, FEvent.FExpiresAfter);
     StreamWriteTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
