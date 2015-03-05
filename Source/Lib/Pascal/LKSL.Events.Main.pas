@@ -867,7 +867,7 @@ begin
     StreamInsertTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
     StreamInsertTLKEventOrigin(AStream, FEvent.FOrigin);
     StreamInsertLKFloat(AStream, FEvent.FProcessedTime);
-    //TODO: FEvent.FState
+    StreamInsertTLKEventState(AStream, FEvent.FState);
 
     InsertEventIntoStream(AStream);
   finally
@@ -909,7 +909,7 @@ begin
     FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(AStream);
     FEvent.FOrigin := StreamReadTLKEventOrigin(AStream);
     FEvent.FProcessedTime := StreamReadLKFloat(AStream);
-    //TODO: FEvent.FState
+    FEvent.FState := StreamReadTLKEventState(AStream);
     ReadEventFromStream(AStream);
   finally
     FEvent.Unlock;
@@ -934,8 +934,7 @@ begin
     StreamWriteTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
     StreamWriteTLKEventOrigin(AStream, FEvent.FOrigin);
     StreamWriteLKFloat(AStream, FEvent.FProcessedTime);
-    //TODO: FEvent.FState
-
+    StreamWriteTLKEventState(AStream, FEvent.FState);
     WriteEventToStream(AStream);
   finally
     FEvent.Unlock;

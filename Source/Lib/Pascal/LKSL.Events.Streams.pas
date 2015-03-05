@@ -66,6 +66,8 @@ procedure StreamDeleteTLKEventLifetimeControl(const AStream: TStream); overload;
 procedure StreamDeleteTLKEventLifetimeControl(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteTLKEventOrigin(const AStream: TStream); overload;
 procedure StreamDeleteTLKEventOrigin(const AStream: TStream; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventState(const AStream: TStream); overload;
+procedure StreamDeleteTLKEventState(const AStream: TStream; const APosition: Int64); overload;
 // Insert Methods
 procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod); overload;
 procedure StreamInsertTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
@@ -73,6 +75,8 @@ procedure StreamInsertTLKEventLifetimeControl(const AStream: TStream; const AVal
 procedure StreamInsertTLKEventLifetimeControl(const AStream: TStream; const AValue: TLKEventLifetimeControl; const APosition: Int64); overload;
 procedure StreamInsertTLKEventOrigin(const AStream: TStream; const AValue: TLKEventOrigin); overload;
 procedure StreamInsertTLKEventOrigin(const AStream: TStream; const AValue: TLKEventOrigin; const APosition: Int64); overload;
+procedure StreamInsertTLKEventState(const AStream: TStream; const AValue: TLKEventState); overload;
+procedure StreamInsertTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64); overload;
 // Read Methods
 function StreamReadTLKEventDispatchMethod(const AStream: TStream): TLKEventDispatchMethod; overload;
 function StreamReadTLKEventDispatchMethod(const AStream: TStream; const APosition: Int64): TLKEventDispatchMethod; overload;
@@ -80,6 +84,8 @@ function StreamReadTLKEventLifetimeControl(const AStream: TStream): TLKEventLife
 function StreamReadTLKEventLifetimeControl(const AStream: TStream; const APosition: Int64): TLKEventLifetimeControl; overload;
 function StreamReadTLKEventOrigin(const AStream: TStream): TLKEventOrigin; overload;
 function StreamReadTLKEventOrigin(const AStream: TStream; const APosition: Int64): TLKEventOrigin; overload;
+function StreamReadTLKEventState(const AStream: TStream): TLKEventState; overload;
+function StreamReadTLKEventState(const AStream: TStream; const APosition: Int64): TLKEventState; overload;
 // Write Methods
 procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod); overload;
 procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
@@ -87,6 +93,8 @@ procedure StreamWriteTLKEventLifetimeControl(const AStream: TStream; const AValu
 procedure StreamWriteTLKEventLifetimeControl(const AStream: TStream; const AValue: TLKEventLifetimeControl; const APosition: Int64); overload;
 procedure StreamWriteTLKEventOrigin(const AStream: TStream; const AValue: TLKEventOrigin); overload;
 procedure StreamWriteTLKEventOrigin(const AStream: TStream; const AValue: TLKEventOrigin; const APosition: Int64); overload;
+procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEventState); overload;
+procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64); overload;
 
 implementation
 
@@ -123,6 +131,16 @@ begin
 end;
 
 procedure StreamDeleteTLKEventOrigin(const AStream: TStream; const APosition: Int64); overload;
+begin
+  StreamClearSpace(AStream, APosition, SizeOf(Integer));
+end;
+
+procedure StreamDeleteTLKEventState(const AStream: TStream);
+begin
+  StreamDeleteTLKEventState(AStream, AStream.Position);
+end;
+
+procedure StreamDeleteTLKEventState(const AStream: TStream; const APosition: Int64);
 begin
   StreamClearSpace(AStream, APosition, SizeOf(Integer));
 end;
@@ -166,6 +184,19 @@ const
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(Integer));
   AStream.Write(ORIGINS[AValue], SizeOf(Integer));
+end;
+
+procedure StreamInsertTLKEventState(const AStream: TStream; const AValue: TLKEventState);
+begin
+  StreamInsertTLKEventState(AStream, AValue, AStream.Position);
+end;
+
+procedure StreamInsertTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64);
+const
+  STATES: Array[TLKEventState] of Integer = (0, 1, 2, 3, 4);
+begin
+  StreamMakeSpace(AStream, APosition, SizeOf(Integer));
+  AStream.Write(STATES[AValue], SizeOf(Integer));
 end;
 
 // Read Methods
@@ -218,6 +249,22 @@ begin
   Result := ORIGINS[LOrigin];
 end;
 
+function StreamReadTLKEventState(const AStream: TStream): TLKEventState;
+begin
+  Result := StreamReadTLKEventState(AStream, AStream.Position);
+end;
+
+function StreamReadTLKEventState(const AStream: TStream; const APosition: Int64): TLKEventState;
+const
+  STATES: Array[0..4] of TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
+var
+  LState: Integer;
+begin
+  AStream.Position := APosition;
+  AStream.Read(LState, SizeOf(Integer));
+  Result := STATES[LState];
+end;
+
 // Write Methods
 
 procedure StreamWriteTLKEventDispatchMethod(const AStream: TStream; const AValue: TLKEventDispatchMethod);
@@ -257,6 +304,19 @@ const
 begin
   AStream.Position := APosition;
   AStream.Write(ORIGINS[AValue], SizeOf(Integer));
+end;
+
+procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEventState);
+begin
+  StreamWriteTLKEventState(AStream, AValue, AStream.Size);
+end;
+
+procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64);
+const
+  STATES: Array[TLKEventState] of Integer = (0, 1, 2, 3, 4);
+begin
+  AStream.Position := APosition;
+  AStream.Write(STATES[AValue], SizeOf(Integer));
 end;
 
 end.
