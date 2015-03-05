@@ -9,7 +9,7 @@ This library provides a vast (and growing) range of powerful features for the fo
 This Library is still in EARLY DEVELOPMENT!
 ====
 Please keep in mind that this library is still in its infancy, and while many of its features work very well, the interfaces are by no means "final" at this point.
-In fact, there are plans to change many of them (particularly in the Event Engine units). Also, unit names will soon be changing (but that's a one-time thing, easy to resolve in your implementations).
+In fact, there are plans to change many of them (particularly in the Event Engine units). This redesign effort is referred to internally as the "redux". You will see it mentioned quite often in recent commits.
 
 > NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
 
