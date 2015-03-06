@@ -103,9 +103,6 @@ type
     FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
-    function GetLockAcquired: Boolean; inline;
-    function GetLockAvailable: Boolean; inline;
-
     function GetNextTickTime: LKFloat;
     function GetThreadState: TLKThreadState;
     function GetTickRate: LKFloat;
@@ -219,11 +216,6 @@ type
     procedure Rest;
     ///  <summary><c>Wakes the Thread if it is an Inactive state (see </c><see DisplayName="Rest" cref="LKSL.Threads.Main|TLKThread.Rest"/><c> for details)</c></summary>
     procedure Wake;
-
-    ///  <summary><c>Returns</c> True <c>if the Lock has been acquired (regardless of the acquiring Thread).</c></summary>
-    property LockAcquired: Boolean read GetLockAcquired;
-    ///  <summary><c>Returns</c> True <c>if the Lock is available.</c></summary>
-    property LockAvailable: Boolean read GetLockAvailable;
 
     ///  <summary><c>The Absolute Reference Time at which the next Tick will occur.</c></summary>
     property NextTickTime: LKFloat read GetNextTickTime;
@@ -445,16 +437,6 @@ end;
 function TLKThread.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsRunning;
-end;
-
-function TLKThread.GetLockAcquired: Boolean;
-begin
-  Result := FLock.LockAcquired;
-end;
-
-function TLKThread.GetLockAvailable: Boolean;
-begin
-  Result := FLock.LockAvailable;
 end;
 
 function TLKThread.GetNextTickTime: LKFloat;

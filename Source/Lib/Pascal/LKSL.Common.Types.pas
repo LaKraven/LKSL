@@ -109,11 +109,6 @@ type
   TLKCriticalSection = class(TCriticalSection)
   private
     {$HINTS OFF}FDummy : array [0..95] of Byte;{$HINTS ON}
-    function GetLockAcquired: Boolean; inline;
-    function GetLockAvailable: Boolean; inline;
-  public
-    property LockAcquired: Boolean read GetLockAcquired;
-    property LockAvailable: Boolean read GetLockAvailable;
   end;
 
   {
@@ -123,8 +118,6 @@ type
   TLKPersistent = class(TPersistent)
   private
     FLock: TLKCriticalSection;
-    function GetLockAcquired: Boolean; inline;
-    function GetLockAvailable: Boolean; inline;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -132,9 +125,6 @@ type
     function LockIfAvailable: Boolean; inline;
     procedure Lock; inline;
     procedure Unlock; inline;
-
-    property LockAcquired: Boolean read GetLockAcquired;
-    property LockAvailable: Boolean read GetLockAvailable;
   end;
 
   {
@@ -144,8 +134,6 @@ type
   TLKObject = class(TObject)
   private
     FLock: TLKCriticalSection;
-    function GetLockAcquired: Boolean; inline;
-    function GetLockAvailable: Boolean; inline;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -153,9 +141,6 @@ type
     function LockIfAvailable: Boolean; inline;
     procedure Lock; inline;
     procedure Unlock; inline;
-
-    property LockAcquired: Boolean read GetLockAcquired;
-    property LockAvailable: Boolean read GetLockAvailable;
   end;
 
   {$IFDEF LKSL_FLOAT_SINGLE}
@@ -170,18 +155,6 @@ type
 
 implementation
 
-{ TLKCriticalSection }
-
-function TLKCriticalSection.GetLockAcquired: Boolean;
-begin
-  Result := (not GetLockAvailable);
-end;
-
-function TLKCriticalSection.GetLockAvailable: Boolean;
-begin
-  Result := (FSection.LockCount = 0);
-end;
-
 { TLKPersistent }
 
 constructor TLKPersistent.Create;
@@ -194,16 +167,6 @@ destructor TLKPersistent.Destroy;
 begin
   FLock.Free;
   inherited;
-end;
-
-function TLKPersistent.GetLockAcquired: Boolean;
-begin
-  Result := FLock.LockAcquired;
-end;
-
-function TLKPersistent.GetLockAvailable: Boolean;
-begin
-  Result := FLock.LockAvailable
 end;
 
 procedure TLKPersistent.Lock;
@@ -233,16 +196,6 @@ destructor TLKObject.Destroy;
 begin
   FLock.Free;
   inherited;
-end;
-
-function TLKObject.GetLockAcquired: Boolean;
-begin
-  Result := FLock.LockAcquired;
-end;
-
-function TLKObject.GetLockAvailable: Boolean;
-begin
-  Result := FLock.LockAvailable;
 end;
 
 procedure TLKObject.Lock;
