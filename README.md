@@ -1,10 +1,39 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
-This library provides a vast (and growing) range of powerful features for the following programming languages:
-  - Delphi
-  - C++ Builder
-  - FreePascal/Lazarus
+This library provides a vast (and growing) range of powerful features for the following programming tools:
+  - **Delphi {and AppMethod Pascal}**
+      - Win32
+      - Win64
+      - MacOS
+      - iOS
+      - Android
+  - **C++ Builder {and AppMethod C++}** (_coming soon_)
+      - Win32
+      - Win64
+      - MacOS
+      - iOS
+      - Android
+  - **FreePascal/Lazarus** (_work in progress_)
+      - Win32
+      - Win64
+      - MacOS
+      - iOS
+      - Android
+      - Linux32
+      - Linux64
+      - Linux ARM
+      - Hopefully any other platform supported by FreePascal/Lazarus.
+
+Platforms in the planning:
+  - PHP
+  - C#
+  - Java
+  - C
+  - C++
+  - Python
+
+> If there's another platform that you think could benefit from the features of the LKSL, please raise an issue. Better yet, if you feel you can produce a viable LKSL translation (in part or whole) for another programming/scripting language, please consider contributing that work back to this original repository!
 
 This Library is still in EARLY DEVELOPMENT!
 ====
