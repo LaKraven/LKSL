@@ -175,10 +175,14 @@ type
     ///  <summary><c>Override if you want your Event Type to Expire after a specific amount of time.</c></summary>
     function GetDefaultExpiresAfter: LKFloat; virtual;
   public
+    ///  <summary><c>A simple macro to return this Class Type as a TLKEventClass instead of TClass.</c></summary>
+    class function GetEventType: TLKEventClass; inline;
+    ///  <summary><c>Override this if you wish to associate your Event with a type-specific </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> Class.</c></summary>
+    ///  <remarks><c>Default = </c>nil</remarks>
+    class function GetStreamableType: TLKEventStreamableClass; virtual;
+
     constructor Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); reintroduce;
     destructor Destroy; override;
-
-    class function GetEventType: TLKEventClass;
 
     ///  <summary><c>Cancels the Event after Dispatch.</c></summary>
     ///  <param name="ACancelConditions">Defines whether the Event should be cancelled if processing has begun or regardless there-of.</param>
@@ -294,23 +298,23 @@ type
   private
     FEvent: TLKEvent;
   protected
-    class procedure OnRegistration; override;
-    class procedure OnUnregistration; override;
-
     function GetEvent: TLKEvent; virtual;
 
-    procedure ReadFromStream(const AStream: TStream); override;
-    procedure InsertIntoStream(const AStream: TStream); override;
-    procedure WriteToStream(const AStream: TStream); override;
+    procedure ReadFromStream(const AStream: TStream); override; final;
+    procedure InsertIntoStream(const AStream: TStream); override; final;
+    procedure WriteToStream(const AStream: TStream); override; final;
 
+    ///  <summary><c>You MUST overload this and provide instructions on how to populate your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance from a Stream.</c></summary>
     procedure ReadEventFromStream(const AStream: TStream); virtual; abstract;
+    ///  <summary><c>You MUST overload this and provide instructions on how to Insert your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance into a Stream.</c></summary>
     procedure InsertEventIntoStream(const AStream: TStream); virtual; abstract;
+    ///  <summary><c>You MUST overload this and provide instructions on how to Write your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance into a Stream.</c></summary>
     procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
 
     ///  <summary><c>If you aren't using Generics, you can define "property Event;" in the Public section.</c></summary>
     property Event: TLKEvent read GetEvent;
   public
-    class function GetEventClass: TLKEventClass; virtual; abstract;
+    class function GetEventType: TLKEventClass; virtual; abstract;
     class function GetTypeVersion: Double; override;
     constructor Create; overload; override;
     constructor Create(const AEvent: TLKEvent); reintroduce; overload;
@@ -338,7 +342,7 @@ type
     procedure InsertEventIntoStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
     procedure WriteEventToStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
   public
-    class function GetEventClass: TLKEventClass; override; final;
+    class function GetEventType: TLKEventClass; override; final;
     property Event: T read GetEvent;
   end;
 
@@ -415,8 +419,22 @@ type
   ///  </remarks>
   TLKEventStreamProcessor = class abstract(TLKEventPreProcessor)
   protected
+    ///  <summary><c>Override this if you need your descendant to do something particular with Events for which there is no defined Streamable Handler.</c></summary>
+    procedure CannotProcessEventStreamable(const AEvent: TLKEvent; const ADelta, AStartTime: LKFLoat); virtual;
+    ///  <summary><c>Takes care of preparing a </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> for each </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Calls </c><see DisplayName="TLKEventStreamProcessor.ProcessEventStreamable" cref="LKSL.Events.Main|TLKEventStreamProcessor.ProcessEventStreamable"/><c> when a suitable </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> Type exists for a given Event.</c></para>
+    ///    <para><c>Calls </c><see DisplayName="TLKEventStreamProcessor.CannotProcessEventStreamable" cref="LKSL.Events.Main|TLKEventStreamProcessor.CannotProcessEventStreamable"/><c> when a suitable </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> Type does NOT exist for a given Event.</c></para>
+    ///  </remarks>
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override; final;
-    procedure ProcessEventStream(const AEventStream: TLKEventStreamable; const ADelta, AStartTime: LKFloat); virtual; abstract;
+    ///  <summary><c>You MUST override this method to dictate what to do with the pre-prepared </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> instance.</c></summary>
+    procedure ProcessEventStreamable(const AEventStream: TLKEventStreamable; const ADelta, AStartTime: LKFloat); virtual; abstract;
+    ///  <summary><c>Override if you need to define some custom criteria</c></summary>
+    ///  <remarks>
+    ///    <para><c>Default = </c>True</para>
+    ///    <para><c>Only invoked if a valid </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> Type exists for the given Event!</c></para>
+    ///  </remarks>
+    function ValidateEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat): Boolean; virtual;
   public
     class function GetTypeGUID: TGUID; override;
   end;
@@ -624,6 +642,11 @@ begin
   end;
 end;
 
+class function TLKEvent.GetStreamableType: TLKEventStreamableClass;
+begin
+  Result := nil;
+end;
+
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
   if FDispatchMethod = edmNotDispatched then
@@ -822,7 +845,7 @@ end;
 constructor TLKEventStreamable.Create;
 begin
   inherited Create;
-  FEvent := GetEventClass.Create;
+  FEvent := GetEventType.Create;
   FEvent.Ref;
 end;
 
@@ -873,16 +896,6 @@ begin
   finally
     FEvent.Unlock;
   end;
-end;
-
-class procedure TLKEventStreamable.OnRegistration;
-begin
-  { TODO -oSJS -cEvent Engine (Redux) : Register the Event Streamable Type }
-end;
-
-class procedure TLKEventStreamable.OnUnregistration;
-begin
-  { TODO -oSJS -cEvent Engine (Redux) : Unregister the Event Streamable Type }
 end;
 
 procedure TLKEventStreamable.ReadFromStream(const AStream: TStream);
@@ -948,7 +961,7 @@ begin
   Result := T(FEvent);
 end;
 
-class function TLKEventStreamable<T>.GetEventClass: TLKEventClass;
+class function TLKEventStreamable<T>.GetEventType: TLKEventClass;
 begin
   Result := T;
 end;
@@ -1128,6 +1141,11 @@ end;
 
 { TLKEventStreamProcessor }
 
+procedure TLKEventStreamProcessor.CannotProcessEventStreamable(const AEvent: TLKEvent; const ADelta, AStartTime: LKFLoat);
+begin
+  // Do nothing
+end;
+
 class function TLKEventStreamProcessor.GetTypeGUID: TGUID;
 const
   MY_GUID: TGUID = '{DBB860AA-F145-4D35-B856-9EDD7379004B}';
@@ -1136,14 +1154,29 @@ begin
 end;
 
 procedure TLKEventStreamProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
+var
+  LStreamableType: TLKEventStreamableClass;
+  LStreamableEvent: TLKEventStreamable;
 begin
-  // if a Streamable Descriptor exists for this Event Type
-    // Serialize the Event into LStream
-    // Try
-      // call ProcessEventStreamable(LStream, ADelta, AStartTime);
-    // Finally
-      // Free LStream
-    // End
+  LStreamableType := AEvent.GetStreamableType;
+  if LStreamableType <> nil then
+  begin
+    if LStreamableType.GetEventType = AEvent.GetEventType then
+    begin
+      LStreamableEvent := LStreamableType.Create(AEvent);
+      try
+        if ValidateEvent(AEvent, ADelta, AStartTime) then
+          ProcessEventStreamable(LStreamableEvent, ADelta, AStartTime);
+      finally
+        LStreamableEvent.Free;
+      end;
+    end;
+  end;
+end;
+
+function TLKEventStreamProcessor.ValidateEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat): Boolean;
+begin
+  Result := True;
 end;
 
 { TLKEventThread }
