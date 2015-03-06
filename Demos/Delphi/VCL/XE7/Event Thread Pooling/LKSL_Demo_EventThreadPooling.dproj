@@ -95,17 +95,15 @@
         </DCCReference>
         <DCCReference Include="Demo.EventThreadPooling.Events.pas"/>
         <DCCReference Include="Demo.EventThreadPooling.EventThreads.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

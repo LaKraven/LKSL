@@ -5,17 +5,15 @@ uses
   Demo.EventThreadPooling.MainForm in 'Demo.EventThreadPooling.MainForm.pas' {Form1},
   Demo.EventThreadPooling.Events in 'Demo.EventThreadPooling.Events.pas',
   Demo.EventThreadPooling.EventThreads in 'Demo.EventThreadPooling.EventThreads.pas',
-  LKSL.Common.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas',
-  LKSL.Common.Types in '..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas',
-  LKSL.Events.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
-  LKSL.Generics.Collections in '..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
-  LKSL.Math.SIUnits in '..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
-  LKSL.Math.Time in '..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas',
-  LKSL.Streamables.Main in '..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
-  LKSL.Streams.System in '..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
-  LKSL.Streams.Types in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
-  LKSL.Threads.Main in '..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',
-  LKSL.Events.Main in '..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas';
+  LKSL.Threads.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',
+  LKSL.Common.Streams in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas',
+  LKSL.Common.Types in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas',
+  LKSL.Events.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas',
+  LKSL.Events.Streams in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
+  LKSL.Generics.Collections in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
+  LKSL.Streamables.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
+  LKSL.Streams.System in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
+  LKSL.Math.SIUnits in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas';
 
 {$R *.res}
 
