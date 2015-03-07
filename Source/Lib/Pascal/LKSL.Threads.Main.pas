@@ -298,7 +298,7 @@ begin
   FTickRateLimit := GetDefaultTickRateLimit;
   FTickRateAverageOver := GetDefaultTickRateAverageOver;
   FTickRateDesired := GetDefaultTickRateDesired;
-  FWakeUp := TEvent.Create(nil, True, THREAD_STATES[FThreadState], Format('LKThreadWakeUp%d', [ThreadID]));
+  FWakeUp := TEvent.Create(nil, True, THREAD_STATES[FThreadState], '');
 end;
 
 destructor TLKThread.Destroy;
