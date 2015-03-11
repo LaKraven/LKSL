@@ -119,7 +119,7 @@ type
   TLKEventPreProcessorClassArray = TArray<TLKEventPreProcessorClass>;
   TLKEventPreProcessorClassList = class(TLKList<TLKEventPreProcessorClass>);
   TLKEventPreProcessorList = class(TLKObjectList<TLKEventPreProcessor>);
-  TLKEventThreadList = class(TLKObjectList<TLKEventThread>);
+  TLKEventThreadList = class(TLKList<TLKEventThread>);
 
   ///  <summary><c>Abstract Base Class for all Event Types</c></summary>
   ///  <remarks>
@@ -478,27 +478,11 @@ uses
 
 type
   { Forward Declarations }
-  TLKEventThreadPreProcessor = class;
   TLKEventPreProcessorTypes = class;
   TLKEventEngine = class;
 
   { Generic Collections }
   TLKEventThreadPreProcessorGUIDMap = class(TLKDictionary<TGUID, TLKEventPreProcessorClass>);
-
-  ///  <summary><c>Specific Event PreProcessor for </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> descendants.</c></summary>
-  TLKEventThreadPreProcessor = class(TLKEventPreProcessor)
-  private
-    FEventThreads: TLKEventThreadList;
-  protected
-    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
-  public
-    class function GetTypeGUID: TGUID; override;
-    constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); override;
-    destructor Destroy; override;
-
-    procedure RegisterEventThread(const AEventThread: TLKEventThread);
-    procedure UnregisterEventThread(const AEventThread: TLKEventThread);
-  end;
 
   ///  <summary><c>Maps a TGUID to a </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> Type.</c></summary>
   TLKEventPreProcessorTypes = class(TLKPersistent)
@@ -519,6 +503,7 @@ type
   private
     FPreProcessors: TLKEventPreProcessorList;
     FPreProcessorClassMap: TLKEventPreProcessorTypes;
+    FThreads: TLKEventThreadList;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -528,6 +513,9 @@ type
     procedure RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
     procedure UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
 
+    procedure QueueInThreads(const AEvent: TLKEvent);
+    procedure StackInThreads(const AEvent: TLKEvent);
+
     procedure QueueEvent(const AEvent: TLKEvent);
     procedure StackEvent(const AEvent: TLKEvent);
 
@@ -536,7 +524,6 @@ type
 
 var
   EventEngine: TLKEventEngine = nil;
-  ThreadPreProcessor: TLKEventThreadPreProcessor = nil;
 
 { TLKEvent }
 
@@ -1239,7 +1226,13 @@ end;
 
 procedure TLKEventThread.Register;
 begin
-  ThreadPreProcessor.RegisterEventThread(Self);
+  EventEngine.FThreads.Lock;
+  try
+    if (not EventEngine.FThreads.Contains(Self)) then
+      EventEngine.FThreads.Add(Self);
+  finally
+    EventEngine.FThreads.Unlock;
+  end;
 end;
 
 procedure TLKEventThread.RegisterListener(const AEventListener: TLKEventListener);
@@ -1254,8 +1247,17 @@ begin
 end;
 
 procedure TLKEventThread.Unregister;
+var
+  LIndex: Integer;
 begin
-  ThreadPreProcessor.UnregisterEventThread(Self);
+  EventEngine.FThreads.Lock;
+  try
+    LIndex := EventEngine.FThreads.IndexOf(Self);
+    if (LIndex > -1) then
+      EventEngine.FThreads.Delete(LIndex);
+  finally
+    EventEngine.FThreads.Unlock;
+  end;
 end;
 
 procedure TLKEventThread.UnregisterListener(const AEventListener: TLKEventListener);
@@ -1269,69 +1271,6 @@ begin
       FListeners.Delete(LIndex);
   finally
     FListeners.Unlock;
-  end;
-end;
-
-{ TLKEventThreadPreProcessor }
-
-constructor TLKEventThreadPreProcessor.Create(const ARegistrationMode: TLKEventRegistrationMode);
-begin
-  inherited;
-  FEventThreads := TLKEventThreadList.Create(False);
-end;
-
-destructor TLKEventThreadPreProcessor.Destroy;
-begin
-  FEventThreads.Free;
-  inherited;
-end;
-
-class function TLKEventThreadPreProcessor.GetTypeGUID: TGUID;
-const
-  MY_GUID: TGUID = '{E014F3CA-89BC-46AF-B0CA-602AE19D1957}';
-begin
-  Result := MY_GUID;
-end;
-
-procedure TLKEventThreadPreProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
-var
-  I: Integer;
-begin
-  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-  try
-    for I := 0 to FEventThreads.Count - 1 do
-      if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-        case AEvent.FDispatchMethod of
-          edmQueue: FEventThreads[I].QueueEvent(AEvent);
-          edmStack: FEventThreads[I].StackEvent(AEvent);
-        end;
-  finally
-    FEventThreads.Unlock;
-  end;
-end;
-
-procedure TLKEventThreadPreProcessor.RegisterEventThread(const AEventThread: TLKEventThread);
-begin
-  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-  try
-    if (not FEventThreads.Contains(AEventThread)) then
-      FEventThreads.Add(AEventThread);
-  finally
-    FEventThreads.Unlock;
-  end;
-end;
-
-procedure TLKEventThreadPreProcessor.UnregisterEventThread(const AEventThread: TLKEventThread);
-var
-  LIndex: Integer;
-begin
-  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-  try
-    LIndex := FEventThreads.IndexOf(AEventThread);
-    if LIndex > -1 then
-      FEventThreads.Delete(LIndex);
-  finally
-    FEventThreads.Unlock;
   end;
 end;
 
@@ -1401,10 +1340,12 @@ begin
   inherited;
   FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
   FPreProcessorClassMap := TLKEventPreProcessorTypes.Create;
+  FThreads := TLKEventThreadList.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
+  FThreads.Free;
   FPreProcessorClassMap.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
@@ -1414,14 +1355,38 @@ procedure TLKEventEngine.QueueEvent(const AEvent: TLKEvent);
 var
   I: Integer;
 begin
-  FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  AEvent.Ref;
   try
-    for I := 0 to FPreProcessors.Count - 1 do
-      if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-        if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
-          FPreProcessors[I].QueueEvent(AEvent)
+    QueueInThreads(AEvent);
+    FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+    try
+      for I := 0 to FPreProcessors.Count - 1 do
+        if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
+          if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
+            FPreProcessors[I].QueueEvent(AEvent)
+    finally
+      FPreProcessors.Unlock;
+    end;
   finally
-    FPreProcessors.Unlock;
+    AEvent.Unref;
+  end;
+end;
+
+procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  AEvent.Ref;
+  try
+    FThreads.Lock;
+    try
+      for I := 0 to FThreads.Count - 1 do
+        FThreads[I].QueueEvent(AEvent);
+    finally
+      FThreads.Unlock;
+    end;
+  finally
+    AEvent.Unref;
   end;
 end;
 
@@ -1440,14 +1405,38 @@ procedure TLKEventEngine.StackEvent(const AEvent: TLKEvent);
 var
   I: Integer;
 begin
-  FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  AEvent.Ref;
   try
-    for I := 0 to FPreProcessors.Count - 1 do
-      if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-        if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
-          FPreProcessors[I].StackEvent(AEvent);
+    StackInThreads(AEvent);
+    FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+    try
+      for I := 0 to FPreProcessors.Count - 1 do
+        if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
+          if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
+            FPreProcessors[I].StackEvent(AEvent);
+    finally
+      FPreProcessors.Unlock;
+    end;
   finally
-    FPreProcessors.Unlock;
+    AEvent.Unref;
+  end;
+end;
+
+procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  AEvent.Ref;
+  try
+    FThreads.Lock;
+    try
+      for I := 0 to FThreads.Count - 1 do
+        FThreads[I].StackEvent(AEvent);
+    finally
+      FThreads.Unlock;
+    end;
+  finally
+    AEvent.Unref;
   end;
 end;
 
@@ -1468,10 +1457,7 @@ end;
 initialization
   if EventEngine = nil then
     EventEngine := TLKEventEngine.Create; // Create this FIRST
-  if ThreadPreProcessor = nil then
-    ThreadPreProcessor := TLKEventThreadPreProcessor.Create;
 finalization
-  ThreadPreProcessor.Kill;
   EventEngine.Free; // Free this LAST
 
 end.
