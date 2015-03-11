@@ -1408,9 +1408,10 @@ begin
       if FEvents[0].FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
       begin
         FEvents[0].FDispatchAfter := 0;
+        FEvents[0].FDispatchTime := GetReferenceTime;
         case FEvents[0].DispatchMethod of // If so...
-          edmQueue: FEvents[0].Queue; // ... send Dispatch to the queue...
-          edmStack: FEvents[0].Stack; // ... or the Stack...
+          edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... send Dispatch to the queue...
+          edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
         end;
         FEvents.Lock;
         try
@@ -1442,7 +1443,7 @@ end;
 
 destructor TLKEventEngine.Destroy;
 begin
-  FScheduler.Free;
+  FScheduler.Kill;
   FThreads.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
