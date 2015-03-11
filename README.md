@@ -48,6 +48,7 @@ Current Features
   - **Streamables Engine**: an engine for serializing and loading custom objects to/from Streams.
   - **High Precision Threading**: a special Thread type which provide extremely accurate "reference times" for interpolation and extrapolation (perfect for powering Simulation and Rendering processes).
   - **Event Engine**: a *very* powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems.
+  - **SI Units Math**: A library to convert between different SI Units, their orders of magnitude, and a growing number of other mathematical functions.
 
 Documentation
 ====
