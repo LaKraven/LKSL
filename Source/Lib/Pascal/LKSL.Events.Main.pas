@@ -50,7 +50,6 @@ interface
 {$ENDREGION}
 
 uses
-  {$IFDEF POSIX}Posix.Unistd,{$ENDIF POSIX}
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.SyncObjs,
   {$ELSE}
@@ -95,6 +94,9 @@ type
   TLKEventLifetimeControl = (elcAutomatic, elcManual);
   ///  <summary><c>Defined Origins for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance.</c></summary>
   TLKEventOrigin = (eoInternal, eoReplay, eoRemote, eoUnknown);
+  ///  <summary><c>Defined Target for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance.</c></summary>
+  TLKEventTarget = (edThreads, edPools, edRecorders, edRemotes, edUknown);
+  TLKEventTargets = set of TLKEventTarget;
   ///  <summary><c>The current State of an Event.</c></summary>
   TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
   ///  <summary><c>Describes whether or not an Event-related Type should automatically Register itself on Construction.</c></summary>
@@ -116,8 +118,6 @@ type
   TLKEventList = class(TLKObjectList<TLKEvent>);
   TLKEventListenerList = class(TLKObjectList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
-  TLKEventPreProcessorClassArray = TArray<TLKEventPreProcessorClass>;
-  TLKEventPreProcessorClassList = class(TLKList<TLKEventPreProcessorClass>);
   TLKEventPreProcessorList = class(TLKObjectList<TLKEventPreProcessor>);
   TLKEventThreadList = class(TLKList<TLKEventThread>);
 
@@ -135,10 +135,10 @@ type
     FDispatchMethod: TLKEventDispatchMethod;
     ///  <summary><c>The Targets to which this Event is allowed to be Dispatched.</c></summary>
     ///  <remarks>
-    ///    <para><c>Default = [] (meaning that there are no restrictions)</c></para>
+    ///    <para><c>Default = LKSL_EVENTENGINE_DEFAULT_TARGETS (meaning that there are no restrictions)</c></para>
     ///    <para><c>By default, we want to allow the Event to be processed by ALL available PreProcessors</c></para>
     ///  </remarks>
-    FDispatchTargets: TLKEventPreProcessorClassList;
+    FDispatchTargets: TLKEventTargets;
     ///  <summary><c>The Reference Time at which the Event was Dispatched.</c></summary>
     FDispatchTime: LKFloat;
     ///  <summary><c>The Duration of Time after which the Event will Expire once Dispatched.</c></summary>
@@ -171,7 +171,7 @@ type
     procedure Unref;
   protected
     ///  <summary><c>Override if you want your Event Type to only dispatch to specific Targets.</c></summary>
-    function GetDefaultDispatchTargets: TLKEventPreProcessorClassArray; virtual;
+    function GetDefaultDispatchTargets: TLKEventTargets; virtual;
     ///  <summary><c>Override if you want your Event Type to Expire after a specific amount of time.</c></summary>
     function GetDefaultExpiresAfter: LKFloat; virtual;
   public
@@ -199,11 +199,11 @@ type
     procedure ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 
     ///  <summary><c>Override the Type-defined default Dispatch Targets for a speciifc Instance.</c></summary>
-    procedure SetDispatchTargets(const ADispatchTargets: TLKEventPreProcessorClassArray);
+    procedure SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
     property DispatchMethod: TLKEventDispatchMethod read FDispatchMethod; // ATOMIC OPERATION
-    property DispatchTargets: TLKEventPreProcessorClassList read FDispatchTargets;
+    property DispatchTargets: TLKEventTargets read FDispatchTargets;
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
     property HasExpired: Boolean read GetHasExpired;
@@ -402,8 +402,8 @@ type
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
     class function GetPreProcessorClass: TLKEventPreProcessorClass;
-    ///  <summary><c>You MUST override this method and provide a UNIQUE GUID for your PreProcessor Class</c></summary>
-    class function GetTypeGUID: TGUID; virtual; abstract;
+    ///  <summary><c>You MUST override and provide a Target Flag</c></summary>
+    class function GetTargetFlag: TLKEventTarget; virtual; abstract;
     constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; virtual;
     destructor Destroy; override;
 
@@ -435,8 +435,6 @@ type
     ///    <para><c>Only invoked if a valid </c><see DisplayName="TLKEventStreamable" cref="LKSL.Events.Main|TLKEventStreamable"/><c> Type exists for the given Event!</c></para>
     ///  </remarks>
     function ValidateEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat): Boolean; virtual;
-  public
-    class function GetTypeGUID: TGUID; override;
   end;
 
   ///  <summary><c>A special kind of Thread, designed to operate using Events.</c></summary>
@@ -470,6 +468,7 @@ type
 
 const
   LKSL_EVENTENGINE_VERSION: Double = 4.00;
+  LKSL_EVENTENGINE_DEFAULT_TARGETS: TLKEventTargets = [edThreads, edPools, edRecorders, edRemotes, edUknown];
 
 implementation
 
@@ -478,31 +477,12 @@ uses
 
 type
   { Forward Declarations }
-  TLKEventPreProcessorTypes = class;
   TLKEventEngine = class;
-
-  { Generic Collections }
-  TLKEventThreadPreProcessorGUIDMap = class(TLKDictionary<TGUID, TLKEventPreProcessorClass>);
-
-  ///  <summary><c>Maps a TGUID to a </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> Type.</c></summary>
-  TLKEventPreProcessorTypes = class(TLKPersistent)
-  private
-    FPreProcessorMap: TLKEventThreadPreProcessorGUIDMap;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    function GetPreProcessorClassFromGUID(const AGUID: TGUID): TLKEventPreProcessorClass;
-
-    procedure RegisterPreProcessorClass(const AGUID: TGUID; const APreProcessorClass: TLKEventPreProcessorClass; AExceptIfExists: Boolean = True);
-    procedure UnregisterPreProcessorClass(const AGUID: TGUID; AExceptIfNotExists: Boolean = True);
-  end;
 
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
   TLKEventEngine = class(TLKPersistent)
   private
     FPreProcessors: TLKEventPreProcessorList;
-    FPreProcessorClassMap: TLKEventPreProcessorTypes;
     FThreads: TLKEventThreadList;
   public
     constructor Create; override;
@@ -518,8 +498,6 @@ type
 
     procedure QueueEvent(const AEvent: TLKEvent);
     procedure StackEvent(const AEvent: TLKEvent);
-
-    property ProcessorClassMap: TLKEventPreProcessorTypes read FPreProcessorClassMap;
   end;
 
 var
@@ -543,11 +521,10 @@ end;
 constructor TLKEvent.Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
   inherited Create;
-  FDispatchTargets := TLKEventPreProcessorClassList.Create;
   FCreatedTime := GetReferenceTime; // We've just created it...
   FDispatchMethod := edmNotDispatched; // It hasn't yet been dispatched...
   FDispatchTime := 0; // We haven't dispatched it yet...
-  FDispatchTargets.Add(GetDefaultDispatchTargets); // We request the default defined Targets for its Type...
+  FDispatchTargets := GetDefaultDispatchTargets;
   FExpiresAfter := GetDefaultExpiresAfter; // We request the default expiration for its Type...
   FLifetimeControl := ALifetimeControl; // Define who is responsible for Lifetime Control...
   FOrigin := eoInternal; // We presume it originates internally...
@@ -557,13 +534,12 @@ end;
 
 destructor TLKEvent.Destroy;
 begin
-  FDispatchTargets.Free;
   inherited;
 end;
 
-function TLKEvent.GetDefaultDispatchTargets: TLKEventPreProcessorClassArray;
+function TLKEvent.GetDefaultDispatchTargets: TLKEventTargets;
 begin
-  Result := [];
+  Result := LKSL_EVENTENGINE_DEFAULT_TARGETS;
 end;
 
 function TLKEvent.GetDefaultExpiresAfter: LKFloat;
@@ -667,10 +643,9 @@ begin
   Stack(ALifetimeControl); // TEMPORARY!
 end;
 
-procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventPreProcessorClassArray);
+procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
 begin
-  FDispatchTargets.Clear;
-  FDispatchTargets.Add(ADispatchTargets)
+  FDispatchTargets := ADispatchTargets;
 end;
 
 procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: LKFloat);
@@ -861,17 +836,25 @@ end;
 
 procedure TLKEventStreamable.InsertIntoStream(const AStream: TStream);
 var
-  I: Integer;
+  LCountPosition, LEndPosition: Int64;
+  LTarget: TLKEventTarget;
+  LTargetCount: Integer;
 begin
   FEvent.Lock;
   try
     StreamInsertLKFloat(AStream, FEvent.FCreatedTime);
     StreamInsertTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
-    // Dispatch Targets Start
-    StreamInsertInteger(AStream, FEvent.FDispatchTargets.Count);
-    for I := 0 to FEvent.FDispatchTargets.Count - 1 do
-      StreamInsertGUID(AStream, FEvent.FDispatchTargets[I].GetTypeGUID);
-    // Dispatch Targets End
+    LTargetCount := 0;
+    LCountPosition := AStream.Position;
+    StreamInsertInteger(AStream, LTargetCount);
+    for LTarget in FEvent.FDispatchTargets do
+    begin
+      Inc(LTargetCount);
+      StreamInsertTLKEventTarget(AStream, LTarget);
+    end;
+    LEndPosition := AStream.Position;
+    StreamWriteInteger(AStream, LTargetCount, LCountPosition);
+    AStream.Position := LEndPosition;
     StreamInsertLKFloat(AStream, FEvent.FDispatchTime);
     StreamInsertLKFloat(AStream, FEvent.FExpiresAfter);
     StreamInsertTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
@@ -888,22 +871,15 @@ end;
 procedure TLKEventStreamable.ReadFromStream(const AStream: TStream);
 var
   I, LCount: Integer;
-  LPreProcessorClass: TLKEventPreProcessorClass;
 begin
   FEvent.Lock;
   try
     FEvent.FCreatedTime := StreamReadLKFloat(AStream);
     FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);
-    // Dispatch Targets Start
-    FEvent.FDispatchTargets.Clear;
+    FEvent.FDispatchTargets := [];
     LCount := StreamReadInteger(AStream);
     for I := 0 to LCount - 1 do
-    begin
-      LPreProcessorClass := EventEngine.ProcessorClassMap.GetPreProcessorClassFromGUID(StreamReadGUID(AStream));
-      if LPreProcessorClass <> nil then
-        FEvent.FDispatchTargets.Add(LPreProcessorClass);
-    end;
-    // Dispatch Targets End
+      FEvent.FDispatchTargets := FEvent.FDispatchTargets + [StreamReadTLKEventTarget(AStream)];
     FEvent.FDispatchTime := StreamReadLKFloat(AStream);
     FEvent.FExpiresAfter := StreamReadLKFloat(AStream);
     FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(AStream);
@@ -918,17 +894,25 @@ end;
 
 procedure TLKEventStreamable.WriteToStream(const AStream: TStream);
 var
-  I: Integer;
+  LCountPosition, LEndPosition: Int64;
+  LTarget: TLKEventTarget;
+  LTargetCount: Integer;
 begin
   FEvent.Lock;
   try
     StreamWriteLKFloat(AStream, FEvent.FCreatedTime);
     StreamWriteTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
-    // Dispatch Targets Start
-    StreamWriteInteger(AStream, FEvent.FDispatchTargets.Count);
-    for I := 0 to FEvent.FDispatchTargets.Count - 1 do
-      StreamWriteGUID(AStream, FEvent.FDispatchTargets[I].GetTypeGUID);
-    // Dispatch Targets End
+    LTargetCount := 0;
+    LCountPosition := AStream.Position;
+    StreamWriteInteger(AStream, LTargetCount);
+    for LTarget in FEvent.FDispatchTargets do
+    begin
+      Inc(LTargetCount);
+      StreamWriteTLKEventTarget(AStream, LTarget);
+    end;
+    LEndPosition := AStream.Position;
+    StreamWriteInteger(AStream, LTargetCount, LCountPosition);
+    AStream.Position := LEndPosition;
     StreamWriteLKFloat(AStream, FEvent.FDispatchTime);
     StreamWriteLKFloat(AStream, FEvent.FExpiresAfter);
     StreamWriteTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
@@ -1095,13 +1079,11 @@ end;
 constructor TLKEventPreProcessor.Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic);
 begin
   inherited Create;
-  EventEngine.ProcessorClassMap.RegisterPreProcessorClass(GetTypeGUID, GetPreProcessorClass);
   FRegistrationMode := ARegistrationMode;
 end;
 
 destructor TLKEventPreProcessor.Destroy;
 begin
-  EventEngine.ProcessorClassMap.UnregisterPreProcessorClass(GetTypeGUID);
   Unregister;
   inherited;
 end;
@@ -1131,13 +1113,6 @@ end;
 procedure TLKEventStreamProcessor.CannotProcessEventStreamable(const AEvent: TLKEvent; const ADelta, AStartTime: LKFLoat);
 begin
   // Do nothing
-end;
-
-class function TLKEventStreamProcessor.GetTypeGUID: TGUID;
-const
-  MY_GUID: TGUID = '{DBB860AA-F145-4D35-B856-9EDD7379004B}';
-begin
-  Result := MY_GUID;
 end;
 
 procedure TLKEventStreamProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
@@ -1274,60 +1249,6 @@ begin
   end;
 end;
 
-{ TLKEventPreProcessorTypes }
-
-constructor TLKEventPreProcessorTypes.Create;
-begin
-  inherited;
-  FPreProcessorMap := TLKEventThreadPreProcessorGUIDMap.Create(5);
-end;
-
-destructor TLKEventPreProcessorTypes.Destroy;
-begin
-  FPreProcessorMap.Free;
-  inherited;
-end;
-
-function TLKEventPreProcessorTypes.GetPreProcessorClassFromGUID(const AGUID: TGUID): TLKEventPreProcessorClass;
-begin
-  Lock;
-  try
-    FPreProcessorMap.TryGetValue(AGUID, Result);
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKEventPreProcessorTypes.RegisterPreProcessorClass(const AGUID: TGUID; const APreProcessorClass: TLKEventPreProcessorClass; AExceptIfExists: Boolean = True);
-begin
-  Lock;
-  try
-    if FPreProcessorMap.ContainsKey(AGUID) then
-    begin
-      if AExceptIfExists then
-        raise ELKEventPreProcessorMapperGUIDExists.CreateFmt('GUID "%s" Already Registered to Event PreProcessor Class "%s"', [GUIDToString(AGUID), FPreProcessorMap.ExtractPair(AGUID).Value.ClassName]);
-    end else
-    begin
-      FPreProcessorMap.Add(AGUID, APreProcessorClass);
-    end;
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKEventPreProcessorTypes.UnregisterPreProcessorClass(const AGUID: TGUID; AExceptIfNotExists: Boolean);
-begin
-  Lock;
-  try
-    if FPreProcessorMap.ContainsKey(AGUID) then
-      FPreProcessorMap.Remove(AGUID)
-    else if AExceptIfNotExists then
-      raise ELKEVentPreProcessorMapperGUIDNotExist.CreateFmt('Event PreProcessor with GUID "%s" Not Registered!', [GUIDToString(AGUID)]);
-  finally
-    Unlock;
-  end;
-end;
-
 { TLKEventEngine }
 
 procedure TLKEventEngine.AfterConstruction;
@@ -1339,14 +1260,12 @@ constructor TLKEventEngine.Create;
 begin
   inherited;
   FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
-  FPreProcessorClassMap := TLKEventPreProcessorTypes.Create;
   FThreads := TLKEventThreadList.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
   FThreads.Free;
-  FPreProcessorClassMap.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
 end;
@@ -1357,12 +1276,13 @@ var
 begin
   AEvent.Ref;
   try
-    QueueInThreads(AEvent);
+    if TLKEventTarget.edThreads in AEvent.DispatchTargets then
+      QueueInThreads(AEvent);
     FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
     try
       for I := 0 to FPreProcessors.Count - 1 do
         if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-          if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
+          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].QueueEvent(AEvent)
     finally
       FPreProcessors.Unlock;
@@ -1407,12 +1327,13 @@ var
 begin
   AEvent.Ref;
   try
-    StackInThreads(AEvent);
+    if TLKEventTarget.edThreads in AEvent.DispatchTargets then
+      StackInThreads(AEvent);
     FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
     try
       for I := 0 to FPreProcessors.Count - 1 do
         if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-          if (AEvent.DispatchTargets.IsEmpty) or (AEvent.DispatchTargets.Contains(FPreProcessors[I].GetPreProcessorClass)) then
+          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].StackEvent(AEvent);
     finally
       FPreProcessors.Unlock;
