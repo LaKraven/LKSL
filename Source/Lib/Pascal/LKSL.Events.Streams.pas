@@ -211,7 +211,7 @@ end;
 
 procedure StreamInsertTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64);
 const
-  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4);
+  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4, 5);
 begin
   StreamMakeSpace(AStream, APosition, SizeOf(Byte));
   AStream.Write(STATES[AValue], SizeOf(Byte));
@@ -287,7 +287,7 @@ end;
 
 function StreamReadTLKEventState(const AStream: TStream; const APosition: Int64): TLKEventState;
 const
-  STATES: Array[0..4] of TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
+  STATES: Array[0..5] of TLKEventState = (esNotDispatched, esScheduled, esDispatched, esProcessing, esProcessed, esCancelled);
 var
   LState: Byte;
 begin
@@ -360,7 +360,7 @@ end;
 
 procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEventState; const APosition: Int64);
 const
-  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4);
+  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4, 5);
 begin
   AStream.Position := APosition;
   AStream.Write(STATES[AValue], SizeOf(Byte));

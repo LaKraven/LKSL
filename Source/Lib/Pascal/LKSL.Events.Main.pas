@@ -98,7 +98,7 @@ type
   TLKEventTarget = (edThreads, edPools, edRecorders, edRemotes, edUknown);
   TLKEventTargets = set of TLKEventTarget;
   ///  <summary><c>The current State of an Event.</c></summary>
-  TLKEventState = (esNotDispatched, esDispatched, esProcessing, esProcessed, esCancelled);
+  TLKEventState = (esNotDispatched, esScheduled, esDispatched, esProcessing, esProcessed, esCancelled);
   ///  <summary><c>Describes whether or not an Event-related Type should automatically Register itself on Construction.</c></summary>
   TLKEventRegistrationMode = (ermAutomatic, ermManual);
   ///  <summary><c>Used to define whether a </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Main|TLKEventListener"/><c> should accept Descendants of the defined </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></summary>
@@ -130,6 +130,15 @@ type
   private
     ///  <summary><c>The Time at which the Event was Created.</c></summary>
     FCreatedTime: LKFloat;
+    ///  <summary><c>The Time (in Seconds) after which the Event should be Dispatched.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Value represents an Offset (in Seconds) from </c><see DisplayName="FDispatchTime" cref="LKSL.Events.Main|TLKEvent.FDispatchTime"/></para>
+    ///    <para><c>0 = Instant Dispatch (no Scheduling)</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
+    FDispatchAfter: LKFloat;
+    ///  <summary><c>The Physical Reference Time at which the Event should be Dispatched by the Scheduler.</c></summary>
+    FDispatchAt: LKFloat;
     ///  <summary><c>The Method by which the Event was Dispatched.</c></summary>
     ///  <remarks><c>We either Queue an Event, or Stack it!</c></remarks>
     FDispatchMethod: TLKEventDispatchMethod;
@@ -156,13 +165,15 @@ type
     ///  <summary><c>Current State of this Event.</c></summary>
     FState: TLKEventState;
 
-    function GetDispathcTargets: TLKEventTargets;
+    function GetDispatchAfter: LKFloat;
+    function GetDispatchTargets: TLKEventTargets;
     function GetDispatchTime: LKFloat;
     function GetExpiresAfter: LKFloat;
     function GetHasExpired: Boolean;
     function GetProcessedTime: LKFloat;
     function GetState: TLKEventState;
 
+    procedure SetDispatchAfter(const ADispatchAfter: LKFloat);
     procedure SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
 
@@ -172,6 +183,12 @@ type
     ///  <remarks><c>If the resulting Count = 0, the Event is Freed.</c></remarks>
     procedure Unref;
   protected
+    ///  <summary><c>Override if you want your Event Type to Schedule its Dispatch by default.</c></summary>
+    ///  <remarks>
+    ///    <para>0<c> = no Scheduling</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
+    function GetDefaultDispatchAfter: LKFloat; virtual;
     ///  <summary><c>Override if you want your Event Type to only dispatch to specific Targets.</c></summary>
     function GetDefaultDispatchTargets: TLKEventTargets; virtual;
     ///  <summary><c>Override if you want your Event Type to Expire after a specific amount of time.</c></summary>
@@ -201,8 +218,9 @@ type
     procedure ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
+    property DispatchAfter: LKFloat read GetDispatchAfter write SetDispatchAfter;
     property DispatchMethod: TLKEventDispatchMethod read FDispatchMethod; // ATOMIC OPERATION
-    property DispatchTargets: TLKEventTargets read GetDispathcTargets write SetDispatchTargets;
+    property DispatchTargets: TLKEventTargets read GetDispatchTargets write SetDispatchTargets;
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
     property HasExpired: Boolean read GetHasExpired;
@@ -476,12 +494,43 @@ uses
 
 type
   { Forward Declarations }
+  TLKEventScheduleList = class;
+  TLKEventScheduler = class;
   TLKEventEngine = class;
+
+  ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
+  TLKEventScheduleList = class(TLKSortedList<TLKEvent>)
+  protected
+    // Parity Checks
+    function AEqualToB(const A, B: TLKEvent): Boolean; override;
+    function AGreaterThanB(const A, B: TLKEvent): Boolean; override;
+    function AGreaterThanOrEqualB(const A, B: TLKEvent): Boolean; override;
+    function ALessThanB(const A, B: TLKEvent): Boolean; override;
+    function ALessThanOrEqualB(const A, B: TLKEvent): Boolean; override;
+  public
+    destructor Destroy; override;
+  end;
+
+  ///  <summary><c>The actual Event Scheduler</c></summary>
+  ///  <remarks><c>Takes care of Dispatching </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances when the appropriate time comes.</c></remarks>
+  TLKEventScheduler = class(TLKThread)
+  private
+    FEvents: TLKEventScheduleList;
+    FNextEventTime: LKFloat;
+  protected
+    function GetInitialThreadState: TLKThreadState; override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure ScheduleEvent(const AEvent: TLKEvent); inline;
+  end;
 
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
   TLKEventEngine = class(TLKPersistent)
   private
     FPreProcessors: TLKEventPreProcessorList;
+    FScheduler: TLKEventScheduler;
     FThreads: TLKEventThreadList;
   public
     constructor Create; override;
@@ -521,6 +570,7 @@ constructor TLKEvent.Create(const ALifetimeControl: TLKEventLifetimeControl = el
 begin
   inherited Create;
   FCreatedTime := GetReferenceTime; // We've just created it...
+  FDispatchAfter := GetDefaultDispatchAfter; // To Schedule, or NOT To Schedule?...
   FDispatchMethod := edmNotDispatched; // It hasn't yet been dispatched...
   FDispatchTime := 0; // We haven't dispatched it yet...
   FDispatchTargets := GetDefaultDispatchTargets;
@@ -534,6 +584,11 @@ end;
 destructor TLKEvent.Destroy;
 begin
   inherited;
+end;
+
+function TLKEvent.GetDefaultDispatchAfter: LKFloat;
+begin
+  Result := 0;
 end;
 
 function TLKEvent.GetDefaultDispatchTargets: TLKEventTargets;
@@ -556,7 +611,17 @@ begin
   end;
 end;
 
-function TLKEvent.GetDispathcTargets: TLKEventTargets;
+function TLKEvent.GetDispatchAfter: LKFloat;
+begin
+  Lock;
+  try
+    Result := FDispatchAfter;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEvent.GetDispatchTargets: TLKEventTargets;
 begin
   Lock;
   try
@@ -638,18 +703,24 @@ end;
 
 procedure TLKEvent.ScheduleQueue(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
 begin
-  FDispatchTime := GetReferenceTime;
-  FLifetimeControl := ALifetimeControl;
-  { TODO -oSJS -cEvent Engine (Redux) : Implement Event Scheduler }
-  Queue(ALifetimeControl); // TEMPORARY!
+  FDispatchAfter := AScheduleFor;
+  Queue(ALifetimeControl);
 end;
 
 procedure TLKEvent.ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
 begin
-  FDispatchTime := GetReferenceTime;
-  FLifetimeControl := ALifetimeControl;
-  { TODO -oSJS -cEvent Engine (Redux) : Implement Event Scheduler }
-  Stack(ALifetimeControl); // TEMPORARY!
+  FDispatchAfter := AScheduleFor;
+  Stack(ALifetimeControl);
+end;
+
+procedure TLKEvent.SetDispatchAfter(const ADispatchAfter: LKFloat);
+begin
+  Lock;
+  try
+    FDispatchAfter := ADispatchAfter;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
@@ -857,6 +928,7 @@ begin
   FEvent.Lock;
   try
     StreamInsertLKFloat(AStream, FEvent.FCreatedTime);
+    StreamInsertLKFloat(AStream, FEvent.FDispatchAfter);
     StreamInsertTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
     LTargetCount := 0;
     LCountPosition := AStream.Position;
@@ -889,6 +961,7 @@ begin
   FEvent.Lock;
   try
     FEvent.FCreatedTime := StreamReadLKFloat(AStream);
+    FEvent.FDispatchAfter := StreamReadLKFloat(AStream);
     FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);
     FEvent.FDispatchTargets := [];
     LCount := StreamReadInteger(AStream);
@@ -915,6 +988,7 @@ begin
   FEvent.Lock;
   try
     StreamWriteLKFloat(AStream, FEvent.FCreatedTime);
+    StreamWriteLKFloat(AStream, FEvent.FDispatchAfter);
     StreamWriteTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
     LTargetCount := 0;
     LCountPosition := AStream.Position;
@@ -1042,15 +1116,12 @@ procedure TLKEventContainer.ProcessEvents(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEventList(FEventStack, ADelta, AStartTime); // Stack first
   ProcessEventList(FEventQueue, ADelta, AStartTime); // Queue second
-  if GetPauseOnNoEvent then
+  if (GetPauseOnNoEvent) and ((FEventStack.IsEmpty) and (FEventQueue.IsEmpty)) then
   begin
-    if (FEventStack.IsEmpty) and (FEventQueue.IsEmpty) then
-    begin
-      if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
-        Rest
-      else if FPauseAt = 0 then
-        FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
-    end;
+    if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
+      Rest
+    else if FPauseAt = 0 then
+      FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
   end;
 end;
 
@@ -1263,6 +1334,97 @@ begin
   end;
 end;
 
+{ TLKEventScheduleList }
+
+function TLKEventScheduleList.AEqualToB(const A, B: TLKEvent): Boolean;
+begin
+  Result := (A.FDispatchAt = B.FDispatchAt);
+end;
+
+function TLKEventScheduleList.AGreaterThanB(const A, B: TLKEvent): Boolean;
+begin
+  Result := (A.FDispatchAt > B.FDispatchAt);
+end;
+
+function TLKEventScheduleList.AGreaterThanOrEqualB(const A, B: TLKEvent): Boolean;
+begin
+  Result := (A.FDispatchAt >= B.FDispatchAt);
+end;
+
+function TLKEventScheduleList.ALessThanB(const A, B: TLKEvent): Boolean;
+begin
+  Result := (A.FDispatchAt < B.FDispatchAt);
+end;
+
+function TLKEventScheduleList.ALessThanOrEqualB(const A, B: TLKEvent): Boolean;
+begin
+  Result := (A.FDispatchAt <= B.FDispatchAt);
+end;
+
+destructor TLKEventScheduleList.Destroy;
+var
+  I: Integer;
+begin
+  for I := Count - 1 downto 0 do
+  begin
+    Items[I].Unref;
+    Items[I].Free;
+  end;
+  Clear(False);
+  inherited;
+end;
+
+{ TLKEventScheduler }
+
+constructor TLKEventScheduler.Create;
+begin
+  inherited;
+  FNextEventTime := 0;
+  FEvents := TLKEventScheduleList.Create;
+end;
+
+destructor TLKEventScheduler.Destroy;
+begin
+  FEvents.Free;
+  inherited;
+end;
+
+function TLKEventScheduler.GetInitialThreadState: TLKThreadState;
+begin
+  Result := tsPaused;
+end;
+
+procedure TLKEventScheduler.ScheduleEvent(const AEvent: TLKEvent);
+begin
+  AEvent.Ref;
+  FEvents.Add(AEvent);
+  Wake;
+end;
+
+procedure TLKEventScheduler.Tick(const ADelta, AStartTime: LKFloat);
+begin
+    if FEvents.Count > 0 then
+    begin
+      if FEvents[0].FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
+      begin
+        FEvents[0].FDispatchAfter := 0;
+        case FEvents[0].DispatchMethod of // If so...
+          edmQueue: FEvents[0].Queue; // ... send Dispatch to the queue...
+          edmStack: FEvents[0].Stack; // ... or the Stack...
+        end;
+        FEvents.Lock;
+        try
+          FEvents[0].Unref; // ... then remove the container...
+          FEvents.Delete(0); // ... and delete the entry from the Schedule
+        finally
+          FEvents.Unlock;
+        end;
+      end else
+        Sleep(1);
+    end else
+      Rest;
+end;
+
 { TLKEventEngine }
 
 procedure TLKEventEngine.AfterConstruction;
@@ -1275,10 +1437,12 @@ begin
   inherited;
   FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
   FThreads := TLKEventThreadList.Create;
+  FScheduler := TLKEventScheduler.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
+  FScheduler.Free;
   FThreads.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
@@ -1290,16 +1454,23 @@ var
 begin
   AEvent.Ref;
   try
-    if TLKEventTarget.edThreads in AEvent.DispatchTargets then
-      QueueInThreads(AEvent);
-    FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-    try
-      for I := 0 to FPreProcessors.Count - 1 do
-        if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
+    if AEvent.DispatchAfter > 0 then
+    begin
+      AEvent.FDispatchAt := (AEvent.DispatchTime + AEvent.DispatchAfter);
+      AEvent.FState := esScheduled;
+      FScheduler.ScheduleEvent(AEvent);
+    end else
+    begin
+      if TLKEventTarget.edThreads in AEvent.DispatchTargets then
+        QueueInThreads(AEvent);
+      FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+      try
+        for I := 0 to FPreProcessors.Count - 1 do
+          if ((AEvent.State <> esCancelled) and (not AEvent.HasExpired)) and (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].QueueEvent(AEvent)
-    finally
-      FPreProcessors.Unlock;
+      finally
+        FPreProcessors.Unlock;
+      end;
     end;
   finally
     AEvent.Unref;
