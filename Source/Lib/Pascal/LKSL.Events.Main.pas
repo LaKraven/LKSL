@@ -156,12 +156,14 @@ type
     ///  <summary><c>Current State of this Event.</c></summary>
     FState: TLKEventState;
 
+    function GetDispathcTargets: TLKEventTargets;
     function GetDispatchTime: LKFloat;
     function GetExpiresAfter: LKFloat;
     function GetHasExpired: Boolean;
     function GetProcessedTime: LKFloat;
     function GetState: TLKEventState;
 
+    procedure SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
     procedure SetExpiresAfter(const AExpiresAfter: LKFloat);
 
     ///  <summary><c>Incrememnts (atomically) the Reference Count for the Event.</c></summary>
@@ -198,12 +200,9 @@ type
     ///  <summary><c>Schedule the Event to be Dispatched through the Stack</c></summary>
     procedure ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 
-    ///  <summary><c>Override the Type-defined default Dispatch Targets for a speciifc Instance.</c></summary>
-    procedure SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
-
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
     property DispatchMethod: TLKEventDispatchMethod read FDispatchMethod; // ATOMIC OPERATION
-    property DispatchTargets: TLKEventTargets read FDispatchTargets;
+    property DispatchTargets: TLKEventTargets read GetDispathcTargets write SetDispatchTargets;
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
     property HasExpired: Boolean read GetHasExpired;
@@ -557,6 +556,16 @@ begin
   end;
 end;
 
+function TLKEvent.GetDispathcTargets: TLKEventTargets;
+begin
+  Lock;
+  try
+    Result := FDispatchTargets;
+  finally
+    Unlock;
+  end;
+end;
+
 class function TLKEvent.GetEventType: TLKEventClass;
 begin
   Result := TLKEventClass(Self);
@@ -645,7 +654,12 @@ end;
 
 procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
 begin
-  FDispatchTargets := ADispatchTargets;
+  Lock;
+  try
+    FDispatchTargets := ADispatchTargets;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: LKFloat);
