@@ -103,6 +103,10 @@ type
     FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
+    procedure CalculateTickRateAverage(const ATickRateDesired, ATickRate, ACurrentTime: LKFloat; var ALastAverageCheckpoint, ANextAverageCheckpoint: LKFloat; var AAverageTicks: Integer);
+    procedure InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer; var AWakeInterval: Cardinal);
+    procedure PullAtomicCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal); inline;
+
     function GetNextTickTime: LKFloat;
     function GetThreadState: TLKThreadState;
     function GetTickRate: LKFloat;
@@ -308,48 +312,83 @@ begin
   inherited;
 end;
 
+procedure TLKThread.CalculateTickRateAverage(const ATickRateDesired, ATickRate, ACurrentTime: LKFloat; var ALastAverageCheckpoint, ANextAverageCheckpoint: LKFloat; var AAverageTicks: Integer);
+var
+  LTickRateAverage: LKFloat;
+begin
+  // Calculate AVEARAGE Tick Rate
+  if ACurrentTime >= ANextAverageCheckpoint then
+  begin
+    ANextAverageCheckpoint := ACurrentTime + TickRateAverageOver;
+    ALastAverageCheckpoint := ACurrentTime;
+    AAverageTicks := -1;
+  end;
+  Inc(AAverageTicks);
+  if (ACurrentTime - ALastAverageCheckpoint > 0) then
+  begin
+    LTickRateAverage := AAverageTicks / (ACurrentTime - ALastAverageCheckpoint);
+    SetTickRateAverage(LTickRateAverage);
+    if ATickRateDesired > 0 then
+      SetTickRateExtraTicksAverage(LTickRateAverage - ATickRateDesired)
+    else
+      SetTickRateExtraTicksAverage(0);
+  end else
+  begin
+    SetTickRateAverage(ATickRate);
+  end;
+end;
+
+procedure TLKThread.InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer; var AWakeInterval: Cardinal);
+begin
+  ACurrentTime := GetReferenceTime;
+  Lock;
+  try
+  FNextTickTime := ACurrentTime;
+  finally
+    Unlock;
+  end;
+  ALastAverageCheckpoint := 0;
+  ANextAverageCheckpoint := 0;
+  ATickRate := 0;
+  AAverageTicks := 0;
+  AWakeInterval := GetWakeInterval;
+end;
+
+procedure TLKThread.PullAtomicCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal);
+begin
+  Lock;
+  try
+    ATickRateLimit := FTickRateLimit;
+    ATickRateDesired := FTickRateDesired;
+    AThrottleInterval := FThrottleInterval;
+    AWakeInterval := FWakeInterval;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKThread.Execute;
 var
   LDelta, LCurrentTime: LKFloat;
-  LTickRate, LTickRateLimit, LTickRateDesired, LTickRateAverage: LKFloat;
+  LTickRate, LTickRateLimit, LTickRateDesired: LKFloat;
   LLastAverageCheckpoint, LNextAverageCheckpoint: LKFloat;
   LAverageTicks: Integer;
   LThrottleInterval: Cardinal;
   LWakeInterval: Cardinal;
 begin
-  LCurrentTime := GetReferenceTime;
-  Lock;
-  try
-  FNextTickTime := LCurrentTime;
-  finally
-    Unlock;
-  end;
-  LLastAverageCheckpoint := 0;
-  LNextAverageCheckpoint := 0;
-  LTickRate := 0;
-  LAverageTicks := 0;
-  LWakeInterval := GetWakeInterval;
+  InitializeTickVariables(LCurrentTime, LLastAverageCheckpoint, LNextAverageCheckpoint, LTickRate, LAverageTicks, LWakeInterval);
   while (not Terminated) do
   begin
     if ThreadState = tsRunning then
     begin
-      // Read once so we don't have to keep Acquiring the Lock!
-      Lock;
-      try
-        LTickRateLimit := FTickRateLimit;
-        LTickRateDesired := FTickRateDesired;
-        LThrottleInterval := FThrottleInterval;
-        LWakeInterval := FWakeInterval;
-      finally
-        Unlock;
-      end;
+      PullAtomicCycleValues(LTickRateLimit, LTickRateDesired, LThrottleInterval, LWakeInterval);
+
       LCurrentTime := GetReferenceTime;
       LDelta := (LCurrentTime - FNextTickTime);
 
       // Rate Limiter
-      if (LTickRateLimit > 0) then
-        if (LDelta < ( 1 / LTickRateLimit)) then
-          LDelta := (1 / LTickRateLimit);
+      if ((LTickRateLimit > 0)) and (LDelta < ( 1 / LTickRateLimit)) then
+        LDelta := (1 / LTickRateLimit);
 
       // Calculate INSTANT Tick Rate
       if LDelta > 0 then
@@ -371,27 +410,7 @@ begin
       // Tick or Wait...
       if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0)) or (LTickRateLimit = 0) then
       begin
-
-        // Calculate AVEARAGE Tick Rate
-        if LCurrentTime >= LNextAverageCheckpoint then
-        begin
-          LNextAverageCheckpoint := LCurrentTime + TickRateAverageOver;
-          LLastAverageCheckpoint := LCurrentTime;
-          LAverageTicks := -1;
-        end;
-        Inc(LAverageTicks);
-        if (LCurrentTime - LLastAverageCheckpoint > 0) then
-        begin
-          LTickRateAverage := LAverageTicks / (LCurrentTime - LLastAverageCheckpoint);
-          SetTickRateAverage(LTickRateAverage);
-          if LTickRateDesired > 0 then
-            SetTickRateExtraTicksAverage(LTickRateAverage - LTickRateDesired)
-          else
-            SetTickRateExtraTicksAverage(0);
-        end else
-        begin
-          SetTickRateAverage(LTickRate);
-        end;
+        CalculateTickRateAverage(LTickRateDesired, LTickRate, LCurrentTime, LLastAverageCheckpoint, LNextAverageCheckpoint, LAverageTicks);
         Lock;
         try
           FNextTickTime := FNextTickTime + LDelta;
