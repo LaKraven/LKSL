@@ -1410,7 +1410,7 @@ begin
         FEvents[0].FDispatchAfter := 0;
         FEvents[0].FDispatchTime := GetReferenceTime;
         case FEvents[0].DispatchMethod of // If so...
-          edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... send Dispatch to the queue...
+          edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... Dispatch to the queue...
           edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
         end;
         FEvents.Lock;
@@ -1421,7 +1421,7 @@ begin
           FEvents.Unlock;
         end;
       end else
-        Sleep(1);
+        Sleep(1); // TODO -oSJS -cEvent Engine (Redux): Replace with the "Smart Sleep" solution from TLKThread
     end else
       Rest;
 end;
