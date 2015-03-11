@@ -44,10 +44,10 @@ In fact, there are plans to change many of them (particularly in the Event Engin
 
 Current Features
 ====
-  - Stream Handling Library (makes working with Streams much easier)
-  - Streamables Engine (an engine for serializing and loading custom objects to/from Streams)
-  - High Precision Threading (a special Thread type which provide extremely accurate "reference times" for interpolation)
-  - Event Engine (a VERY powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems)
+  - **Stream Handling Library**: makes working with Streams much easier.
+  - **Streamables Engine**: an engine for serializing and loading custom objects to/from Streams.
+  - **High Precision Threading**: a special Thread type which provide extremely accurate "reference times" for interpolation and extrapolation (perfect for powering Simulation and Rendering processes).
+  - **Event Engine**: a *very* powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems.
 
 Documentation
 ====
