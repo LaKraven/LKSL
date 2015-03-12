@@ -1,7 +1,16 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
-This library provides a vast (and growing) range of powerful features for the following programming tools:
+Current Features
+====
+  - **Stream Handling Library**: makes working with Streams much easier.
+  - **Streamables Engine**: an engine for serializing and loading custom objects to/from Streams.
+  - **High Precision Threading**: a special Thread type which provide extremely accurate "reference times" for interpolation and extrapolation (perfect for powering Simulation and Rendering processes).
+  - **Event Engine**: a *very* powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems.
+  - **SI Units Math**: A library to convert between different SI Units, their orders of magnitude, and a growing number of other mathematical functions.
+
+Supported Programming Tools
+====
   - **Delphi {and AppMethod Pascal}**
       - Win32
       - Win64
@@ -41,14 +50,6 @@ Please keep in mind that this library is still in its infancy, and while many of
 In fact, there are plans to change many of them (particularly in the Event Engine units). This redesign effort is referred to internally as the "redux". You will see it mentioned quite often in recent commits.
 
 > NOTE: C++ Builder versions will be added at a slower rate (unless you want to help producing verbatim C++ translations of the Delphi units, which would be very-much welcomed)
-
-Current Features
-====
-  - **Stream Handling Library**: makes working with Streams much easier.
-  - **Streamables Engine**: an engine for serializing and loading custom objects to/from Streams.
-  - **High Precision Threading**: a special Thread type which provide extremely accurate "reference times" for interpolation and extrapolation (perfect for powering Simulation and Rendering processes).
-  - **Event Engine**: a *very* powerful, highly optimized engine for producing Multi-Threaded, Asynchronous, Event-Driven systems.
-  - **SI Units Math**: A library to convert between different SI Units, their orders of magnitude, and a growing number of other mathematical functions.
 
 Documentation
 ====
