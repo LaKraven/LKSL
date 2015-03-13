@@ -455,7 +455,7 @@ type
   end;
 
   ///  <summary><c>A special kind of Thread, designed to operate using Events.</c></summary>
-  TLKEventThread = class(TLKEventContainer)
+  TLKEventThread = class abstract(TLKEventContainer)
   private
     FListeners: TLKEventListenerList;
     ///  <summary><c>Dictates whether this Event Thread should be automatically Registered after Construction.</c></summary>
