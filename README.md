@@ -11,19 +11,19 @@ Current Features
 
 Supported Programming Tools
 ====
-  - **Delphi {and AppMethod Pascal}**
+  - **Delphi (XE2-XE8) {and AppMethod Pascal}**
       - Win32
       - Win64
       - MacOS
       - iOS
       - Android
-  - **C++ Builder {and AppMethod C++}** (_coming soon_)
+  - **C++ Builder (XE2-XE8) {and AppMethod C++}** (_coming soon_)
       - Win32
       - Win64
       - MacOS
       - iOS
       - Android
-  - **FreePascal/Lazarus** (_work in progress_)
+  - **FreePascal/Lazarus (3.0.x and Newer)** (_work in progress_)
       - Win32
       - Win64
       - MacOS
