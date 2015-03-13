@@ -103,10 +103,13 @@ type
     FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
+    { Internal Methods }
+    procedure AtomicIncrementNextTickTime(const AIncrementBy: LKFloat); inline;
     procedure CalculateTickRateAverage(const ATickRateDesired, ATickRate, ACurrentTime: LKFloat; var ALastAverageCheckpoint, ANextAverageCheckpoint: LKFloat; var AAverageTicks: Integer);
     procedure InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer; var AWakeInterval: Cardinal);
-    procedure PullAtomicCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal); inline;
+    procedure AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal); inline;
 
+    { Property Getters }
     function GetNextTickTime: LKFloat;
     function GetThreadState: TLKThreadState;
     function GetTickRate: LKFloat;
@@ -121,6 +124,7 @@ type
     function GetThrottleInterval: Cardinal;
     function GetWakeInterval: Cardinal;
 
+    { Property Setters }
     procedure SetThreadState(const AThreadState: TLKThreadState);
     procedure SetTickRate(const ATickRate: LKFloat); // Used internally!
     procedure SetTickRateAverage(const ATickRateAverage: LKFloat); // Used internally!
@@ -354,7 +358,7 @@ begin
   AWakeInterval := GetWakeInterval;
 end;
 
-procedure TLKThread.PullAtomicCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal);
+procedure TLKThread.AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal);
 begin
   Lock;
   try
@@ -362,6 +366,16 @@ begin
     ATickRateDesired := FTickRateDesired;
     AThrottleInterval := FThrottleInterval;
     AWakeInterval := FWakeInterval;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKThread.AtomicIncrementNextTickTime(const AIncrementBy: LKFloat);
+begin
+  Lock;
+  try
+    FNextTickTime := FNextTickTime + AIncrementBy;
   finally
     Unlock;
   end;
@@ -381,9 +395,8 @@ begin
   begin
     if ThreadState = tsRunning then
     begin
-      PullAtomicCycleValues(LTickRateLimit, LTickRateDesired, LThrottleInterval, LWakeInterval);
-
       LCurrentTime := GetReferenceTime;
+      AtomicInitializeCycleValues(LTickRateLimit, LTickRateDesired, LThrottleInterval, LWakeInterval);
       LDelta := (LCurrentTime - FNextTickTime);
 
       // Rate Limiter
@@ -411,12 +424,7 @@ begin
       if ((LCurrentTime >= FNextTickTime) and (LTickRateLimit > 0)) or (LTickRateLimit = 0) then
       begin
         CalculateTickRateAverage(LTickRateDesired, LTickRate, LCurrentTime, LLastAverageCheckpoint, LNextAverageCheckpoint, LAverageTicks);
-        Lock;
-        try
-          FNextTickTime := FNextTickTime + LDelta;
-        finally
-          Unlock;
-        end;
+        AtomicIncrementNextTickTime(LDelta);
         Tick(LDelta, LCurrentTime);
       end else
       begin

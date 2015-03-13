@@ -1402,28 +1402,32 @@ begin
 end;
 
 procedure TLKEventScheduler.Tick(const ADelta, AStartTime: LKFloat);
+var
+  LThrottleInterval: Cardinal;
 begin
-    if FEvents.Count > 0 then
+  LThrottleInterval := ThrottleInterval; // Pull once to prevent unnecessary locking
+  if FEvents.Count > 0 then
+  begin
+    if FEvents[0].FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
     begin
-      if FEvents[0].FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
-      begin
-        FEvents[0].FDispatchAfter := 0;
-        FEvents[0].FDispatchTime := GetReferenceTime;
-        case FEvents[0].DispatchMethod of // If so...
-          edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... Dispatch to the queue...
-          edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
-        end;
-        FEvents.Lock;
-        try
-          FEvents[0].Unref; // ... then remove the container...
-          FEvents.Delete(0); // ... and delete the entry from the Schedule
-        finally
-          FEvents.Unlock;
-        end;
-      end else
-        Sleep(1); // TODO -oSJS -cEvent Engine (Redux): Replace with the "Smart Sleep" solution from TLKThread
+      FEvents[0].FDispatchAfter := 0;
+      FEvents[0].FDispatchTime := GetReferenceTime;
+      case FEvents[0].DispatchMethod of // If so...
+        edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... Dispatch to the queue...
+        edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
+      end;
+      FEvents.Lock;
+      try
+        FEvents[0].Unref; // ... then remove the container...
+        FEvents.Delete(0); // ... and delete the entry from the Schedule
+      finally
+        FEvents.Unlock;
+      end;
     end else
-      Rest;
+      if (FEvents[0].FDispatchAt - GetReferenceTime >= LThrottleInterval / 1000) then
+        TThread.Sleep(LThrottleInterval);
+  end else
+    Rest;
 end;
 
 { TLKEventEngine }
