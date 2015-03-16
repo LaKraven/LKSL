@@ -392,7 +392,7 @@ type
     ///  <remarks>
     ///    <para><c>A small delay is good when performance is critical.</c></para>
     ///    <para><c>Value is presented in Seconds.</c></para>
-    ///    <para><c>Default =</c> 0.50 <c>seconds</c></para>
+    ///    <para><c>Default =</c> 0.25 <c>seconds</c></para>
     ///  </remarks>
     function GetDefaultPauseDelay: LKFloat; virtual;
     ///  <summary><c>Should this Thread self-Wake when a new Event is placed into the Stack or Queue?</c></summary>
@@ -1078,7 +1078,7 @@ end;
 
 function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
 begin
-  Result := 0.5;
+  Result := 0.25;
 end;
 
 function TLKEventContainer.GetEventCount: Integer;
