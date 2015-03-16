@@ -287,17 +287,17 @@ type
   private type
     TEventCallbackUnbound = procedure(const AEvent: T);
     TEventCallbackOfObject = procedure(const AEvent: T) of Object;
-    {$IFNDEF FPC}TEventCallbackAnonymous = reference to procedure(const AEvent: T);{$ENDIF FPC}
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}TEventCallbackAnonymous = reference to procedure(const AEvent: T);{$ENDIF SUPPORTS_REFERENCETOMETHOD}
   private
     FOnEventUnbound: TEventCallbackUnbound;
     FOnEventOfObject: TEventCallbackOfObject;
-    {$IFNDEF FPC}FOnEventAnonymous: TEventCallbackAnonymous;{$ENDIF FPC}
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}FOnEventAnonymous: TEventCallbackAnonymous;{$ENDIF SUPPORTS_REFERENCETOMETHOD}
   protected
     procedure DoEvent(const AEvent: TLKEvent); override; final;
   public
     constructor Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackUnbound; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload;
     constructor Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackOfObject; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload;
-    {$IFNDEF FPC}constructor Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackAnonymous; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload;{$ENDIF FPC}
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}constructor Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackAnonymous; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload;{$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
     function GetEventClass: TLKEventClass; override; final;
   end;
@@ -865,13 +865,13 @@ begin
   inherited Create(AEventThread, ARegistrationMode);
   FOnEventOfObject := AOnEventCallback;
 end;
-
-constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackAnonymous; const ARegistrationMode: TLKEventRegistrationMode);
-begin
-  inherited Create(AEventThread, ARegistrationMode);
-  FOnEventAnonymous := AOnEventCallback;
-end;
-
+{$IFDEF SUPPORTS_REFERENCETOMETHOD}
+  constructor TLKEventListener<T>.Create(const AEventThread: TLKEventThread; const AOnEventCallback: TEventCallbackAnonymous; const ARegistrationMode: TLKEventRegistrationMode);
+  begin
+    inherited Create(AEventThread, ARegistrationMode);
+    FOnEventAnonymous := AOnEventCallback;
+  end;
+{$ENDIF SUPPORTS_REFERENCETOMETHOD}
 procedure TLKEventListener<T>.DoEvent(const AEvent: TLKEvent);
 begin
   if Assigned(FOnEventUnbound) then

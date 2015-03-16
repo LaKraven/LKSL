@@ -157,7 +157,7 @@ const
 function SIMagnitudeConvert(const ASourceValue: LKFloat; const AFromMagnitude, AToMagnitude: TLKSIMagnitude): LKFloat; inline;
 function SIMagnitudeGetNotationText(const AMagnitude: TLKSIMagnitude; const ANotation: TLKSIUnitNotation): String; inline;
 procedure SIMagnitudeToBest(const AInValue: LKFloat; const AInMagnitude: TLKSIMagnitude; var AOutValue: LKFloat; var AOutMagnitude: TLKSIMagnitude); overload; inline;
-procedure SIMagnitudeToBest(var AValue: LKFloat; var AOutMagnitude: TLKSIMagnitude); overload; inline;
+procedure SIMagnitudeToBest(var AValue: LKFloat; var AMagnitude: TLKSIMagnitude); overload; inline;
 
 implementation
 
@@ -173,7 +173,7 @@ begin
   Result := LK_UNIT_MAGNITUDE_NAMES_SI[AMagnitude, ANotation];
 end;
 
-procedure SIMagnitudeToBest(var AValue: LKFloat; var AOutMagnitude: TLKSIMagnitude);
+procedure SIMagnitudeToBest(var AValue: LKFloat; var AMagnitude: TLKSIMagnitude);
 begin
   { TODO -oSJS-cSI Units : Implement method to determine most appropriate Order of Magnitude to represent given value }
 end;

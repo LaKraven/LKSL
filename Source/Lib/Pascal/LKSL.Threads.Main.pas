@@ -188,6 +188,8 @@ type
     ///  <param name="AStartTime"><c>The Reference Time at which the current Tick began.</c></param>
     procedure Tick(const ADelta, AStartTime: LKFloat); virtual; abstract;
   public
+    ///  <summary><c>Puts a Thread to sleep ONLY if there's enough time!</c></summary>
+    class function SmartSleep(const ATimeToWait: LKFloat ;const AThreshold: Cardinal): Boolean;
     constructor Create; virtual;
     destructor Destroy; override;
 
@@ -750,6 +752,16 @@ begin
     FWakeInterval := AInterval;
   finally
     Unlock;
+  end;
+end;
+
+class function TLKThread.SmartSleep(const ATimeToWait: LKFloat; const AThreshold: Cardinal): Boolean;
+begin
+  Result := False;
+  if (ATimeToWait >= AThreshold / 1000) then
+  begin
+    TThread.Sleep(AThreshold);
+    Result := True;
   end;
 end;
 
