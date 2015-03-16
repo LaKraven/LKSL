@@ -1,6 +1,10 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
+Installation
+====
+Don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
+
 Current Features
 ====
   - **Stream Handling Library**: makes working with Streams much easier.
