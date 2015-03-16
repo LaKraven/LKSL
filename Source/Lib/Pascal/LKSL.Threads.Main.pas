@@ -189,7 +189,7 @@ type
     procedure Tick(const ADelta, AStartTime: LKFloat); virtual; abstract;
   public
     ///  <summary><c>Puts a Thread to sleep ONLY if there's enough time!</c></summary>
-    class function SmartSleep(const ATimeToWait: LKFloat ;const AThreshold: Cardinal): Boolean;
+    class function SmartSleep(const ATimeToWait: LKFloat; const AThreshold: Cardinal): Boolean;
     constructor Create; virtual;
     destructor Destroy; override;
 

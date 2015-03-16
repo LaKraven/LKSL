@@ -93,6 +93,8 @@ type
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
   TLKListSortOrder = (soAscending, soDescending);
+  TLKListFinalizeMode = (fmNoFinalize, fmFinalize);
+  TLKListSmartCompactMode = (scmNoSmartCompact, scmSmartCompact);
 
   { Exception Types }
   ELKGenericCollectionsException = class(ELKException);
@@ -191,15 +193,20 @@ type
     procedure InitializeArray;
   protected
     // Capacity Management
-    procedure CheckCapacity; overload;
+    procedure CheckCapacity; overload; inline;
     procedure CheckCapacity(const ATotalRequiredCapacity: Integer); overload;
     // Array Management
     procedure Finalize(const AIndex, ACount: Integer);
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
+    // Delete
+    procedure DeleteActual(const AIndex: Integer; const AFinalizeMode: TLKListFinalizeMode; const ASmartCompactMode: TLKListSmartCompactMode);
     // Insert
     procedure InsertActual(const AItem: T; const AIndex: Integer); inline;
     // Quick Sort
     procedure QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
+    // Smart Compact
+    procedure CompactActual;
+    procedure SmartCompact;
     // Validation Methods
     function ValidateIndexInRange(const AIndex: Integer): Boolean;
     function ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
@@ -212,9 +219,13 @@ type
     procedure Add(const AItems: TArrayOfT); overload;
 
     procedure Clear(const ACompact: Boolean = True); virtual;
+    procedure Compact; inline;
 
+    ///  <summary><c>Delete a specific Item at the given Index.</c></summary>
     procedure Delete(const AIndex: Integer); overload; virtual;
-    procedure Delete(const AIndices: Array of Integer); overload;
+    ///  <summary><c>Alias of </c>DeleteRange</summary>
+    procedure Delete(const AFirstIndex, ACount: Integer); overload; inline;
+    ///  <summary><c>Delete a Range of Items from the given Index.</c></summary>
     procedure DeleteRange(const AIndex, ACount: Integer); virtual;
 
     function Remove(const AItem: T): Integer; overload;
@@ -235,11 +246,19 @@ type
 
     procedure Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
 
+    ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
+    ///  <remarks><c>Read-Only</c></remarks>
     property Capacity: Integer read GetCapacity;
+    ///  <summary><c>By what Factor to increase the Size of the List when the Capacity Threshold is reached.</c></summary>
     property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
+    ///  <summary><c>The Minimum number of Vacant Slots in the List before the List is Expanded.</c></summary>
     property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
+    ///  <summary><c>The number of Items presently occupying the List.</c></summary>
+    ///  <remarks><c>Read-Only</c></remarks>
     property Count: Integer read GetCount;
+    ///  <summary><c>Returns </c>True<c> if the List contains no Items.</c></summary>
     property IsEmpty: Boolean read GetIsEmpty;
+    ///  <summary><c>Retrieves the Item at the given Index</c></summary>
     property Items[const AIndex: Integer]: T read GetItemByIndex; default;
   end;
 
@@ -579,11 +598,11 @@ type
 
 const
   LKSL_LIST_CAPACITY_DEFAULT = 10;
-  LKSL_LIST_MULTIPLIER_DEFAULT = 1.5;
   LKSL_LIST_MULTIPLIER_MINIMUM = 1.10;
   LKSL_LIST_MULTIPLIER_MAXIMUM = 3.00;
-  LKSL_LIST_THRESHOLD_DEFAULT = 5;
+  LKSL_LIST_MULTIPLIER_DEFAULT = 1.5;
   LKSL_LIST_THRESHOLD_MINIMUM = 5;
+  LKSL_LIST_THRESHOLD_DEFAULT = LKSL_LIST_THRESHOLD_MINIMUM;
 
 implementation
 
@@ -763,6 +782,21 @@ begin
     SetLength(FArray, LKSL_LIST_CAPACITY_DEFAULT);
 end;
 
+procedure TLKListBase<T>.Compact;
+begin
+  CompactActual;
+end;
+
+procedure TLKListBase<T>.CompactActual;
+begin
+  Lock;
+  try
+    SetLength(FArray, FCount + FCapacityThreshold + Round(FCapacityMultiplier));
+  finally
+    Unlock;
+  end;
+end;
+
 function TLKListBase<T>.Contains(const AItems: TArrayOfT): Boolean;
 var
   I: Integer;
@@ -801,28 +835,33 @@ begin
 end;
 
 procedure TLKListBase<T>.Delete(const AIndex: Integer);
-var
-  I: Integer;
+begin
+  DeleteActual(AIndex, fmFinalize, scmSmartCompact);
+end;
+
+procedure TLKListBase<T>.Delete(const AFirstIndex, ACount: Integer);
+begin
+  DeleteRange(AFirstIndex, ACount);
+end;
+
+procedure TLKListBase<T>.DeleteActual(const AIndex: Integer; const AFinalizeMode: TLKListFinalizeMode; const ASmartCompactMode: TLKListSmartCompactMode);
 begin
   Lock;
   try
     if ValidateIndexInRange(AIndex) then
     begin
       Dec(FCount);
-      Move(AIndex + 1, AIndex, FCount - AIndex);
-      Finalize(FCount, 1);
+      if AFinalizeMode = fmFinalize then
+      begin
+        Move(AIndex + 1, AIndex, FCount - AIndex);
+        Finalize(FCount, 1);
+      end;
+      if ASmartCompactMode = scmSmartCompact then
+        SmartCompact;
     end;
   finally
     Unlock;
   end;
-end;
-
-procedure TLKListBase<T>.Delete(const AIndices: array of Integer);
-var
-  I: Integer;
-begin
-  for I := Low(AIndices) to High(AIndices) do
-    Delete(AIndices[I]);
 end;
 
 procedure TLKListBase<T>.DeleteRange(const AIndex, ACount: Integer);
@@ -1119,7 +1158,7 @@ function TLKListBase<T>.Remove(const AItem: T): Integer;
 begin
   Result := IndexOf(AItem);
   if Result >= 0 then
-    Delete(Result);
+    DeleteActual(Result, fmFinalize, scmSmartCompact);
 end;
 
 procedure TLKListBase<T>.SetCapacityMultiplier(const AMultiplier: Single);
@@ -1148,6 +1187,17 @@ begin
   try
     FCapacityThreshold := AThreshold;
     CheckCapacity; // Adjust the Array Capacity if necessary
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKListBase<T>.SmartCompact;
+begin
+  Lock;
+  try
+    if Length(FArray) > Round(FCount * FCapacityMultiplier) + FCapacityThreshold then
+      CompactActual;
   finally
     Unlock;
   end;

@@ -42,8 +42,7 @@ begin
   FPerformanceHistory.Add(LDelta);
 
   SYNCHRONIZE(procedure begin
-//                Form1.memLog.Lines.Add(Format('%s Microseconds - %s', [FormatFloat('#######################.#######################', SIMagnitudeConvert(LDelta, simOne, simMicro)), AEvent.Foo]));
-                Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance)]));
+                Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds [This run = %s Seconds]', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance), FormatFloat('#######################.#######################', LDelta)]));
               end);
 end;
 

@@ -1060,20 +1060,19 @@ end;
 
 procedure TLKEventContainer.ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
 var
-  I, LStart, LEnd: Integer;
+  I, LEnd: Integer;
 begin
   if AEventList.Count > 0 then
   begin
-    LStart := 0;
     LEnd := AEventList.Count - 1;
-    for I := LStart to LEnd do
+    for I := 0 to LEnd do
     begin
       if (not Terminated) then
         if (AEventList[I].State <> esCancelled) and (not AEventList[I].HasExpired) then // We don't want to bother processing Cancelled Events!
           ProcessEvent(AEventList[I], ADelta, AStartTime);
         AEventList[I].Unref; // We're no longer referencing the Event
     end;
-    AEventList.DeleteRange(LStart, LEnd); // Locking occurs automagically
+    AEventList.DeleteRange(0, LEnd); // Locking occurs automagically
   end;
 end;
 
