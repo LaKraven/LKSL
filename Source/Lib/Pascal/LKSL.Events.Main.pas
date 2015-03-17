@@ -458,8 +458,11 @@ type
   TLKEventThread = class abstract(TLKEventContainer)
   private
     FListeners: TLKEventListenerList;
+    FListenersPending: TLKEventListenerList;
+    FListenersLeaving: TLKEventListenerList;
     ///  <summary><c>Dictates whether this Event Thread should be automatically Registered after Construction.</c></summary>
     FRegistrationMode: TLKEventRegistrationMode;
+    procedure ProcessEnqueuedListeners;
   protected
     { TLKThread Overrides }
     procedure PreTick(const ADelta, AStartTime: LKFloat); override;
@@ -1239,6 +1242,8 @@ begin
   inherited Create;
   FRegistrationMode := ARegistrationMode;
   FListeners := TLKEventListenerList.Create(False);
+  FListenersPending := TLKEventListenerList.Create(False);
+  FListenersLeaving := TLKEventListenerList.Create(False);
   InitializeListeners;
 end;
 
@@ -1247,6 +1252,8 @@ begin
   Unregister;
   FinalizeListeners;
   FListeners.Free;
+  FListenersPending.Free;
+  FListenersLeaving.Free;
   inherited;
 end;
 
@@ -1263,13 +1270,48 @@ end;
 procedure TLKEventThread.PreTick(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
+  ProcessEnqueuedListeners;
+end;
+
+procedure TLKEventThread.ProcessEnqueuedListeners;
+var
+  I, LIndex: Integer;
+begin
+  FListeners.Lock;
+  try
+    // Process Pending
+    FListenersPending.Lock;
+    try
+      for I := 0 to FListenersPending.Count - 1 do
+        if (not FListeners.Contains(FListenersPending[I])) then
+          FListeners.Add(FListenersPending[I]);
+      FListenersPending.Clear(False);
+    finally
+      FListenersPending.Unlock;
+    end;
+    // Process Leaving
+    FListenersLeaving.Lock;
+    try
+      for I := 0 to FListenersLeaving.Count - 1 do
+      begin
+        LIndex := FListeners.IndexOf(FListenersLeaving[I]);
+        if LIndex > -1 then
+          FListeners.Delete(LIndex);
+      end;
+      FListenersLeaving.Clear(False);
+    finally
+      FListenersLeaving.Unlock;
+    end;
+  finally
+    FListeners.Unlock;
+  end;
 end;
 
 procedure TLKEventThread.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 var
   I: Integer;
 begin
-  FListeners.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  FListeners.Lock;
   try
     for I := 0 to FListeners.Count - 1 do
       if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // We don't want to bother actioning the Event if it has been Cancelled or has Expired
@@ -1296,12 +1338,23 @@ end;
 
 procedure TLKEventThread.RegisterListener(const AEventListener: TLKEventListener);
 begin
-  FListeners.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-  try
-    if (not FListeners.Contains(AEventListener)) then
-      FListeners.Add(AEventListener);
-  finally
-    FListeners.Unlock;
+  if FListeners.LockIfAvailable then
+  begin
+    try
+      if (not FListeners.Contains(AEventListener)) then
+        FListeners.Add(AEventListener);
+    finally
+      FListeners.Unlock;
+    end;
+  end else
+  begin
+    FListenersPending.Lock;
+    try
+      if (not FListenersPending.Contains(AEventListener)) then
+        FListenersPending.Add(AEventListener);
+    finally
+      FListenersPending.Unlock;
+    end;
   end;
 end;
 
@@ -1323,13 +1376,24 @@ procedure TLKEventThread.UnregisterListener(const AEventListener: TLKEventListen
 var
   LIndex: Integer;
 begin
-  FListeners.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
-  try
-    LIndex := FListeners.IndexOf(AEventListener);
-    if LIndex > -1 then
-      FListeners.Delete(LIndex);
-  finally
-    FListeners.Unlock;
+  if FListeners.LockIfAvailable then
+  begin
+    try
+      LIndex := FListeners.IndexOf(AEventListener);
+      if LIndex > -1 then
+        FListeners.Delete(LIndex);
+    finally
+      FListeners.Unlock;
+    end;
+  end else
+  begin
+    FListenersLeaving.Lock;
+    try
+      if (not FListenersLeaving.Contains(AEventListener)) then
+        FListenersLeaving.Add(AEventListener);
+    finally
+      FListenersLeaving.Unlock;
+    end;
   end;
 end;
 
