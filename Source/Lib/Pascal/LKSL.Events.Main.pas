@@ -1553,7 +1553,7 @@ end;
 
 procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
 begin
-  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  FEventThreads.Lock;
   try
     if (not FEventThreads.Contains(AEventThread)) then
       FEventThreads.Add(AEventThread);
@@ -1564,7 +1564,7 @@ end;
 
 procedure TLKEventEngine.RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
 begin
-  FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  FPreProcessors.Lock;
   try
     if (not FPreProcessors.Contains(APreProcessor)) then
       FPreProcessors.Add(APreProcessor);
@@ -1617,7 +1617,7 @@ procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThrea
 var
   LIndex: Integer;
 begin
-  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  FEventThreads.Lock;
   try
     LIndex := FEventThreads.IndexOf(AEventThread);
     if LIndex > -1 then
@@ -1631,7 +1631,7 @@ procedure TLKEventEngine.UnregisterPreProcessor(const APreProcessor: TLKEventPre
 var
   LIndex: Integer;
 begin
-  FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  FPreProcessors.Lock;
   try
     LIndex := FPreProcessors.IndexOf(APreProcessor);
     if LIndex > -1 then
