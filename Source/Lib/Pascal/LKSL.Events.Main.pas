@@ -534,7 +534,7 @@ type
   private
     FPreProcessors: TLKEventPreProcessorList;
     FScheduler: TLKEventScheduler;
-    FThreads: TLKEventThreadList;
+    FEventThreads: TLKEventThreadList;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -543,6 +543,9 @@ type
 
     procedure RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
     procedure UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
+
+    procedure RegisterEventThread(const AEventThread: TLKEventThread);
+    procedure UnregisterEventThread(const AEventThread: TLKEventThread);
 
     procedure QueueInThreads(const AEvent: TLKEvent);
     procedure StackInThreads(const AEvent: TLKEvent);
@@ -1327,13 +1330,7 @@ end;
 
 procedure TLKEventThread.Register;
 begin
-  EventEngine.FThreads.Lock;
-  try
-    if (not EventEngine.FThreads.Contains(Self)) then
-      EventEngine.FThreads.Add(Self);
-  finally
-    EventEngine.FThreads.Unlock;
-  end;
+  EventEngine.RegisterEventThread(Self);
 end;
 
 procedure TLKEventThread.RegisterListener(const AEventListener: TLKEventListener);
@@ -1359,17 +1356,8 @@ begin
 end;
 
 procedure TLKEventThread.Unregister;
-var
-  LIndex: Integer;
 begin
-  EventEngine.FThreads.Lock;
-  try
-    LIndex := EventEngine.FThreads.IndexOf(Self);
-    if (LIndex > -1) then
-      EventEngine.FThreads.Delete(LIndex);
-  finally
-    EventEngine.FThreads.Unlock;
-  end;
+  EventEngine.UnregisterEventThread(Self);
 end;
 
 procedure TLKEventThread.UnregisterListener(const AEventListener: TLKEventListener);
@@ -1504,14 +1492,14 @@ constructor TLKEventEngine.Create;
 begin
   inherited;
   FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
-  FThreads := TLKEventThreadList.Create;
+  FEventThreads := TLKEventThreadList.Create;
   FScheduler := TLKEventScheduler.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
   FScheduler.Kill;
-  FThreads.Free;
+  FEventThreads.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
 end;
@@ -1531,7 +1519,7 @@ begin
     begin
       if TLKEventTarget.edThreads in AEvent.DispatchTargets then
         QueueInThreads(AEvent);
-      FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+      FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
           if ((AEvent.State <> esCancelled) and (not AEvent.HasExpired)) and (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
@@ -1551,15 +1539,26 @@ var
 begin
   AEvent.Ref;
   try
-    FThreads.Lock;
+    FEventThreads.Lock;
     try
-      for I := 0 to FThreads.Count - 1 do
-        FThreads[I].QueueEvent(AEvent);
+      for I := 0 to FEventThreads.Count - 1 do
+        FEventThreads[I].QueueEvent(AEvent);
     finally
-      FThreads.Unlock;
+      FEventThreads.Unlock;
     end;
   finally
     AEvent.Unref;
+  end;
+end;
+
+procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
+begin
+  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  try
+    if (not FEventThreads.Contains(AEventThread)) then
+      FEventThreads.Add(AEventThread);
+  finally
+    FEventThreads.Unlock;
   end;
 end;
 
@@ -1582,7 +1581,7 @@ begin
   try
     if TLKEventTarget.edThreads in AEvent.DispatchTargets then
       StackInThreads(AEvent);
-    FPreProcessors.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+    FPreProcessors.Lock;
     try
       for I := 0 to FPreProcessors.Count - 1 do
         if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
@@ -1602,15 +1601,29 @@ var
 begin
   AEvent.Ref;
   try
-    FThreads.Lock;
+    FEventThreads.Lock;
     try
-      for I := 0 to FThreads.Count - 1 do
-        FThreads[I].StackEvent(AEvent);
+      for I := 0 to FEventThreads.Count - 1 do
+        FEventThreads[I].StackEvent(AEvent);
     finally
-      FThreads.Unlock;
+      FEventThreads.Unlock;
     end;
   finally
     AEvent.Unref;
+  end;
+end;
+
+procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThread);
+var
+  LIndex: Integer;
+begin
+  FEventThreads.Lock; { TODO -oSJS -cEvent Engine (Redux) : Switch to LockIfAvailable and add failover list! }
+  try
+    LIndex := FEventThreads.IndexOf(AEventThread);
+    if LIndex > -1 then
+      FEventThreads.Delete(LIndex);
+  finally
+    FEventThreads.Unlock;
   end;
 end;
 
