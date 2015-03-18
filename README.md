@@ -18,15 +18,15 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 
 
 ## Features:
-|         Feature         | Description                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------ |
-| Base Types              | Special *Common Base Types* each containing a Thread-Safe Locking Mechanism.                     |
-| Event Engine            | A *very powerful* system for producing Multi-Threaded, Asynchronous and Event-Driven programs.   |
-| Generics Collections    | Highly efficient, Thread-Safe Collection Types (*lists, trees etc.*)                             |
-| High Precision Threads  | A special Thread Base Type designed to provide supremely High Precision Tick Rates.              |
-| Math Library            | A library for Unit Conversion, special calculation and other useful mathematics routines.        |
-| Stream Handling Library | Makes working with Streams *much* easier! Handles Deleting, Inserting, Reading and Writing data. |
-| Streamables Engine      | A system to serialize Object Instances into Streams, and to dynamically reconstitute them, too.  |
+|         Feature         | Description                                                                                      | Status                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Base Types              | Special *Common Base Types* each containing a Thread-Safe Locking Mechanism.                     | Suitable for real-world use (being used in production software) |
+| Event Engine            | A *very powerful* system for producing Multi-Threaded, Asynchronous and Event-Driven programs.   | Events, Event Threads and Event Listeners all working well      |
+| Generics Collections    | Highly efficient, Thread-Safe Collection Types (*lists, trees etc.*)                             | Suitable for real-world use (being used in production software) |
+| High Precision Threads  | A special Thread Base Type designed to provide supremely High Precision Tick Rates.              | Suitable for real-world use (being used in production software) |
+| Math Library            | A library for Unit Conversion, special calculation and other useful mathematics routines.        | Early in development                                            |
+| Stream Handling Library | Makes working with Streams *much* easier! Handles Deleting, Inserting, Reading and Writing data. | Suitable for real-world use (being used in production software) |
+| Streamables Engine      | A system to serialize Object Instances into Streams, and to dynamically reconstitute them, too.  | Suitable for real-world use (being used in production software) |
 
 ## Support Matrix:
 
