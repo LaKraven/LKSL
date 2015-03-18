@@ -71,6 +71,7 @@ type
   TLKEventPreProcessor = class;
   TLKEventStreamProcessor = class;
   TLKEventThread = class;
+  TLKEventPool = class;
 
   { Class References }
   TLKEventClass = class of TLKEvent;
@@ -116,9 +117,9 @@ type
 
   { Generics Collections }
   TLKEventList = class(TLKObjectList<TLKEvent>);
-  TLKEventListenerList = class(TLKObjectList<TLKEventListener>);
+  TLKEventListenerList = class(TLKList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
-  TLKEventPreProcessorList = class(TLKObjectList<TLKEventPreProcessor>);
+  TLKEventPreProcessorList = class(TLKList<TLKEventPreProcessor>);
   TLKEventThreadList = class(TLKList<TLKEventThread>);
 
   ///  <summary><c>Abstract Base Class for all Event Types</c></summary>
@@ -462,6 +463,9 @@ type
     FListenersLeaving: TLKEventListenerList;
     ///  <summary><c>Dictates whether this Event Thread should be automatically Registered after Construction.</c></summary>
     FRegistrationMode: TLKEventRegistrationMode;
+    ///  <summary><c>If this Thread belongs to a Pool, this is the reference to that Pool.</c></summary>
+    ///  <remarks>nil<c> if the Thread does NOT belong to a Pool</c></remarks>
+    FPool: TLKEventPool;
     procedure ProcessEnqueuedListeners;
   protected
     { TLKThread Overrides }
@@ -474,7 +478,8 @@ type
     procedure InitializeListeners; virtual;
     procedure FinalizeListeners; virtual;
   public
-    constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; virtual;
+    constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload; virtual;
+    constructor Create(const AEventPool: TLKEventPool; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload; virtual;
     destructor Destroy; override;
 
     procedure AfterConstruction; override;
@@ -484,6 +489,35 @@ type
 
     procedure Register;
     procedure Unregister;
+  end;
+
+  ///  <summary><c>Base Class for Event Pools</c></summary>
+  ///  <remarks>
+  ///    <para><c>Event Pools create multiple </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> Descendant Instances (of the specified Type), and distribute Events between them.</c></para>
+  ///    <para><c>You can adjust the number of Event Threads in the Pool on-the-fly.</c></para>
+  ///  </remarks>
+  TLKEventPool = class abstract(TLKEventContainer)
+  private
+    FEventThreads: TLKEventThreadList;
+    FRegistrationMode: TLKEventRegistrationMode;
+    FThreadCount: Integer;
+
+    procedure AddEventThread(const AEventThread: TLKEventThread);
+    procedure RemoveEventThread(const AEventThread: TLKEventThread);
+  protected
+    { TLKThread Overrides }
+    procedure PreTick(const ADelta, AStartTime: LKFloat); override;
+
+    { TLKEventContainer Overrides }
+    procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
+  public
+    constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; virtual;
+    destructor Destroy; override;
+
+    procedure Register;
+    procedure Unregister;
+
+    procedure AfterConstruction; override;
   end;
 
 const
@@ -1243,11 +1277,18 @@ end;
 constructor TLKEventThread.Create(const ARegistrationMode: TLKEventRegistrationMode);
 begin
   inherited Create;
+  FPool := nil;
   FRegistrationMode := ARegistrationMode;
-  FListeners := TLKEventListenerList.Create(False);
-  FListenersPending := TLKEventListenerList.Create(False);
-  FListenersLeaving := TLKEventListenerList.Create(False);
+  FListeners := TLKEventListenerList.Create;
+  FListenersPending := TLKEventListenerList.Create;
+  FListenersLeaving := TLKEventListenerList.Create;
   InitializeListeners;
+end;
+
+constructor TLKEventThread.Create(const AEventPool: TLKEventPool; const ARegistrationMode: TLKEventRegistrationMode);
+begin
+  Create(ARegistrationMode);
+  FPool := AEventPool;
 end;
 
 destructor TLKEventThread.Destroy;
@@ -1330,7 +1371,10 @@ end;
 
 procedure TLKEventThread.Register;
 begin
-  EventEngine.RegisterEventThread(Self);
+  if FPool <> nil then
+    FPool.AddEventThread(Self)
+  else
+    EventEngine.RegisterEventThread(Self);
 end;
 
 procedure TLKEventThread.RegisterListener(const AEventListener: TLKEventListener);
@@ -1357,7 +1401,10 @@ end;
 
 procedure TLKEventThread.Unregister;
 begin
-  EventEngine.UnregisterEventThread(Self);
+  if FPool <> nil then
+    FPool.RemoveEventThread(Self)
+  else
+    EventEngine.UnregisterEventThread(Self);
 end;
 
 procedure TLKEventThread.UnregisterListener(const AEventListener: TLKEventListener);
@@ -1383,6 +1430,58 @@ begin
       FListenersLeaving.Unlock;
     end;
   end;
+end;
+
+{ TLKEventPool }
+
+procedure TLKEventPool.AddEventThread(const AEventThread: TLKEventThread);
+begin
+  { TODO -oSJS -cEvent Engine (Pooling) : Add Event Thread }
+end;
+
+procedure TLKEventPool.AfterConstruction;
+begin
+  inherited;
+  if FRegistrationMode = ermAutomatic then
+    Register;
+end;
+
+constructor TLKEventPool.Create(const ARegistrationMode: TLKEventRegistrationMode);
+begin
+  inherited Create;
+  FRegistrationMode := ARegistrationMode;
+  FEventThreads := TLKEventThreadList.Create;
+end;
+
+destructor TLKEventPool.Destroy;
+begin
+  FEventThreads.Free;
+  inherited;
+end;
+
+procedure TLKEventPool.PreTick(const ADelta, AStartTime: LKFloat);
+begin
+  ProcessEvents(ADelta, AStartTime);
+end;
+
+procedure TLKEventPool.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
+begin
+  { TODO -oSJS -cEvent Engine (Pooling) : Algorithm to determine "Best Possible Thread" and dispatch the Event to that. }
+end;
+
+procedure TLKEventPool.Register;
+begin
+  { TODO -oSJS -cEvent Engine (Pooling) : Register Event Pool }
+end;
+
+procedure TLKEventPool.RemoveEventThread(const AEventThread: TLKEventThread);
+begin
+  { TODO -oSJS -cEvent Engine (Pooling) : Remove Event Thread }
+end;
+
+procedure TLKEventPool.Unregister;
+begin
+  { TODO -oSJS -cEvent Engine (Pooling) : Unregister Event Pool }
 end;
 
 { TLKEventScheduleList }
@@ -1491,7 +1590,7 @@ end;
 constructor TLKEventEngine.Create;
 begin
   inherited;
-  FPreProcessors := TLKEventPreProcessorList.Create(False); // Create this FIRST
+  FPreProcessors := TLKEventPreProcessorList.Create; // Create this FIRST
   FEventThreads := TLKEventThreadList.Create;
   FScheduler := TLKEventScheduler.Create;
 end;
