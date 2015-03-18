@@ -6,7 +6,15 @@ Please keep in mind that this library is still in its infancy, and while many of
 In fact, there are plans to change many of them (particularly in the Event Engine units). This redesign effort is referred to internally as the "redux". You will see it mentioned quite often in recent commits.
 
 ## Installation
-Don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
+On *Windows*, don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
+
+### Environment Variables registered by *INSTALL.BAT* on **Windows**:
+| Variable Name | Points to Path     |
+| ------------- | ------------------ |
+| LKSL_HOME     | \                  |
+| LKSL_LIB      | \Source\Lib        |
+| LKSL_PASCAL   | \Source\Lib\Pascal |
+
 
 ## Features:
 |         Feature         | Description                                                                                      |
