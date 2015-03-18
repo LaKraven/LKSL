@@ -9,6 +9,7 @@ In fact, there are plans to change many of them (particularly in the Event Engin
 On *Windows*, don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
 
 Environment Variables registered by *INSTALL.BAT* on **Windows**:
+
 | Variable Name | Points to Path     |
 | ------------- | ------------------ |
 | LKSL_HOME     | \                  |
