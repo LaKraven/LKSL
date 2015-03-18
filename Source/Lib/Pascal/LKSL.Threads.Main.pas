@@ -600,8 +600,8 @@ end;
 
 procedure TLKThread.Kill;
 begin
-  FWakeUp.SetEvent;
   Terminate;
+  FWakeUp.SetEvent;
   WaitFor;
   Free;
 end;

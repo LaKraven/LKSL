@@ -115,6 +115,8 @@ type
         ELKEventPreProcessorMapperValueExists = class(ELKEventPreProcessorMapperException);
     ELKEventListenerException = class(ELKEventEngineException);
       ELKEventListenerNoEventThreadDefined = class(ELKEventListenerException);
+    ELKEventPoolException = class(ELKEventEngineException);
+      ELKEventPoolThreadTypeMismatch = class(ELKEventPoolException);
 
   { Generics Collections }
   TLKEventList = class(TLKObjectList<TLKEvent>);
@@ -369,6 +371,7 @@ type
   ///  <summary><c>Abstract Base Type for all Thread Types containing an Event Queue and Stack</c></summary>
   ///  <remarks>
   ///    <para><c>This includes </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> and </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> Types.</c></para>
+  ///    <para><c>You should not need to inherit from this Type in your own code!</c></para>
   ///  </remarks>
   TLKEventContainer = class abstract(TLKThread)
   private
@@ -468,6 +471,7 @@ type
     ///  <summary><c>If this Thread belongs to a Pool, this is the reference to that Pool.</c></summary>
     ///  <remarks>nil<c> if the Thread does NOT belong to a Pool</c></remarks>
     FPool: TLKEventPool;
+    constructor Create(const AEventPool: TLKEventPool; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload; virtual;
     procedure ProcessEnqueuedListeners;
   protected
     { TLKThread Overrides }
@@ -481,7 +485,6 @@ type
     procedure FinalizeListeners; virtual;
   public
     constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload; virtual;
-    constructor Create(const AEventPool: TLKEventPool; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce; overload; virtual;
     destructor Destroy; override;
 
     procedure AfterConstruction; override;
@@ -502,9 +505,17 @@ type
   private
     FEventThreads: TLKEventThreadList;
     FRegistrationMode: TLKEventRegistrationMode;
+    FThreadCount: Integer;
+    FThreadCountTarget: Integer;
 
     procedure AddEventThread(const AEventThread: TLKEventThread);
     procedure RemoveEventThread(const AEventThread: TLKEventThread);
+
+    procedure CreateThreads;
+    procedure DestroyThreads;
+
+    function GetThreadCount: Integer;
+    procedure SetThreadCount(const AThreadCount: Integer);
   protected
     ///  <summary><c>Override and return a reference to the </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> Type you wish for this Pool to manage!</c></summary>
     function GetEventThreadType: TLKEventThreadClass; virtual; abstract;
@@ -515,13 +526,15 @@ type
     { TLKEventContainer Overrides }
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
   public
-    constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
+    constructor Create(const AThreadCount: Integer; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
     destructor Destroy; override;
+
+    procedure AfterConstruction; override;
 
     procedure Register;
     procedure Unregister;
 
-    procedure AfterConstruction; override;
+    property ThreadCount: Integer read GetThreadCount write SetThreadCount;
   end;
 
   ///  <summary><c>A Generic Event Pool, enabling single-line Event Pool Type definitions.</c></summary>
@@ -1482,6 +1495,8 @@ end;
 
 procedure TLKEventPool.AddEventThread(const AEventThread: TLKEventThread);
 begin
+  if not (AEventThread is GetEventThreadType) then
+    raise ELKEventPoolThreadTypeMismatch.CreateFmt('Event Pool wants Event Threads of Type "%s", but attempted to register Event Thread of Type "%s"', [GetEventThreadType.ClassName, AEventThread.ClassName]);
   FEventThreads.Lock;
   try
     if (not FEventThreads.Contains(AEventThread)) then
@@ -1494,21 +1509,64 @@ end;
 procedure TLKEventPool.AfterConstruction;
 begin
   inherited;
+  CreateThreads;
   if FRegistrationMode = ermAutomatic then
     Register;
 end;
 
-constructor TLKEventPool.Create(const ARegistrationMode: TLKEventRegistrationMode);
+constructor TLKEventPool.Create(const AThreadCount: Integer; const ARegistrationMode: TLKEventRegistrationMode);
 begin
   inherited Create;
+  FThreadCount := AThreadCount;
+  FThreadCountTarget := AThreadCount;
   FRegistrationMode := ARegistrationMode;
   FEventThreads := TLKEventThreadList.Create;
 end;
 
+procedure TLKEventPool.CreateThreads;
+var
+  I: Integer;
+begin
+  for I := 1 to FThreadCount do
+    GetEventThreadType.Create(Self, ermAutomatic);
+end;
+
 destructor TLKEventPool.Destroy;
 begin
+  DestroyThreads;
   FEventThreads.Free;
   inherited;
+end;
+
+procedure TLKEventPool.DestroyThreads;
+var
+  I, LCount: Integer;
+begin
+  Lock;
+  try
+    FThreadCount := 0;
+    FThreadCountTarget := 0;
+    FEventThreads.Lock;
+    try
+      LCount := FEventThreads.Count;
+      for I := LCount - 1 downto 0 do
+        FEventThreads[I].Kill;
+    finally
+      FEventThreads.Unlock;
+    end;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKEventPool.GetThreadCount: Integer;
+begin
+  Lock;
+  try
+    Result := FThreadCount;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKEventPool.PreTick(const ADelta, AStartTime: LKFloat);
@@ -1541,6 +1599,16 @@ begin
       FEventThreads.Delete(LIndex);
   finally
     FEventThreads.Unlock;
+  end;
+end;
+
+procedure TLKEventPool.SetThreadCount(const AThreadCount: Integer);
+begin
+  Lock;
+  try
+    FThreadCountTarget := AThreadCount;
+  finally
+    Unlock;
   end;
 end;
 
