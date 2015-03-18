@@ -15,36 +15,36 @@ Current Features
 
 Supported Programming Tools
 ====
-  - **Delphi (XE2-XE8) {and AppMethod Pascal}**
-      - Win32
-      - Win64
-      - MacOS
-      - iOS
-      - Android
-  - **C++ Builder (XE2-XE8) {and AppMethod C++}** (_coming soon_)
-      - Win32
-      - Win64
-      - MacOS
-      - iOS
-      - Android
-  - **FreePascal/Lazarus (3.0.x and Newer)** (_work in progress_)
-      - Win32
-      - Win64
-      - MacOS
-      - iOS
-      - Android
-      - Linux32
-      - Linux64
-      - Linux ARM
-      - Hopefully any other platform supported by FreePascal/Lazarus.
+  - [x] **Delphi (XE2-XE8) {and AppMethod Pascal}**
+      - [x] Win32
+      - [x] Win64
+      - [x] MacOS
+      - [x] iOS
+      - [x] Android
+  - [ ] **C++ Builder (XE2-XE8) {and AppMethod C++}** (_coming soon_)
+      - [ ] Win32
+      - [ ] Win64
+      - [ ] MacOS
+      - [ ] iOS
+      - [ ] Android
+  - [ ] **FreePascal/Lazarus (3.0.x and Newer)** (_work in progress_)
+      - [ ] Win32
+      - [ ] Win64
+      - [ ] MacOS
+      - [ ] iOS
+      - [ ] Android
+      - [ ] Linux32
+      - [ ] Linux64
+      - [ ] Linux ARM
+      - [ ] Hopefully any other platform supported by FreePascal/Lazarus.
 
 Platforms in the planning:
-  - PHP
-  - C#
-  - Java
-  - C
-  - C++
-  - Python
+  - [ ] PHP
+  - [ ] C#
+  - [ ] Java
+  - [ ] C
+  - [ ] C++
+  - [ ] Python
 
 > If there's another platform that you think could benefit from the features of the LKSL, please raise an issue. Better yet, if you feel you can produce a viable LKSL translation (in part or whole) for another programming/scripting language, please consider contributing that work back to this original repository!
 
