@@ -202,12 +202,12 @@
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL_Demo_EventThreadPooling"/>
       </Unit0>
       <Unit1>
         <Filename Value="Demo.EventThreadPooling.MainForm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Demo.EventThreadPooling.MainForm"/>
       </Unit1>
