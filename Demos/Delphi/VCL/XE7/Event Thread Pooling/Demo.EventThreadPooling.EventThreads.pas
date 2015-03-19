@@ -23,8 +23,11 @@ type
     procedure FinalizeListeners; override;
   end;
 
+  TTestEventPool = class(TLKEventPool<TTestEventThread>);
+
 var
-  TestEventThread: TTestEventThread;
+  //TestEventThread: TTestEventThread;
+  TestEventPool: TTestEventPool;
 
 implementation
 
@@ -77,8 +80,10 @@ begin
 end;
 
 initialization
-  TestEventThread := TTestEventThread.Create;
+  //TestEventThread := TTestEventThread.Create;
+  TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
 finalization
-  TestEventThread.Kill;
+  //TestEventThread.Kill;
+  TestEventPool.Kill;
 
 end.
