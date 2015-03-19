@@ -1,3 +1,5 @@
+<!--- This document is written in a "Markdown" language, and is best viewed through a proper Markdown Viewer.
+      You can find a good Markdown Viewer at http://markdownpad.com/ -->
 # LaKraven Studios Standard Library [LKSL]
 ## Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved
 
@@ -22,3 +24,4 @@ That's really it! No room for ambiguity or confusion. You can use the source as 
 
 ## Donations:
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
+<!--- If you're reading in a plain-text editor, please copy and paste the Hyperlink into your Browser -->
