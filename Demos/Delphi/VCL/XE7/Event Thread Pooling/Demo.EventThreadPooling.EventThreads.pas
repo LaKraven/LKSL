@@ -26,7 +26,6 @@ type
   TTestEventPool = class(TLKEventPool<TTestEventThread>);
 
 var
-  //TestEventThread: TTestEventThread;
   TestEventPool: TTestEventPool;
 
 implementation
@@ -45,7 +44,12 @@ begin
   FPerformanceHistory.Add(LDelta);
 
   SYNCHRONIZE(procedure begin
-                Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds [This run = %s Seconds]', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance), FormatFloat('#######################.#######################', LDelta)]));
+                Form1.memLog.Lines.BeginUpdate;
+                try
+                  Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds [This run = %s Seconds]', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance), FormatFloat('#######################.#######################', LDelta)]));
+                finally
+                  Form1.memLog.Lines.EndUpdate;
+                end;
               end);
 end;
 
@@ -80,10 +84,8 @@ begin
 end;
 
 initialization
-  //TestEventThread := TTestEventThread.Create;
   TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
 finalization
-  //TestEventThread.Kill;
   TestEventPool.Kill;
 
 end.

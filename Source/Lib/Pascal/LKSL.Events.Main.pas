@@ -564,9 +564,6 @@ type
   { Forward Declarations }
   TLKEventScheduleList = class;
   TLKEventScheduler = class;
-  {$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    TLKEventPoolPreProcessor = class;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
   TLKEventEngine = class;
 
   ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
@@ -597,47 +594,21 @@ type
     procedure ScheduleEvent(const AEvent: TLKEvent); inline;
   end;
 
-  {$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    ///  <summary><c>Handles Events before they get passed off to the Event Pools.</c></summary>
-    ///  <remarks>
-    ///    <para><c>This may be more efficient overall than passing Events directly to Pools, as each Pool needs to determine which Event Thread gets the Event.</c></para>
-    ///  </remarks>
-    TLKEventPoolPreProcessor = class(TLKEventPreProcessor)
-    private
-      FPools: TLKEventPoolList;
-      FPoolsPending: TLKEventPoolList;
-      FPoolsLeaving: TLKEventPoolList;
-    protected
-      class function GetTargetFlag: TLKEventTarget; override;
-      procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
-    public
-      constructor Create(const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); override;
-      destructor Destroy; override;
-
-      procedure RegisterPool(const AEventPool: TLKEventPool);
-      procedure UnregisterPool(const AEventPool: TLKEventPool);
-    end;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
-
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
   TLKEventEngine = class(TLKPersistent)
   private
     FPreProcessors: TLKEventPreProcessorList;
     FScheduler: TLKEventScheduler;
     FEventThreads: TLKEventThreadList;
-    {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-      FPools: TLKEventPoolList;
-      FPoolsPending: TLKEventPoolList;
-      FPoolsLeaving: TLKEventPoolList;
-    {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+    FPools: TLKEventPoolList;
+    FPoolsPending: TLKEventPoolList;
+    FPoolsLeaving: TLKEventPoolList;
   public
     constructor Create; override;
     destructor Destroy; override;
 
-    {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-      procedure RegisterPool(const AEventPool: TLKEventPool);
-      procedure UnregisterPool(const AEventPool: TLKEventPool);
-    {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+    procedure RegisterPool(const AEventPool: TLKEventPool);
+    procedure UnregisterPool(const AEventPool: TLKEventPool);
 
     procedure RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
     procedure UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
@@ -645,10 +616,8 @@ type
     procedure RegisterEventThread(const AEventThread: TLKEventThread);
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
 
-    {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-      procedure QueueInPools(const AEvent: TLKEvent);
-      procedure StackInPools(const AEvent: TLKEvent);
-    {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+    procedure QueueInPools(const AEvent: TLKEvent);
+    procedure StackInPools(const AEvent: TLKEvent);
 
     procedure QueueInThreads(const AEvent: TLKEvent);
     procedure StackInThreads(const AEvent: TLKEvent);
@@ -659,9 +628,6 @@ type
 
 var
   EventEngine: TLKEventEngine = nil;
-  {$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    EventPools: TLKEventPoolPreProcessor = nil;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
 
 { TLKEvent }
 
@@ -1661,11 +1627,7 @@ end;
 
 procedure TLKEventPool.Register;
 begin
-  {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    EventEngine.RegisterPool(Self);
-  {$ELSE}
-    EventPools.RegisterPool(Self);
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+  EventEngine.RegisterPool(Self);
 end;
 
 procedure TLKEventPool.RemoveEventThread(const AEventThread: TLKEventThread);
@@ -1694,11 +1656,7 @@ end;
 
 procedure TLKEventPool.Unregister;
 begin
-  {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    EventEngine.UnregisterPool(Self);
-  {$ELSE}
-    EventPools.UnregisterPool(Self);
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+  EventEngine.UnregisterPool(Self);
 end;
 
 { TLKEventPool<T> }
@@ -1804,94 +1762,6 @@ begin
     Rest;
 end;
 
-{$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-  { TLKEventPoolPreProcessor }
-
-  constructor TLKEventPoolPreProcessor.Create(const ARegistrationMode: TLKEventRegistrationMode);
-  begin
-    inherited;
-    FPools := TLKEventPoolList.Create;
-    FPoolsPending := TLKEventPoolList.Create;
-    FPoolsLeaving := TLKEventPoolList.Create;
-  end;
-
-  destructor TLKEventPoolPreProcessor.Destroy;
-  begin
-    FPoolsPending.Free;
-    FPoolsLeaving.Free;
-    FPools.Free;
-    inherited;
-  end;
-
-  class function TLKEventPoolPreProcessor.GetTargetFlag: TLKEventTarget;
-  begin
-    Result := edPools;
-  end;
-
-  procedure TLKEventPoolPreProcessor.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
-  var
-    I: Integer;
-  begin
-    FPools.Lock;
-    try
-      for I := 0 to FPools.Count - 1 do
-        case AEvent.DispatchMethod of
-          edmQueue: FPools[I].QueueEvent(AEvent);
-          edmStack: FPools[I].StackEvent(AEvent);
-        end;
-    finally
-      FPools.Unlock;
-    end;
-  end;
-
-  procedure TLKEventPoolPreProcessor.RegisterPool(const AEventPool: TLKEventPool);
-  begin
-    if FPools.LockIfAvailable then
-    begin
-      try
-        if (not FPools.Contains(AEventPool)) then
-          FPools.Add(AEventPool);
-      finally
-        FPools.Unlock;
-      end;
-    end else
-    begin
-      FPoolsPending.Lock;
-      try
-        if (not FPoolsPending.Contains(AEventPool)) then
-          FPoolsPending.Add(AEventPool);
-      finally
-        FPoolsPending.Unlock;
-      end;
-    end;
-  end;
-
-  procedure TLKEventPoolPreProcessor.UnregisterPool(const AEventPool: TLKEventPool);
-  var
-    LIndex: Integer;
-  begin
-    if FPools.LockIfAvailable then
-    begin
-      try
-        LIndex := FPools.IndexOf(AEventPool);
-        if LIndex > -1 then
-          FPools.Delete(LIndex);
-      finally
-        FPools.Unlock;
-      end;
-    end else
-    begin
-      FPoolsLeaving.Lock;
-      try
-        if (not FPoolsLeaving.Contains(AEventPool)) then
-          FPoolsLeaving.Add(AEventPool);
-      finally
-        FPoolsLeaving.Unlock;
-      end;
-    end;
-  end;
-{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
-
 { TLKEventEngine }
 
 constructor TLKEventEngine.Create;
@@ -1900,20 +1770,16 @@ begin
   FPreProcessors := TLKEventPreProcessorList.Create; // Create this FIRST
   FEventThreads := TLKEventThreadList.Create;
   FScheduler := TLKEventScheduler.Create;
-  {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    FPools := TLKEventPoolList.Create;
-    FPoolsPending := TLKEventPoolList.Create;
-    FPoolsLeaving := TLKEventPoolList.Create;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+  FPools := TLKEventPoolList.Create;
+  FPoolsPending := TLKEventPoolList.Create;
+  FPoolsLeaving := TLKEventPoolList.Create;
 end;
 
 destructor TLKEventEngine.Destroy;
 begin
-  {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    FPoolsPending.Free;
-    FPoolsLeaving.Free;
-    FPools.Free;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+  FPoolsPending.Free;
+  FPoolsLeaving.Free;
+  FPools.Free;
   FScheduler.Kill;
   FEventThreads.Free;
   FPreProcessors.Free; // Free this LAST
@@ -1935,10 +1801,8 @@ begin
     begin
       if TLKEventTarget.edThreads in AEvent.DispatchTargets then
         QueueInThreads(AEvent);
-      {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-        if TLKEventTarget.edPools in AEvent.DispatchTargets then
-          QueueInPools(AEvent);
-      {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+      if TLKEventTarget.edPools in AEvent.DispatchTargets then
+        QueueInPools(AEvent);
       FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
@@ -1953,25 +1817,23 @@ begin
   end;
 end;
 
-{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-  procedure TLKEventEngine.QueueInPools(const AEvent: TLKEvent);
-  var
-    I: Integer;
-  begin
-    AEvent.Ref;
+procedure TLKEventEngine.QueueInPools(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  AEvent.Ref;
+  try
+    FPools.Lock;
     try
-      FPools.Lock;
-      try
-        for I := 0 to FPools.Count - 1 do
-          FPools[I].QueueEvent(AEvent);
-      finally
-        FPools.Unlock;
-      end;
+      for I := 0 to FPools.Count - 1 do
+        FPools[I].QueueEvent(AEvent);
     finally
-      AEvent.Unref;
+      FPools.Unlock;
     end;
+  finally
+    AEvent.Unref;
   end;
-{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+end;
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
 var
@@ -2002,29 +1864,27 @@ begin
   end;
 end;
 
-{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-  procedure TLKEventEngine.RegisterPool(const AEventPool: TLKEventPool);
+procedure TLKEventEngine.RegisterPool(const AEventPool: TLKEventPool);
+begin
+  if FPools.LockIfAvailable then
   begin
-    if FPools.LockIfAvailable then
-    begin
-      try
-        if (not FPools.Contains(AEventPool)) then
-          FPools.Add(AEventPool);
-      finally
-        FPools.Unlock;
-      end;
-    end else
-    begin
-      FPoolsPending.Lock;
-      try
-        if (not FPoolsPending.Contains(AEventPool)) then
-          FPoolsPending.Add(AEventPool);
-      finally
-        FPoolsPending.Unlock;
-      end;
+    try
+      if (not FPools.Contains(AEventPool)) then
+        FPools.Add(AEventPool);
+    finally
+      FPools.Unlock;
+    end;
+  end else
+  begin
+    FPoolsPending.Lock;
+    try
+      if (not FPoolsPending.Contains(AEventPool)) then
+        FPoolsPending.Add(AEventPool);
+    finally
+      FPoolsPending.Unlock;
     end;
   end;
-{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+end;
 
 procedure TLKEventEngine.RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
 begin
@@ -2052,10 +1912,8 @@ begin
     begin
       if TLKEventTarget.edThreads in AEvent.DispatchTargets then
         StackInThreads(AEvent);
-      {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-        if TLKEventTarget.edPools in AEvent.DispatchTargets then
-          StackInPools(AEvent);
-      {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+      if TLKEventTarget.edPools in AEvent.DispatchTargets then
+        StackInPools(AEvent);
       FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
@@ -2070,25 +1928,23 @@ begin
   end;
 end;
 
-{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-  procedure TLKEventEngine.StackInPools(const AEvent: TLKEvent);
-  var
-    I: Integer;
-  begin
-    AEvent.Ref;
+procedure TLKEventEngine.StackInPools(const AEvent: TLKEvent);
+var
+  I: Integer;
+begin
+  AEvent.Ref;
+  try
+    FPools.Lock;
     try
-      FPools.Lock;
-      try
-        for I := 0 to FPools.Count - 1 do
-          FPools[I].StackEvent(AEvent);
-      finally
-        FPools.Unlock;
-      end;
+      for I := 0 to FPools.Count - 1 do
+        FPools[I].StackEvent(AEvent);
     finally
-      AEvent.Unref;
+      FPools.Unlock;
     end;
+  finally
+    AEvent.Unref;
   end;
-{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+end;
 
 procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
 var
@@ -2122,32 +1978,30 @@ begin
   end;
 end;
 
-{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-  procedure TLKEventEngine.UnregisterPool(const AEventPool: TLKEventPool);
-  var
-    LIndex: Integer;
+procedure TLKEventEngine.UnregisterPool(const AEventPool: TLKEventPool);
+var
+  LIndex: Integer;
+begin
+  if FPools.LockIfAvailable then
   begin
-    if FPools.LockIfAvailable then
-    begin
-      try
-        LIndex := FPools.IndexOf(AEventPool);
-        if LIndex > -1 then
-          FPools.Delete(LIndex);
-      finally
-        FPools.Unlock;
-      end;
-    end else
-    begin
-      FPoolsLeaving.Lock;
-      try
-        if (not FPoolsLeaving.Contains(AEventPool)) then
-          FPoolsLeaving.Add(AEventPool);
-      finally
-        FPoolsLeaving.Unlock;
-      end;
+    try
+      LIndex := FPools.IndexOf(AEventPool);
+      if LIndex > -1 then
+        FPools.Delete(LIndex);
+    finally
+      FPools.Unlock;
+    end;
+  end else
+  begin
+    FPoolsLeaving.Lock;
+    try
+      if (not FPoolsLeaving.Contains(AEventPool)) then
+        FPoolsLeaving.Add(AEventPool);
+    finally
+      FPoolsLeaving.Unlock;
     end;
   end;
-{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+end;
 
 procedure TLKEventEngine.UnregisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
 var
@@ -2166,15 +2020,7 @@ end;
 initialization
   if EventEngine = nil then
     EventEngine := TLKEventEngine.Create; // Create this FIRST
-  {$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    if EventPools = nil then
-      EventPools := TLKEventPoolPreProcessor.Create;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
 finalization
-  {$IFNDEF LKSL_EVENTENGINE_POOLSINTERNAL}
-    if EventPools <> nil then
-      EventPools.Kill;
-  {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
   if EventEngine <> nil then
     EventEngine.Free; // Free this LAST
 
