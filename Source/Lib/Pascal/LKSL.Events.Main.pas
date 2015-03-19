@@ -378,10 +378,15 @@ type
     FEventQueue: TLKEventList;
     FEventStack: TLKEventList;
     FPauseAt: LKFloat;
+    FWorking: Boolean;
 
     function GetEventCount: Integer;
     function GetEventCountQueue: Integer;
     function GetEventCountStack: Integer;
+    function GetWorking: Boolean;
+
+    procedure SetWorking(const AWorking: Boolean);
+
     procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
   protected
@@ -414,6 +419,7 @@ type
     property EventCount: Integer read GetEventCount;
     property EventCountQueue: Integer read GetEventCountQueue;
     property EventCountStack: Integer read GetEventCountStack;
+    property Working: Boolean read GetWorking write SetWorking;
   end;
 
   ///  <summary><c>An Event PreProcessor contains an Event Queue and Stack, wakes up when one or more Events are pending for processing, then processes the Events according to its purpose-specific implementation.</c></summary>
@@ -525,6 +531,8 @@ type
 
     { TLKEventContainer Overrides }
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
+    ///  <summary><c>Called only when there is at least one viable Event Thread in the Pool.</c></summary>
+    procedure PoolEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); virtual;
   public
     constructor Create(const AThreadCount: Integer; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
     destructor Destroy; override;
@@ -540,7 +548,7 @@ type
   ///  <summary><c>A Generic Event Pool, enabling single-line Event Pool Type definitions.</c></summary>
   TLKEventPool<T: TLKEventThread> = class(TLKEventPool)
   protected
-    function GetEventThreadType: TLKEventThreadClass; override;
+    function GetEventThreadType: TLKEventThreadClass; override; final;
   end;
 
 const
@@ -636,6 +644,11 @@ type
 
     procedure RegisterEventThread(const AEventThread: TLKEventThread);
     procedure UnregisterEventThread(const AEventThread: TLKEventThread);
+
+    {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
+      procedure QueueInPools(const AEvent: TLKEvent);
+      procedure StackInPools(const AEvent: TLKEvent);
+    {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
 
     procedure QueueInThreads(const AEvent: TLKEvent);
     procedure StackInThreads(const AEvent: TLKEvent);
@@ -1171,7 +1184,9 @@ begin
           ProcessEvent(AEventList[I], ADelta, AStartTime);
         AEventList[I].Unref; // We're no longer referencing the Event
     end;
+    SetWorking(True);
     AEventList.DeleteRange(0, LEnd); // Locking occurs automagically
+    SetWorking(False);
   end;
 end;
 
@@ -1210,6 +1225,16 @@ begin
   Result := True; // By default, we want to wake the Thread when an Event is added to the Queue/Stack
 end;
 
+function TLKEventContainer.GetWorking: Boolean;
+begin
+  Lock;
+  try
+    Result := FWorking;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKEventContainer.ProcessEvents(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEventList(FEventStack, ADelta, AStartTime); // Stack first
@@ -1231,6 +1256,16 @@ begin
   begin
     Wake; // Wake up this Thread
     FPauseAt := 0;
+  end;
+end;
+
+procedure TLKEventContainer.SetWorking(const AWorking: Boolean);
+begin
+  Lock;
+  try
+    FWorking := AWorking;
+  finally
+    Unlock;
   end;
 end;
 
@@ -1569,6 +1604,50 @@ begin
   end;
 end;
 
+procedure TLKEventPool.PoolEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
+var
+  I: Integer;
+  LBestThreadIndex, LBestThreadCount: Integer;
+begin
+  LBestThreadIndex := -1;
+  LBestThreadCount := -1;
+  AEvent.Ref;
+  try
+    repeat
+      FEventThreads.Lock;
+      try
+        for I := 0 to FEventThreads.Count - 1 do
+        begin
+          if FEventThreads[I].EventCount = 0 then // First check if the Event Thread is Idle
+          begin
+            LBestThreadIndex := I;
+            Break; // No point going any further!
+          end else // If the Thread isn't idle, let's see if it's a good contender...
+          begin
+            if ((((not FEventThreads[I].Working)))) and (((LBestThreadIndex = -1)) or (FEventThreads[I].EventCount < LBestThreadCount)) then // We assume that the first Thread will be the best
+            begin
+              LBestThreadIndex := I;
+              LBestThreadCount := FEventThreads[I].EventCount;
+            end;
+          end;
+        end;
+        // Dispatch to the best Thread
+        if LBestThreadIndex > -1 then
+        begin
+          case AEvent.DispatchMethod of
+            edmQueue: FEventThreads[LBestThreadIndex].QueueEvent(AEvent);
+            edmStack: FEventThreads[LBestThreadIndex].StackEvent(AEvent);
+          end;
+        end;
+      finally
+        FEventThreads.Unlock;
+      end;
+    until LBestThreadIndex > -1;
+  finally
+    AEvent.Unref;
+  end;
+end;
+
 procedure TLKEventPool.PreTick(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEvents(ADelta, AStartTime);
@@ -1576,7 +1655,8 @@ end;
 
 procedure TLKEventPool.ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 begin
-  { TODO -oSJS -cEvent Engine (Pooling) : Algorithm to determine "Best Possible Thread" and dispatch the Event to that. }
+  if FEventThreads.Count > 0 then // If there are no Event Threads in this Pool, we can't do anything with the Event
+    PoolEvent(AEvent, ADelta, AStartTime);
 end;
 
 procedure TLKEventPool.Register;
@@ -1855,6 +1935,10 @@ begin
     begin
       if TLKEventTarget.edThreads in AEvent.DispatchTargets then
         QueueInThreads(AEvent);
+      {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
+        if TLKEventTarget.edPools in AEvent.DispatchTargets then
+          QueueInPools(AEvent);
+      {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
       FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
@@ -1868,6 +1952,26 @@ begin
     AEvent.Unref;
   end;
 end;
+
+{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
+  procedure TLKEventEngine.QueueInPools(const AEvent: TLKEvent);
+  var
+    I: Integer;
+  begin
+    AEvent.Ref;
+    try
+      FPools.Lock;
+      try
+        for I := 0 to FPools.Count - 1 do
+          FPools[I].QueueEvent(AEvent);
+      finally
+        FPools.Unlock;
+      end;
+    finally
+      AEvent.Unref;
+    end;
+  end;
+{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
 
 procedure TLKEventEngine.QueueInThreads(const AEvent: TLKEvent);
 var
@@ -1939,21 +2043,52 @@ var
 begin
   AEvent.Ref;
   try
-    if TLKEventTarget.edThreads in AEvent.DispatchTargets then
-      StackInThreads(AEvent);
-    FPreProcessors.Lock;
-    try
-      for I := 0 to FPreProcessors.Count - 1 do
-        if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // No point passing it along if it's been cancelled!
-          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
-            FPreProcessors[I].StackEvent(AEvent);
-    finally
-      FPreProcessors.Unlock;
+    if AEvent.DispatchAfter > 0 then
+    begin
+      AEvent.FDispatchAt := (AEvent.DispatchTime + AEvent.DispatchAfter);
+      AEvent.FState := esScheduled;
+      FScheduler.ScheduleEvent(AEvent);
+    end else
+    begin
+      if TLKEventTarget.edThreads in AEvent.DispatchTargets then
+        StackInThreads(AEvent);
+      {$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
+        if TLKEventTarget.edPools in AEvent.DispatchTargets then
+          StackInPools(AEvent);
+      {$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
+      FPreProcessors.Lock;
+      try
+        for I := 0 to FPreProcessors.Count - 1 do
+          if ((AEvent.State <> esCancelled) and (not AEvent.HasExpired)) and (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
+            FPreProcessors[I].StackEvent(AEvent)
+      finally
+        FPreProcessors.Unlock;
+      end;
     end;
   finally
     AEvent.Unref;
   end;
 end;
+
+{$IFDEF LKSL_EVENTENGINE_POOLSINTERNAL}
+  procedure TLKEventEngine.StackInPools(const AEvent: TLKEvent);
+  var
+    I: Integer;
+  begin
+    AEvent.Ref;
+    try
+      FPools.Lock;
+      try
+        for I := 0 to FPools.Count - 1 do
+          FPools[I].StackEvent(AEvent);
+      finally
+        FPools.Unlock;
+      end;
+    finally
+      AEvent.Unref;
+    end;
+  end;
+{$ENDIF LKSL_EVENTENGINE_POOLSINTERNAL}
 
 procedure TLKEventEngine.StackInThreads(const AEvent: TLKEvent);
 var
