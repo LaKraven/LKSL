@@ -1,5 +1,4 @@
-<!--- This document is written in a "Markdown" language, and is best viewed through a proper Markdown Viewer.
-      You can find a good Markdown Viewer at http://markdownpad.com/ -->
+<!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
 > This page is currently incomplete.
 
 # Event Engine
@@ -58,7 +57,7 @@ Better still, if we decide to extend our application with new functionality base
 Best of all, this new functionality can be introduced without having to make *any* modifications to the existing *Modules*.
 
 ### Simple Usage Example
-You can learn how to integrate the *LKSL Event Engine* into your systems by reading the [Simple Usage Example](3 - Simple Usage Example.md) here on the LKSL Wiki!
+You can learn how to integrate the *LKSL Event Engine* into your systems by reading the [Simple Usage Example](./2_Simple_Usage_Example.md) here on the LKSL Wiki!
 
 ## Donations
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>

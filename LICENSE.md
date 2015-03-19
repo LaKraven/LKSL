@@ -1,5 +1,4 @@
-<!--- This document is written in a "Markdown" language, and is best viewed through a proper Markdown Viewer.
-      You can find a good Markdown Viewer at http://markdownpad.com/ -->
+<!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
 # LaKraven Studios Standard Library [LKSL]
 ## Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved
 
