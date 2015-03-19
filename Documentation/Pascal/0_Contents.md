@@ -1,6 +1,6 @@
 <!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
 # LaKraven Studios Standard Library [LKSL]
-## [Documentation](../../0_Contents.md)/Pascal
+## [Documentation](../0_Contents.md)/Pascal
 
 ## Contents:
 * [**Event Engine**](./Event%20Engine/0_Contents.md)
