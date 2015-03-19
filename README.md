@@ -57,7 +57,7 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 > If there's another platform that you think could benefit from the features of the LKSL, please raise an issue. Better yet, if you feel you can produce a viable LKSL translation (in part or whole) for another programming/scripting language, please consider contributing that work back to this original repository!
 
 ## Documentation:
-Feel free to take a look at the [LKSL Wiki](https://github.com/LaKraven/LKSL/wiki) to learn how the LKSL can be integrated into your systems (or, as the case may be, how your system can be designed to best utilize the features of the LKSL).
+Feel free to take a look at the [Documentation](./Documentation) to learn how the LKSL can be integrated into your systems (or, as the case may be, how your system can be designed to best utilize the features of the LKSL).
 
 You can also find educational articles demonstrating the various features of the LKSL can be found at http://otapi.com.
 
