@@ -376,6 +376,7 @@ type
   TLKEventContainer = class abstract(TLKThread)
   private
     FEventQueue: TLKEventList;
+    FEventRate: LKFloat;
     FEventStack: TLKEventList;
     FPauseAt: LKFloat;
     FWorking: Boolean;
@@ -383,8 +384,10 @@ type
     function GetEventCount: Integer;
     function GetEventCountQueue: Integer;
     function GetEventCountStack: Integer;
+    function GetEventRate: LKFloat;
     function GetWorking: Boolean;
 
+    procedure SetEventRate(const AEventRate: LKFloat);
     procedure SetWorking(const AWorking: Boolean);
 
     procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
@@ -416,9 +419,11 @@ type
     procedure QueueEvent(const AEvent: TLKEvent);
     procedure StackEvent(const AEvent: TLKEvent);
 
+    ///  <summary><c>The combined number of Events waiting in both the Queue and the Stack.</c></summary>
     property EventCount: Integer read GetEventCount;
     property EventCountQueue: Integer read GetEventCountQueue;
     property EventCountStack: Integer read GetEventCountStack;
+    property EventRate: LKFloat read GetEventRate;
     property Working: Boolean read GetWorking write SetWorking;
   end;
 
@@ -1139,6 +1144,7 @@ end;
 procedure TLKEventContainer.ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
 var
   I, LEnd: Integer;
+  LProcessStarted: LKFloat;
 begin
   if AEventList.Count > 0 then
   begin
@@ -1147,7 +1153,11 @@ begin
     begin
       if (not Terminated) then
         if (AEventList[I].State <> esCancelled) and (not AEventList[I].HasExpired) then // We don't want to bother processing Cancelled Events!
+        begin
+          LProcessStarted := GetReferenceTime;
           ProcessEvent(AEventList[I], ADelta, AStartTime);
+          SetEventRate(1 / (GetReferenceTime - LProcessStarted));
+        end;
         AEventList[I].Unref; // We're no longer referencing the Event
     end;
     SetWorking(True);
@@ -1174,6 +1184,16 @@ end;
 function TLKEventContainer.GetEventCountStack: Integer;
 begin
   Result := FEventStack.Count;
+end;
+
+function TLKEventContainer.GetEventRate: LKFloat;
+begin
+  Lock;
+  try
+    Result := FEventRate;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKEventContainer.GetInitialThreadState: TLKThreadState;
@@ -1222,6 +1242,16 @@ begin
   begin
     Wake; // Wake up this Thread
     FPauseAt := 0;
+  end;
+end;
+
+procedure TLKEventContainer.SetEventRate(const AEventRate: LKFloat);
+begin
+  Lock;
+  try
+    FEventRate := AEventRate;
+  finally
+    Unlock;
   end;
 end;
 
