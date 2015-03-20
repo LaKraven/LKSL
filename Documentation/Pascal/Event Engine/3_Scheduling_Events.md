@@ -1,7 +1,7 @@
 <!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
 Following on directly from the [Simple Usage Example](./2_Simple_Usage_Example.md)...
 
-# Event Engine
+# [Event Engine](./0_Contents.md)
 ## Scheduling Events
 
 ### What is _Event Scheduling?_
@@ -26,7 +26,7 @@ Your delay can be as long or short as you like, though it should be noted that _
 ### Important Note: Timing Resolution and Accuracy
 The Scheduler does not necessarily guarantee that your _Event_ will be dispatched at _exactly the moment the delay specifies_, as the number of _Events_ waiting in the Scheduler may mean that any given _Event_'s dispatch is slightly delayed.
 
-Similarly, the resolution of the Scheduler is restricted to that of your system. If your PC cannot handle timing resolution below 1ms, then the Scheduler's resolution will be restricted to 1ms.
+Similarly, the resolution of the Scheduler is restricted to that of your system. If your PC cannot handle timing resolution below 1ms, then the Scheduler's resolution will be restricted to 1ms. The typical modern computer (PC, mobile, tablet etc) can provide a timing resolution of microseconds. This is more than ample for the majority of applications, such as video games and  simulations.
 
 The Scheduler will, however, strive to provide the highest possible accuracy.
 
