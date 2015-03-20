@@ -1,5 +1,5 @@
 <!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
-# Event Engine
+# [Event Engine](./0_Contents.md)
 ## Simple Usage Example
 
 ## Contents:
