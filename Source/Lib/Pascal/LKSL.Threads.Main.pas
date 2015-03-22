@@ -142,10 +142,9 @@ type
     ///    <para><c>Default = </c>0</para>
     ///  </remarks>
     function GetDefaultTickRateLimit: LKFloat; virtual;
-    // Override "GetDefaultTickRateAverageOver" if you want to change the default Tick Rate Averaging Time (default = 2 seconds)
     ///  <summary><c>Override if you wish to change the default Tick Rate Averaging Time.</c></summary>
     ///  <remarks>
-    ///    <para><c>Value is in Seconds (1 = 1 second)</c></para>
+    ///    <para><c>Value is in Seconds (</c>1<c> = 1 second)</c></para>
     ///    <para><c>Default = </c>2</para>
     ///  </remarks>
     function GetDefaultTickRateAverageOver: LKFloat; virtual;

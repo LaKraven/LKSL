@@ -13,7 +13,8 @@ uses
   LKSL.Generics.Collections in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
   LKSL.Streamables.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
   LKSL.Streams.System in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
-  LKSL.Math.SIUnits in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas';
+  LKSL.Math.SIUnits in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
+  LKSL.Common.Performance in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas';
 
 {$R *.res}
 

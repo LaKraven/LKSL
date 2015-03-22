@@ -144,11 +144,14 @@ type
   end;
 
   {$IFDEF LKSL_FLOAT_SINGLE}
+    ///  <summary><c>Single-Precision Floating Point Type.</c></summary>
     LKFloat = Single;
   {$ELSE}
     {$IFDEF LKSL_FLOAT_EXTENDED}
+      ///  <summary><c>Extended-Precision Floating Point Type.</c></summary>
       LKFloat = Extended;
     {$ELSE}
+      ///  <summary><c>Double-Precision Floating Point Type.</c></summary>
       LKFloat = Double; // This is our default
     {$ENDIF LKSL_FLOAT_DOUBLE}
   {$ENDIF LKSL_FLOAT_SINGLE}
