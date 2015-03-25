@@ -376,13 +376,9 @@ type
   TLKEventContainer = class abstract(TLKThread)
   private
     FEventQueue: TLKEventList;
-    FEventRate: LKFloat;
-    FEventRateAverage: LKFloat;
-    FEventRateAverageOver: LKFloat;
     FEventStack: TLKEventList;
     FPauseAt: LKFloat;
     FPerformance: TLKPerformanceCounter;
-    FRateLock: TLKCriticalSection;
     FWorking: Boolean;
 
     function GetEventCount: Integer;
@@ -390,15 +386,11 @@ type
     function GetEventCountStack: Integer;
     function GetEventRate: LKFloat;
     function GetEventRateAverage: LKFloat;
-    function GetEventRateAverageOver: LKFloat;
+    function GetEventRateAverageOver: Cardinal;
     function GetWorking: Boolean;
 
-    procedure SetEventRate(const AEventRate: LKFloat);
-    procedure SetEventRateAverageOver(const AEventRateAverageOver: LKFloat);
+    procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
     procedure SetWorking(const AWorking: Boolean);
-
-    procedure LockRate; inline;
-    procedure UnlockRate; inline;
 
     procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
@@ -407,12 +399,12 @@ type
     function GetInitialThreadState: TLKThreadState; override;
     procedure Tick(const ADelta, AStartTime: LKFloat); override;
     { Overrideables }
-    ///  <summary><c>Override if you wish to change the default Event Rate Averaging Time.</c></summary>
+    ///  <summary><c>Override if you wish to change the default Event Rate Averaging Sample Count.</c></summary>
     ///  <remarks>
-    ///    <para><c>Value is in Seconds (</c>1<c> = 1 second)</c></para>
-    ///    <para><c>Default = </c>2</para>
+    ///    <para><c>Value is in Samples</c></para>
+    ///    <para><c>Default = </c>10</para>
     ///  </remarks>
-    function GetDefaultEventRateAverageOver: LKFloat; virtual;
+    function GetDefaultEventRateAverageOver: Cardinal; virtual;
     ///  <summary><c>How long should the Thread wait for new Events before self-Pausing?</c></summary>
     ///  <remarks>
     ///    <para><c>A small delay is good when performance is critical.</c></para>
@@ -450,7 +442,7 @@ type
     ///  <remarks><c>Based on the sum of all Events processed over the number of seconds dictated by </c><see DisplayName="EventRateAverageOver" cref="LKSL.Events.Main|TLKEventContainer.EventRateAverageOver"/></remarks>
     property EventRateAverage: LKFloat read GetEventRateAverage;
     ///  <summary><c>How much time (in seconds) the Average Event Rate is to be calculated over.</c></summary>
-    property EventRateAverageOver: LKFloat read GetEventRateAverageOver write SetEventRateAverageOver;
+    property EventRateAverageOver: Cardinal read GetEventRateAverageOver write SetEventRateAverageOver;
     ///  <summary><c>This flag is set to </c>True<c> when Events are being processed.</c></summary>
     ///  <remarks><c>It is mainly used to determine whether a </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> is a viable candidate to receive an </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> from an </c><see DisplayName="TLKEventPool" cref="LKSL.Events.Main|TLKEventPool"/></remarks>
     property Working: Boolean read GetWorking write SetWorking;
@@ -1157,10 +1149,7 @@ end;
 constructor TLKEventContainer.Create;
 begin
   inherited;
-  FPerformance := TLKPerformanceCounter.Create(10);
-  FRateLock := TLKCriticalSection.Create;
-  FEventRate := 0;
-  FEventRateAverageOver := GetDefaultEventRateAverageOver;
+  FPerformance := TLKPerformanceCounter.Create(GetDefaultEventRateAverageOver);
   FEventQueue := TLKEventList.Create(False);
   FEventStack := TLKEventList.Create(False);
 end;
@@ -1171,7 +1160,6 @@ begin
   FEventStack.OwnsObjects := True;
   FEventQueue.Free;
   FEventStack.Free;
-  FRateLock.Free;
   FPerformance.Free;
   inherited;
 end;
@@ -1192,7 +1180,6 @@ begin
           LProcessStarted := GetReferenceTime;
           ProcessEvent(AEventList[I], ADelta, AStartTime);
           FPerformance.RecordSample(GetReferenceTime - LProcessStarted);
-          SetEventRate(FPerformance.InstantRate);
         end;
         AEventList[I].Unref; // We're no longer referencing the Event
     end;
@@ -1202,9 +1189,9 @@ begin
   end;
 end;
 
-function TLKEventContainer.GetDefaultEventRateAverageOver: LKFloat;
+function TLKEventContainer.GetDefaultEventRateAverageOver: Cardinal;
 begin
-  Result := 2;
+  Result := 10;
 end;
 
 function TLKEventContainer.GetDefaultPauseDelay: LKFloat;
@@ -1229,32 +1216,18 @@ end;
 
 function TLKEventContainer.GetEventRate: LKFloat;
 begin
-  LockRate;
-  try
-    Result := FEventRate;
-  finally
-    UnlockRate;
-  end;
+  Result := FPerformance.InstantRate;
 end;
 
 function TLKEventContainer.GetEventRateAverage: LKFloat;
 begin
-  LockRate;
-  try
-    Result := FEventRateAverage;
-  finally
-    UnlockRate;
-  end;
+  Result := FPerformance.AverageRate;
 end;
 
-function TLKEventContainer.GetEventRateAverageOver: LKFloat;
+function TLKEventContainer.GetEventRateAverageOver: Cardinal;
 begin
-  LockRate;
-  try
-    Result := FEventRateAverageOver;
-  finally
-    UnlockRate;
-  end;
+  // Thread-safe already.
+  Result := FPerformance.AverageOver;
 end;
 
 function TLKEventContainer.GetInitialThreadState: TLKThreadState;
@@ -1282,11 +1255,6 @@ begin
   end;
 end;
 
-procedure TLKEventContainer.LockRate;
-begin
-  FRateLock.Acquire;
-end;
-
 procedure TLKEventContainer.ProcessEvents(const ADelta, AStartTime: LKFloat);
 begin
   ProcessEventList(FEventStack, ADelta, AStartTime); // Stack first
@@ -1311,24 +1279,10 @@ begin
   end;
 end;
 
-procedure TLKEventContainer.SetEventRate(const AEventRate: LKFloat);
+procedure TLKEventContainer.SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
 begin
-  LockRate;
-  try
-    FEventRate := AEventRate;
-  finally
-    UnlockRate;
-  end;
-end;
-
-procedure TLKEventContainer.SetEventRateAverageOver(const AEventRateAverageOver: LKFloat);
-begin
-  LockRate;
-  try
-    FEventRateAverageOver := AEventRateAverageOver;
-  finally
-    UnlockRate;
-  end;
+  // Thread-safe already
+  FPerformance.AverageOver := AEventRateAverageOver;
 end;
 
 procedure TLKEventContainer.SetWorking(const AWorking: Boolean);
@@ -1355,11 +1309,6 @@ end;
 procedure TLKEventContainer.Tick(const ADelta, AStartTime: LKFloat);
 begin
   // Do nothing
-end;
-
-procedure TLKEventContainer.UnlockRate;
-begin
-  FRateLock.Release;
 end;
 
 { TLKEventPreProcessor }

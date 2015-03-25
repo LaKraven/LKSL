@@ -62,36 +62,42 @@ type
   TLKPerformanceCounter = class;
 
   ///  <summary><c>Keeps track of Performance both Instant and Average, in units of Things Per Second.</c></summary>
+  ///  <remarks>
+  ///    <para><c>Note that this does NOT operate like a "Stopwatch", it merely takes the given Time Difference (Delta) Values to calculate smooth averages.</c></para>
+  ///  </remarks>
   TLKPerformanceCounter = class(TLKPersistent)
   private
-    FAverageOver: Integer;
+    FAverageOver: Cardinal;
     FAverageRate: LKFloat;
     FInstantRate: LKFloat;
 
     ///  <summary><c>A humble Dynamic Array, fixed to the specified "Average Over" value, containing each Sample used to determine the Average Rate.</c></summary>
     FSamples: Array of LKFloat;
     ///  <summary><c>The number of Samples currently being held. This will reach the "Average Over" value and stay there (unless the "Average Over" value changes)</c></summary>
-    FSampleCount: Integer;
+    FSampleCount: Cardinal;
     ///  <summary><c>The Index of the NEXT Sample to be stored. This simply rolls around from 0 to N, replacing each oldest value.</c></summary>
     FSampleIndex: Integer;
 
     { Getters }
-    function GetAverageOver: Integer;
+    function GetAverageOver: Cardinal;
     function GetAverageRate: LKFloat;
     function GetInstantRate: LKFloat;
 
     { Setters }
-    procedure SetAverageOver(const AAverageOver: Integer = 10);
+    procedure SetAverageOver(const AAverageOver: Cardinal = 10);
   public
-    constructor Create(const AAverageOver: Integer); reintroduce;
+    constructor Create(const AAverageOver: Cardinal); reintroduce;
 
     procedure AfterConstruction; override;
 
     procedure RecordSample(const AValue: LKFloat);
     procedure Reset;
 
-    property AverageOver: Integer read GetAverageOver write SetAverageOver;
+    ///  <summary><c>The number of Samples over which to calculate the Average</c></summary>
+    property AverageOver: Cardinal read GetAverageOver write SetAverageOver;
+    ///  <summary><c>The Average Rate (based on the number of Samples over which to calculate it)</c></summary>
     property AverageRate: LKFloat read GetAverageRate;
+    ///  <summary><c>The Instant Rate (based only on the last given Sample)</c></summary>
     property InstantRate: LKFloat read GetInstantRate;
   end;
 
@@ -105,13 +111,13 @@ begin
   Reset;
 end;
 
-constructor TLKPerformanceCounter.Create(const AAverageOver: Integer);
+constructor TLKPerformanceCounter.Create(const AAverageOver: Cardinal);
 begin
   inherited Create;
   FAverageOver := AAverageOver;
 end;
 
-function TLKPerformanceCounter.GetAverageOver: Integer;
+function TLKPerformanceCounter.GetAverageOver: Cardinal;
 begin
   Lock;
   try
@@ -125,9 +131,9 @@ function TLKPerformanceCounter.GetAverageRate: LKFloat;
 begin
   Lock;
   try
-    Result := GetAverageRate;
+    Result := FAverageRate;
   finally
-
+    Unlock;
   end;
 end;
 
@@ -160,7 +166,7 @@ begin
 
       // Now we'll calculate the Average
       LTotal := 0;
-      for I := 0 to FSampleCount do
+      for I := 0 to FSampleCount - 1 do
         LTotal := LTotal + FSamples[I];
       if LTotal > 0 then // Can't divide by 0
         FAverageRate := 1 / (LTotal / FSampleCount);
@@ -179,7 +185,7 @@ begin
   FAverageRate := 0;
 end;
 
-procedure TLKPerformanceCounter.SetAverageOver(const AAverageOver: Integer);
+procedure TLKPerformanceCounter.SetAverageOver(const AAverageOver: Cardinal);
 begin
   Lock;
   try
