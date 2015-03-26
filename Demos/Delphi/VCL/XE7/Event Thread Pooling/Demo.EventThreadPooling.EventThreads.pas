@@ -47,7 +47,7 @@ begin
                 Form1.memLog.Lines.BeginUpdate;
                 try
                   Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds [This run = %s Seconds]', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance), FormatFloat('#######################.#######################', LDelta)]));
-                  Form1.memLog.Lines.Add(Format('Thread Event Rate Average = %s Events Per Second]', [FormatFloat('#######################.#######################', EventRateAverage)]));
+                  Form1.memLog.Lines.Add(Format('Thread Event Rate Average = %s Events Per Second', [FormatFloat('#######################.####', EventRateAverage)]));
                 finally
                   Form1.memLog.Lines.EndUpdate;
                 end;
