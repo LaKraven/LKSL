@@ -513,6 +513,8 @@ type
     procedure ProcessEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat); override;
 
     { Overrideables }
+    ///  <summary><c>Override if you wish to provide custom Criteria to determine whether this Thread is interested in an Event.</c></summary>
+    function GetEventRelevant(const AEvent: TLKEvent): Boolean; virtual;
     procedure InitializeListeners; virtual;
     procedure FinalizeListeners; virtual;
   public
@@ -1426,6 +1428,11 @@ begin
   // Do nothing (yet)
 end;
 
+function TLKEventThread.GetEventRelevant(const AEvent: TLKEvent): Boolean;
+begin
+  Result := True;
+end;
+
 procedure TLKEventThread.InitializeListeners;
 begin
   // Do nothing (yet)
@@ -1656,7 +1663,7 @@ begin
               LThisThreadScore := LThisThreadEventCount / FEventThreads[I].EventRateAverage // Where we have an Average, we can calculate the Score dynamically.
             else
               LThisThreadScore := LThisThreadEventCount / 60; // In the absence of data, we presume 60 Events Per Second to provide at least SOME kind of Score!
-            if ((((not FEventThreads[I].Working)))) and (((LBestThreadScore = -1)) or (LThisThreadScore < LBestThreadScore)) then // We assume that the first Thread will be the best
+            if ((((not FEventThreads[I].Working)) and (FEventThreads[I].GetEventRelevant(AEvent)))) and (((LBestThreadScore = -1)) or (LThisThreadScore < LBestThreadScore)) then // We assume that the first Thread will be the best
             begin
               LBestThreadIndex := I;
               LBestThreadScore := LThisThreadScore;
@@ -1872,7 +1879,7 @@ begin
       FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
-          if ((AEvent.State <> esCancelled) and (not AEvent.HasExpired)) and (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
+          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].QueueEvent(AEvent)
       finally
         FPreProcessors.Unlock;
@@ -1910,7 +1917,8 @@ begin
     FEventThreads.Lock;
     try
       for I := 0 to FEventThreads.Count - 1 do
-        FEventThreads[I].QueueEvent(AEvent);
+        if FEventThreads[I].GetEventRelevant(AEvent) then
+          FEventThreads[I].QueueEvent(AEvent);
     finally
       FEventThreads.Unlock;
     end;
@@ -1983,7 +1991,7 @@ begin
       FPreProcessors.Lock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
-          if ((AEvent.State <> esCancelled) and (not AEvent.HasExpired)) and (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
+          if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].StackEvent(AEvent)
       finally
         FPreProcessors.Unlock;
@@ -2021,7 +2029,8 @@ begin
     FEventThreads.Lock;
     try
       for I := 0 to FEventThreads.Count - 1 do
-        FEventThreads[I].StackEvent(AEvent);
+        if FEventThreads[I].GetEventRelevant(AEvent) then
+          FEventThreads[I].StackEvent(AEvent);
     finally
       FEventThreads.Unlock;
     end;
