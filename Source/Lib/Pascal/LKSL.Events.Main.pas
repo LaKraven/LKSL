@@ -1632,11 +1632,11 @@ end;
 
 procedure TLKEventPool.PoolEvent(const AEvent: TLKEvent; const ADelta, AStartTime: LKFloat);
 var
-  I: Integer;
-  LBestThreadIndex, LBestThreadCount: Integer;
+  LThisThreadEventCount, LBestThreadIndex, I: Integer;
+  LThisThreadScore, LBestThreadScore: LKFloat;
 begin
   LBestThreadIndex := -1;
-  LBestThreadCount := -1;
+  LBestThreadScore := -1;
   AEvent.Ref;
   try
     repeat
@@ -1644,16 +1644,22 @@ begin
       try
         for I := 0 to FEventThreads.Count - 1 do
         begin
-          if FEventThreads[I].EventCount = 0 then // First check if the Event Thread is Idle
+          LThisThreadEventCount := FEventThreads[I].EventCount;
+          if LThisThreadEventCount = 0 then // First check if the Event Thread is Idle
           begin
             LBestThreadIndex := I;
             Break; // No point going any further!
           end else // If the Thread isn't idle, let's see if it's a good contender...
           begin
-            if ((((not FEventThreads[I].Working)))) and (((LBestThreadIndex = -1)) or (FEventThreads[I].EventCount < LBestThreadCount)) then // We assume that the first Thread will be the best
+            // Score = Event Count / Average Events-Per-Second Rate (Lower = Better)
+            if FEventThreads[I].EventRateAverage > 0 then // It is possible that no Events have been processed by the Thread yet to provide any Average! Tec
+              LThisThreadScore := LThisThreadEventCount / FEventThreads[I].EventRateAverage // Where we have an Average, we can calculate the Score dynamically.
+            else
+              LThisThreadScore := LThisThreadEventCount / 60; // In the absence of data, we presume 60 Events Per Second to provide at least SOME kind of Score!
+            if ((((not FEventThreads[I].Working)))) and (((LBestThreadScore = -1)) or (LThisThreadScore < LBestThreadScore)) then // We assume that the first Thread will be the best
             begin
               LBestThreadIndex := I;
-              LBestThreadCount := FEventThreads[I].EventCount;
+              LBestThreadScore := LThisThreadScore;
             end;
           end;
         end;
