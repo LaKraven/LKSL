@@ -180,9 +180,6 @@ type
     ///  <summary><c>Forces the "Next Tick Time" to be bumped to RIGHT NOW. This will trigger the next Tick immediately regardless of any Rate Limit setting.</c></summary>
     procedure Bump;
 
-    ///  <summary><c>Called instead of "Free" to property Terminate and Free the Thread.</c></summary>
-    procedure Kill; virtual;
-
     ///  <summary><c>Acquires the Thread's internal Critical Section.</c></summary>
     ///  <remarks>
     ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
@@ -285,6 +282,12 @@ end;
 
 destructor TLKThread.Destroy;
 begin
+  FWakeUp.SetEvent;
+  if not Terminated then
+  begin
+    Terminate;
+    WaitFor;
+  end;
   FWakeUp.Free;
   FLock.Free;
   FPerformance.Free;
@@ -480,14 +483,6 @@ begin
   finally
     Unlock;
   end;
-end;
-
-procedure TLKThread.Kill;
-begin
-  Terminate;
-  FWakeUp.SetEvent;
-  WaitFor;
-  Free;
 end;
 
 procedure TLKThread.Lock;

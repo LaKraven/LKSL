@@ -137,9 +137,11 @@ var
 ```
 We safely Free/Finalize the Thread thusly:
 ```pascal
-  MyThread.Kill;
+  MyThread.Free;
 ```
 This will ensure that the _Event Thread_ is terminated and finalized _safely_.
+
+> There used to be a method called `Kill` on TLKThread and its descendants, which has now been removed as unnecessary.
 
 ### Preparing and Dispatching an Event
 We can prepare and dispatch an _Event_ from anywhere in our code. We do not need to worry about _Thread Safety_, so we can do this from within any Thread.

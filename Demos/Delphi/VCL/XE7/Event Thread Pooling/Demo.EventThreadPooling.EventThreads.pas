@@ -87,6 +87,6 @@ end;
 initialization
   TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
 finalization
-  TestEventPool.Kill;
+  TestEventPool.Free;
 
 end.

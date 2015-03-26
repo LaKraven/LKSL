@@ -1618,7 +1618,7 @@ begin
     try
       LCount := FEventThreads.Count;
       for I := LCount - 1 downto 0 do
-        FEventThreads[I].Kill;
+        FEventThreads[I].Free;
     finally
       FEventThreads.Unlock;
     end;
@@ -1853,7 +1853,7 @@ begin
   FPoolsPending.Free;
   FPoolsLeaving.Free;
   FPools.Free;
-  FScheduler.Kill;
+  FScheduler.Free;
   FEventThreads.Free;
   FPreProcessors.Free; // Free this LAST
   inherited;
