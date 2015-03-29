@@ -15,7 +15,7 @@
 * [Preparing and Dispatching an Event](#preparing-and-dispatching-an-event)
 
 ### What is the _Event Engine_?
-If you haven't done so already, you should first read the [Event Engine Introduction](./1_Introduction.md) article here on the LKSL Wiki.
+If you haven't done so already, you should first read the [Event Engine Introduction](./1_Introduction.md) article here on the LKSL Documentation.
 
 ### Units to Include
 For the sake of inlining often-used (but small) routines across virtually every Class Type in the LKSL, you should include a reference to `System.SyncObjs` into the _Uses_ section of any unit interacting with the LKSL. If you don't, you'll get compiler warnings informing you that certain methods could not be properly inlined.

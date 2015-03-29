@@ -23,6 +23,10 @@
       * [Freeing/Finalizing an Event Thread](./2_Simple_Usage_Example.md#important-note-freeingfinalizing-an-event-thread)
   * [Preparing and Dispatching an Event](./2_Simple_Usage_Example.md#preparing-and-dispatching-an-event)
 * [**Scheduling Events**](./3_Scheduling_Events.md)
+* [**Event Pooling**](./4_Event_Pooling.md)
+  * [What is Event Pooling?](./4_Event_Pooling.md#what-is-event-pooling)
+    * [Important Note](./4_Event_Pooling.md#important-note-threads-in-a-pool-must-be-strictly-transactional)
+  * [Defining an Event Pool](./4_Event_Pooling.md#defining-an-event-pool)
 
 ## Donations
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
