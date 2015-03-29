@@ -9,24 +9,24 @@
   * [Important Note](#important-note-threads-in-a-pool-must-be-strictly-transactional)
 * [Defining an Event Pool](#defining-an-event-pool)
 
-## What is _Event Pooling?_
-_Event Pooling_ takes an ordinary `TLKEventThread` descendant Type, and dynamically manages multiple instances of it. _Events_ are then passed to whichever instance of the nominated `TLKEventThread` descendant Type is most ready to process it.
+## What is *Event Pooling?*
+*Event Pooling* takes an ordinary `TLKEventThread` descendant Type, and dynamically manages multiple instances of it. *Events* are then passed to whichever instance of the nominated `TLKEventThread` descendant Type is most ready to process it.
 
-The determination of which _Thread_ is best suited to process each given _Event_ is based on the average performance of each _Thread_ in the pool, as well as how many _Events_ are already waiting each each _Thread's_ respective _Queue_ and _Stack_.
+The determination of which *Thread* is best suited to process each given *Event* is based on the average performance of each *Thread* in the pool, as well as how many *Events* are already waiting each each *Thread's* respective *Queue* and *Stack*.
 
-_Event Pools_ are intended to be used when a singular process would genuinely benefit from being multi-threaded.
+*Event Pools* are intended to be used when a singular process would genuinely benefit from being multi-threaded.
 
 ### Important Note: Threads in a Pool must be strictly Transactional!
-It is important when defining a `TLKEventThread` descendant to serve as a _worker thread_ within a _Pool_ that you remember there's no way of knowing which _Thread_ is going to be handed each _Event_ to process.
+It is important when defining a `TLKEventThread` descendant to serve as a *worker thread* within a *Pool* that you remember there's no way of knowing which *Thread* is going to be handed each *Event* to process.
 
-Likewise, each _Thread_ within the _Pool_ has no awareness of the other _Threads_, or even how many other _Threads_ there are at any given moment.
+Likewise, each *Thread* within the *Pool* has no awareness of the other *Threads*, or even how many other *Threads* there are at any given moment.
 
-This means that you _must_ design your `TLKEventThread` descendant (if you intend to use it within a _Pool_) as a _Transactional Thread, with no persisted state_. 
+This means that you *must* design your `TLKEventThread` descendant (if you intend to use it within a *Pool*) as a *Transactional Thread, with no persisted state*. 
 
-## Defining an _Event Pool_
-Defining an _Event Pool_ is remarkably straight-forward.
+## Defining an *Event Pool*
+Defining an *Event Pool* is remarkably straight-forward.
 
-Assuming that our _Event Thread_ type is called `TMyEventThread`, we can define an _Event Pool_ for that type with a single line of code:
+Assuming that our *Event Thread* type is called `TMyEventThread`, we can define an *Event Pool* for that type with a single line of code:
 
 ```pascal
   TMyEventPool = class(TLKEventPool<TMyEventThread>);
@@ -44,7 +44,7 @@ end;
 
 The parameter value `TThread.ProcessorCount` (in Delphi) retrieves the number of CPU Threads available on the user's system. You can substitute this for any integer value greater than 1.
 
-Destroying an `Event Pool` is as simple as destroying any other object instance:
+Destroying an *Event Pool* is as simple as destroying any other object instance:
 
 ```pascal
   MyEventPool.Free;
