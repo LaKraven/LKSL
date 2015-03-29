@@ -50,7 +50,7 @@ Destroying an *Event Pool* is as simple as destroying any other object instance:
   MyEventPool.Free;
 ```
 
-The destructor will take care of finalizing the `Pool` and all other aspects of itself for you.
+The destructor will take care of finalizing the *Pool* and all other aspects of itself for you.
 
 ## Donations
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
