@@ -94,13 +94,12 @@ type
     FTickRateDesired: LKFloat; // The DESIRED rate at which you want the Thread to Tick (minimum)
     FTickRateLimit: LKFloat; // The current Tick Rate Limit (in "Ticks per Second"), 0 = no limit.
     FThrottleInterval: Cardinal; // The current Throttling Interval (in Milliseconds)
-    FWakeInterval: Cardinal;
     FWakeUp: TEvent;
 
     { Internal Methods }
     procedure AtomicIncrementNextTickTime(const AIncrementBy: LKFloat); inline;
-    procedure InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer; var AWakeInterval: Cardinal);
-    procedure AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal); inline;
+    procedure InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer);
+    procedure AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval: Cardinal); inline;
 
     { Property Getters }
     function GetNextTickTime: LKFloat;
@@ -111,7 +110,6 @@ type
     function GetTickRateDesired: LKFloat;
     function GetTickRateLimit: LKFloat;
     function GetThrottleInterval: Cardinal;
-    function GetWakeInterval: Cardinal;
 
     { Property Setters }
     procedure SetThreadState(const AThreadState: TLKThreadState);
@@ -119,7 +117,6 @@ type
     procedure SetTickRateDesired(const ADesiredRate: LKFloat);
     procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
     procedure SetThrottleInterval(const AThrottleInterval: Cardinal);
-    procedure SetWakeInterval(const AInterval: Cardinal);
   protected
     ///  <summary><c>Override if you wish your inherited Type to enforce a Tick Rate Limit by Default.</c></summary>
     ///  <remarks>
@@ -146,9 +143,6 @@ type
     ///    <para><c>Values are in </c>MILLISECONDS</para>
     ///  </remarks>
     function GetDefaultThrottleInterval: Integer; virtual;
-    ///  <summary><c>Override if you wish to specify a custom Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
-    ///  <remarks><c>Default = </c>10000 <c>(10 seconds)</c></remarks>
-    function GetDefaultWakeInterval: Cardinal; virtual;
     ///  <summary><c>Defines whether the Thread should be Running or Paused upon Construction.</c></summary>
     ///  <remarks><c>Default = </c>tsRunning</remarks>
     function GetInitialThreadState: TLKThreadState; virtual;
@@ -230,8 +224,6 @@ type
     ///    <para><c>Minimum value = </c>1</para>
     ///  </remarks>
     property ThrottleInterval: Cardinal read GetThrottleInterval write SetThrottleInterval;
-    ///  <summary><c>The Interval between heartbeats when the Thread is Resting/Paused.</c></summary>
-    property WakeInterval: Cardinal read GetWakeInterval write SetWakeInterval;
   end;
 
 // "GetReferenceTime" returns the current "Reference Time" (which is supremely high resolution)
@@ -271,7 +263,6 @@ begin
   inherited Create(False);
   FPerformance := TLKPerformanceCounter.Create(GetDefaultTickRateAverageOver);
   FThrottleInterval := GetDefaultThrottleInterval;
-  FWakeInterval := GetDefaultWakeInterval;
   FLock := TLKCriticalSection.Create;
   FreeOnTerminate := False;
   FThreadState := GetInitialThreadState;
@@ -294,7 +285,7 @@ begin
   inherited;
 end;
 
-procedure TLKThread.InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer; var AWakeInterval: Cardinal);
+procedure TLKThread.InitializeTickVariables(var ACurrentTime, ALastAverageCheckpoint, ANextAverageCheckpoint, ATickRate: LKFloat; var AAverageTicks: Integer);
 begin
   ACurrentTime := GetReferenceTime;
   Lock;
@@ -307,17 +298,15 @@ begin
   ANextAverageCheckpoint := 0;
   ATickRate := 0;
   AAverageTicks := 0;
-  AWakeInterval := GetWakeInterval;
 end;
 
-procedure TLKThread.AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval, AWakeInterval: Cardinal);
+procedure TLKThread.AtomicInitializeCycleValues(var ATickRateLimit, ATickRateDesired: LKFloat; var AThrottleInterval: Cardinal);
 begin
   Lock;
   try
     ATickRateLimit := FTickRateLimit;
     ATickRateDesired := FTickRateDesired;
     AThrottleInterval := FThrottleInterval;
-    AWakeInterval := FWakeInterval;
   finally
     Unlock;
   end;
@@ -340,15 +329,14 @@ var
   LLastAverageCheckpoint, LNextAverageCheckpoint: LKFloat;
   LAverageTicks: Integer;
   LThrottleInterval: Cardinal;
-  LWakeInterval: Cardinal;
 begin
-  InitializeTickVariables(LCurrentTime, LLastAverageCheckpoint, LNextAverageCheckpoint, LTickRate, LAverageTicks, LWakeInterval);
+  InitializeTickVariables(LCurrentTime, LLastAverageCheckpoint, LNextAverageCheckpoint, LTickRate, LAverageTicks);
   while (not Terminated) do
   begin
     if ThreadState = tsRunning then
     begin
       LCurrentTime := GetReferenceTime;
-      AtomicInitializeCycleValues(LTickRateLimit, LTickRateDesired, LThrottleInterval, LWakeInterval);
+      AtomicInitializeCycleValues(LTickRateLimit, LTickRateDesired, LThrottleInterval);
       LDelta := (LCurrentTime - FNextTickTime);
 
       // Rate Limiter
@@ -376,18 +364,13 @@ begin
           TThread.Sleep(LThrottleInterval);
       end;
     end else
-      FWakeUp.WaitFor(LWakeInterval);
+      FWakeUp.WaitFor(INFINITE);
   end;
 end;
 
 function TLKThread.GetDefaultTickRateLimit: LKFloat;
 begin
   Result := 0;
-end;
-
-function TLKThread.GetDefaultWakeInterval: Cardinal;
-begin
-  Result := 10000;
 end;
 
 function TLKThread.GetDefaultThrottleInterval: Integer;
@@ -475,16 +458,6 @@ begin
   end;
 end;
 
-function TLKThread.GetWakeInterval: Cardinal;
-begin
-  Lock;
-  try
-    Result := FWakeInterval;
-  finally
-    Unlock;
-  end;
-end;
-
 procedure TLKThread.Lock;
 begin
   FLock.Acquire;
@@ -562,16 +535,6 @@ begin
     // so we match the two.
     if (FTickRateLimit > 0) and (FTickRateLimit < FTickRateDesired) then
       FTickRateDesired := FTickRateLimit;
-  finally
-    Unlock;
-  end;
-end;
-
-procedure TLKThread.SetWakeInterval(const AInterval: Cardinal);
-begin
-  Lock;
-  try
-    FWakeInterval := AInterval;
   finally
     Unlock;
   end;
