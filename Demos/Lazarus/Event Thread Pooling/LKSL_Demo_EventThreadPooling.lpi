@@ -198,7 +198,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="8">
+    <Units Count="11">
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -214,6 +214,7 @@
       <Unit2>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Threads.Main"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Stopwatch.pas"/>
@@ -235,6 +236,19 @@
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit7>
+      <Unit8>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Common.Performance"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit10>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -52,8 +52,7 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  LKSL.Common.Types,
-  LKSL.Generics.Collections;
+  LKSL.Common.Types;
 
   {$I LKSL_RTTI.inc}
 
