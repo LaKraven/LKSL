@@ -391,8 +391,8 @@ type
 
     procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
     procedure SetWorking(const AWorking: Boolean);
-
-    procedure ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
+    procedure ProcessQueue(const ADelta, AStartTime: LKFloat);
+    procedure ProcessStack(const ADelta, AStartTime: LKFloat);
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
   protected
     { TLKThread overrides }
@@ -1166,31 +1166,6 @@ begin
   inherited;
 end;
 
-procedure TLKEventContainer.ProcessEventList(const AEventList: TLKEventList; const ADelta, AStartTime: LKFloat);
-var
-  I, LEnd: Integer;
-  LProcessStarted: LKFloat;
-begin
-  if AEventList.Count > 0 then
-  begin
-    LEnd := AEventList.Count - 1;
-    for I := 0 to LEnd do
-    begin
-      if (not Terminated) then
-        if (AEventList[I].State <> esCancelled) and (not AEventList[I].HasExpired) then // We don't want to bother processing Cancelled Events!
-        begin
-          LProcessStarted := GetReferenceTime;
-          ProcessEvent(AEventList[I], ADelta, AStartTime);
-          FPerformance.RecordSample(GetReferenceTime - LProcessStarted);
-        end;
-        AEventList[I].Unref; // We're no longer referencing the Event
-    end;
-    SetWorking(True);
-    AEventList.DeleteRange(0, LEnd); // Locking occurs automagically
-    SetWorking(False);
-  end;
-end;
-
 function TLKEventContainer.GetDefaultEventRateAverageOver: Cardinal;
 begin
   Result := 10;
@@ -1259,14 +1234,64 @@ end;
 
 procedure TLKEventContainer.ProcessEvents(const ADelta, AStartTime: LKFloat);
 begin
-  ProcessEventList(FEventStack, ADelta, AStartTime); // Stack first
-  ProcessEventList(FEventQueue, ADelta, AStartTime); // Queue second
+  ProcessStack(ADelta, AStartTime);
+  ProcessQueue(ADelta, AStartTime);
   if (GetPauseOnNoEvent) and ((FEventStack.IsEmpty) and (FEventQueue.IsEmpty)) then
   begin
     if (FPauseAt > 0) and (GetReferenceTime >= FPauseAt) then
       Rest
     else if FPauseAt = 0 then
       FPauseAt := GetReferenceTime + GetDefaultPauseDelay;
+  end;
+end;
+
+procedure TLKEventContainer.ProcessQueue(const ADelta, AStartTime: LKFloat);
+var
+  I, LEnd: Integer;
+  LProcessStarted: LKFloat;
+begin
+  if FEventQueue.Count > 0 then
+  begin
+    LEnd := FEventQueue.Count - 1;
+    for I := 0 to LEnd do
+    begin
+      if (not Terminated) then
+        if (FEventQueue[I].State <> esCancelled) and (not FEventQueue[I].HasExpired) then // We don't want to bother processing Cancelled Events!
+        begin
+          LProcessStarted := GetReferenceTime;
+          ProcessEvent(FEventQueue[I], ADelta, AStartTime);
+          FPerformance.RecordSample(GetReferenceTime - LProcessStarted);
+        end;
+        FEventQueue[I].Unref; // We're no longer referencing the Event
+    end;
+    SetWorking(True);
+    FEventQueue.DeleteRange(0, LEnd); // Locking occurs automagically
+    SetWorking(False);
+  end;
+end;
+
+procedure TLKEventContainer.ProcessStack(const ADelta, AStartTime: LKFloat);
+var
+  I, LEnd: Integer;
+  LProcessStarted: LKFloat;
+begin
+  if FEventStack.Count > 0 then
+  begin
+    LEnd := FEventStack.Count - 1;
+    for I := LEnd downto 0 do
+    begin
+      if (not Terminated) then
+        if (FEventStack[I].State <> esCancelled) and (not FEventStack[I].HasExpired) then // We don't want to bother processing Cancelled Events!
+        begin
+          LProcessStarted := GetReferenceTime;
+          ProcessEvent(FEventStack[I], ADelta, AStartTime);
+          FPerformance.RecordSample(GetReferenceTime - LProcessStarted);
+        end;
+        FEventStack[I].Unref; // We're no longer referencing the Event
+    end;
+    SetWorking(True);
+    FEventStack.DeleteRange(0, LEnd); // Locking occurs automagically
+    SetWorking(False);
   end;
 end;
 
