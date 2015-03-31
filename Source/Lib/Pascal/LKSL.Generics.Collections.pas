@@ -92,6 +92,10 @@ type
     TLKTreeObjectNode<T: class> = class;
   {$ENDIF FPC}
 
+  {$IFDEF FPC}
+    TArray<T> = Array of T;
+  {$ENDIF FPC}
+
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
   TLKListSortOrder = (soAscending, soDescending);
@@ -174,6 +178,11 @@ type
         constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
       {$ENDIF FPC}
       destructor Destroy; override;
+
+      {$IFDEF FPC}
+        function TryGetValue(const AKey: TKey; var AValue: TValue): Boolean;
+        function ContainsKey(const AKey: TKey): Boolean;
+      {$ENDIF FPC}
 
       procedure Lock; inline;
       procedure Unlock; inline;
@@ -706,6 +715,19 @@ end;
     inherited Create;
   end;
 
+  function TLKDictionary<TKey, TValue>.TryGetValue(const AKey: TKey; var AValue: TValue): Boolean;
+  var
+    LIndex: Integer;
+  begin
+    Result := Find(AKey, LIndex);
+    if Result then
+      AValue := Data[LIndex];
+  end;
+
+  function TLKDictionary<TKey, TValue>.ContainsKey(const AKey: TKey): Boolean;
+  begin
+    Result := IndexOf(AKey) > -1;
+  end;
 {$ELSE}
   constructor TLKDictionary<TKey, TValue>.Create(const AComparer: IEqualityComparer<TKey>);
   begin

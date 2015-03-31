@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   LKSL.Streams.System, LKSL.Streams.Types,
-  LKSL.Threads.Main, LKSL.Common.Streams, LKSL.Math.SiUnits;
+  LKSL.Threads.Main, LKSL.Common.Streams, LKSL.Math.SiUnits, LKSL.Generics.Collections;
 
 { TForm1 }
 

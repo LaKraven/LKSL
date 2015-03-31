@@ -28,6 +28,7 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Math Library            | A library for Unit Conversion, special calculation and other useful mathematics routines.        | Early in development                                            |
 | Stream Handling Library | Makes working with Streams *much* easier! Handles Deleting, Inserting, Reading and Writing data. | Suitable for real-world use (being used in production software) |
 | Streamables Engine      | A system to serialize Object Instances into Streams, and to dynamically reconstitute them, too.  | Suitable for real-world use (being used in production software) |
+| Package Engine          | Extension of the Streamables Engine supporting the packaging of files together (a VFS of sorts)  | Planned, not yet implemented.                                   |
 
 ## Support Matrix:
 
@@ -40,6 +41,7 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Math Library            | Yes              | Soon                  | Yes             |
 | Stream Handling Library | Yes              | Soon                  | Yes             |
 | Streamables Engine      | Yes              | Soon                  | Soon            |
+| Package Engine          | Soon             | Soon                  | Soon            |
 
 ## Other Platforms currently in Consideration:
 
@@ -52,6 +54,7 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Math Library            | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
 | Stream Handling Library | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
 | Streamables Engine      | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
+| Package Engine          | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
 *Note: There are no promises with the above table! It depends on who is willing to support what!**
 
 > If there's another platform that you think could benefit from the features of the LKSL, please raise an issue. Better yet, if you feel you can produce a viable LKSL translation (in part or whole) for another programming/scripting language, please consider contributing that work back to this original repository!

@@ -214,7 +214,7 @@ type
 
     procedure Clear;
     function GetCount: Integer;
-    function GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
+//    function GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
     function GetStreamableTypeByGUID(const AGUID: TGUID): TLKStreamableType; overload;
   public
     constructor Create; override;
@@ -236,8 +236,8 @@ type
     procedure WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
 
     property Count: Integer read GetCount;
-    property StreamableType[const AIndex: Integer]: TLKStreamableType read GetStreamableTypeByIndex; default;
-    property StreamableType[const AGUID: TGUID]: TLKStreamableType read GetStreamableTypeByGUID; default;
+//    property StreamableTypeByIndex[const AIndex: Integer]: TLKStreamableType read GetStreamableTypeByIndex;
+    property StreamableTypeByGUID[const AGUID: TGUID]: TLKStreamableType read GetStreamableTypeByGUID;
   end;
 
 var
@@ -302,7 +302,7 @@ var
 begin
   LBlockStart := AStream.Position;
   LSignature := StreamReadGUID(AStream); // Read the GUID
-  if LSignature = GetTypeGUID then // Check if the Signature matches the expected GUID
+  if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
   begin
     {LEngineVersion := }StreamReadByte(AStream); // Need to advance the Stream past the Engine Version byte
     LBlockSize := StreamReadInt64(AStream);
@@ -358,7 +358,7 @@ begin
   Lock;
   try
     LSignature := StreamReadGUID(AStream); // Read the GUID
-    if LSignature = GetTypeGUID then // Check if the Signature matches the expected GUID
+    if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
     begin
       {LEngineVersion := }StreamReadByte(AStream); // Need to advance the Stream past the Engine Version byte
       FBlockSize := StreamReadInt64(AStream); // Read the Block Size
@@ -567,10 +567,11 @@ end;
 
 function TLKStreamables.GetStreamableTypeByGUID(const AGUID: TGUID): TLKStreamableType;
 begin
+
   if not (FStreamableTypes.TryGetValue(AGUID, Result)) then
     Result := nil;
 end;
-
+{
 function TLKStreamables.GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;
 begin
   Lock;
@@ -580,7 +581,7 @@ begin
     Unlock;
   end;
 end;
-
+}
 function TLKStreamables.GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
 var
   LPosition: Int64;
