@@ -214,7 +214,6 @@
       <Unit2>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Threads.Main"/>
       </Unit2>
       <Unit3>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Stopwatch.pas"/>
@@ -239,7 +238,6 @@
       <Unit8>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Common.Performance"/>
       </Unit8>
       <Unit9>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
@@ -252,7 +250,6 @@
       <Unit11>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Generics.Collections"/>
       </Unit11>
     </Units>
   </ProjectOptions>

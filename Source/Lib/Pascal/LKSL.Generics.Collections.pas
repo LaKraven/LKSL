@@ -72,26 +72,23 @@ uses
 
 type
   { Forward Declaration }
-  {$IFNDEF FPC}
+  {$IFDEF FPC}
+    TArray<T> = Array of T;
+  {$ELSE}
     TLKSortHandler<T> = class;
     TLKArray<T> = class;
     TLKDictionary<TKey, TValue> = class;
+    TLKHashMap<TKey, TValue> = class;
     TLKListBase<T> = class;
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
     TLKSortedListBase<T> = class;
     TLKSortedList<T> = class;
     TLKSortedObjectList<T: class> = class;
-  {$ENDIF FPC}
-  {$IFNDEF FPC}
     TLKCenteredList<T> = class;
     TLKCenteredObjectList<T: class> = class;
     TLKTreeNode<T> = class;
     TLKTreeObjectNode<T: class> = class;
-  {$ENDIF FPC}
-
-  {$IFDEF FPC}
-    TArray<T> = Array of T;
   {$ENDIF FPC}
 
   { Enum Types }
@@ -185,6 +182,26 @@ type
       procedure Lock; inline;
       procedure Unlock; inline;
     end;
+
+  ///  <summary><c>Thread-safe Hashed Key/Value Map.</c></summary>
+  ///  <remarks><c>Note that this is not ready for use at this time!</c></remarks>
+  TLKHashMap<TKey, TValue> = class(TLKPersistent)
+  private type
+    TItem = record
+      HashCode: Integer;
+      Key: TKey;
+      Value: TValue;
+    end;
+    TItemArray = Array of TItem;
+  private
+//    FItems: TItemArray;
+//    FCapacityMultiplier: Single;
+//    FCapacityThreshold: Integer;
+//    FCount: Integer;
+//    FLock: TCriticalSection;
+
+//    function Hash(const AKey: TKey): Integer;
+  end;
 
   {
     TLKListBase<T>
@@ -773,6 +790,13 @@ procedure TLKDictionary<TKey, TValue>.Unlock;
 begin
   FLock.Release;
 end;
+
+{ TLKHashMap<TKey, TValue> }
+
+//function TLKHashMap<TKey, TValue>.Hash(const AKey: TKey): Integer;
+//begin
+//  Result := 0;
+//end;
 
 { TLKListBase<T> }
 
@@ -2599,5 +2623,6 @@ end;
     inherited;
   end;
 {$ENDIF FPC}
+
 end.
 
