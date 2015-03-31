@@ -74,21 +74,23 @@ uses
 
 type
   { Forward Declaration }
-  TLKArray<T> = class;
-  TLKDictionary<TKey, TValue> = class;
-  TLKListBase<T> = class;
-  TLKList<T> = class;
-  TLKObjectList<T: class> = class;
-  TLKSortedListBase<T> = class;
-  TLKSortedList<T> = class;
-  TLKSortedObjectList<T: class> = class;
+  {$IFNDEF FPC}
+    TLKSortHandler<T> = class;
+    TLKArray<T> = class;
+    TLKDictionary<TKey, TValue> = class;
+    TLKListBase<T> = class;
+    TLKList<T> = class;
+    TLKObjectList<T: class> = class;
+    TLKSortedListBase<T> = class;
+    TLKSortedList<T> = class;
+    TLKSortedObjectList<T: class> = class;
+  {$ENDIF FPC}
   {$IFNDEF FPC}
     TLKCenteredList<T> = class;
     TLKCenteredObjectList<T: class> = class;
     TLKTreeNode<T> = class;
     TLKTreeObjectNode<T: class> = class;
   {$ENDIF FPC}
-  TLKSortHandler<T> = class;
 
   { Enum Types }
   TLKListDirection = (ldLeft, ldRight);
@@ -102,6 +104,21 @@ type
     ELKGenericCollectionsRangeException = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyAlreadyExists = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyNotFound = class(ELKGenericCollectionsException);
+
+  {
+    TLKSortHandler<T>
+      - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
+      - Allows you to provide Dynamic Sorting Behaviour at Runtime!
+  }
+  TLKSortHandler<T> = class abstract(TLKPersistent)
+  public
+    // Parity Checks
+    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+  end;
 
   {
     TLKArray<T>
@@ -147,11 +164,15 @@ type
     private
       FLock: TCriticalSection;
     public
-      constructor Create(ACapacity: Integer = 0); reintroduce; overload;
-      constructor Create(const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
-      constructor Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
-      constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>); reintroduce; overload;
-      constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+      {$IFDEF FPC}
+        constructor Create; reintroduce;
+      {$ELSE}
+        constructor Create(ACapacity: Integer = 0); reintroduce; overload;
+        constructor Create(const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+        constructor Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+        constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>); reintroduce; overload;
+        constructor Create(const Collection: TEnumerable<TPair<TKey,TValue>>; const AComparer: IEqualityComparer<TKey>); reintroduce; overload;
+      {$ENDIF FPC}
       destructor Destroy; override;
 
       procedure Lock; inline;
@@ -171,11 +192,14 @@ type
       {$ENDIF SUPPORTS_REFERENCETOMETHOD}
       TIterateCallbackOfObject = procedure(const AIndex: Integer; const AItem: T) of object;
       TIterateCallbackUnbound = procedure(const AIndex: Integer; const AItem: T);
+      TLKSortHandlerT = class(TLKSortHandler<T>);
   private
     FArray: TArrayOfT;
     FCapacityMultiplier: Single;
     FCapacityThreshold: Integer;
-    FComparer: IComparer<T>;
+    {$IFNDEF FPC}
+      FComparer: IComparer<T>;
+    {$ENDIF FPC}
     FCount: Integer;
     // Getters - Capacity
     function GetCapacity: Integer;
@@ -192,6 +216,10 @@ type
 
     procedure InitializeArray;
   protected
+    // Add
+    function AddActual(const AItem: T): Integer; virtual;
+    // Remove
+    function RemoveActual(const AItem: T): Integer;
     // Capacity Management
     procedure CheckCapacity; overload; inline;
     procedure CheckCapacity(const ATotalRequiredCapacity: Integer); overload;
@@ -203,7 +231,7 @@ type
     // Insert
     procedure InsertActual(const AItem: T; const AIndex: Integer); inline;
     // Quick Sort
-    procedure QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure QuickSort(const ASortHandler: TLKSortHandlerT; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
     // Smart Compact
     procedure CompactActual;
     procedure SmartCompact;
@@ -212,7 +240,9 @@ type
     function ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
   public
     constructor Create; overload; override;
-    constructor Create(const AComparer: IComparer<T>); reintroduce; overload; virtual;
+    {$IFNDEF FPC}
+      constructor Create(const AComparer: IComparer<T>); reintroduce; overload; virtual;
+    {$ENDIF FPC}
     destructor Destroy; override;
 
     function Add(const AItem: T): Integer; overload; virtual;
@@ -228,7 +258,7 @@ type
     ///  <summary><c>Delete a Range of Items from the given Index.</c></summary>
     procedure DeleteRange(const AIndex, ACount: Integer); virtual;
 
-    function Remove(const AItem: T): Integer; overload;
+    function Remove(const AItem: T): Integer; overload; inline;
     procedure Remove(const AItems: TArrayOfT); overload;
 
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
@@ -244,7 +274,7 @@ type
     function Contains(const AItems: TArrayOfT): Boolean; overload;
     function IndexOf(const AItem: T): Integer;
 
-    procedure Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure Sort(const ASortHandler: TLKSortHandlerT; const ASortOrder: TLKListSortOrder = soAscending);
 
     ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
     ///  <remarks><c>Read-Only</c></remarks>
@@ -282,7 +312,9 @@ type
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
   public
     constructor Create(const AOwnsObjects: Boolean = True); overload;
-    constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); overload;
+    {$IFNDEF FPC}
+      constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); overload;
+    {$ENDIF FPC}
     destructor Destroy; override;
 
     procedure Clear(const ACompact: Boolean = True); override;
@@ -314,8 +346,8 @@ type
       - Abstract methods need to be implemented on type-specific descendants
   }
   TLKSortedList<T> = class abstract(TLKSortedListBase<T>)
-  public
-    function Add(const AItem: T): Integer; reintroduce; overload;
+  protected
+    function AddActual(const AItem: T): Integer; override;
   end;
 
   {
@@ -330,7 +362,9 @@ type
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
   public
     constructor Create(const AOwnsObjects: Boolean = True); reintroduce; overload;
-    constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); reintroduce; overload;
+    {$IFNDEF FPC}
+      constructor Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean = True); reintroduce; overload;
+    {$ENDIF FPC}
     destructor Destroy; override;
 
     procedure Clear(const ACompact: Boolean = True); override;
@@ -581,20 +615,6 @@ type
     property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
   end;
 {$ENDIF FPC}
-  {
-    TLKSortHandler<T>
-      - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
-      - Allows you to provide Dynamic Sorting Behaviour at Runtime!
-  }
-  TLKSortHandler<T> = class abstract(TLKPersistent)
-  public
-    // Parity Checks
-    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
-    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
-    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
-    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
-    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
-  end;
 
 const
   LKSL_LIST_CAPACITY_DEFAULT = 10;
@@ -679,35 +699,44 @@ end;
 
 { TLKDictionary<TKey, TValue> }
 
-constructor TLKDictionary<TKey, TValue>.Create(const AComparer: IEqualityComparer<TKey>);
-begin
-  FLock := TCriticalSection.Create;
-  inherited Create(AComparer);
-end;
+{$IFDEF FPC}
+  constructor TLKDictionary<TKey, TValue>.Create;
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create;
+  end;
 
-constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer);
-begin
-  FLock := TCriticalSection.Create;
-  inherited Create(ACapacity);
-end;
+{$ELSE}
+  constructor TLKDictionary<TKey, TValue>.Create(const AComparer: IEqualityComparer<TKey>);
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create(AComparer);
+  end;
 
-constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>);
-begin
-  FLock := TCriticalSection.Create;
-  inherited Create(ACapacity, AComparer);
-end;
+  constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer);
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create(ACapacity);
+  end;
 
-constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>; const AComparer: IEqualityComparer<TKey>);
-begin
-  FLock := TCriticalSection.Create;
-  inherited Create(Collection, AComparer);
-end;
+  constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>);
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create(ACapacity, AComparer);
+  end;
 
-constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>);
-begin
-  FLock := TCriticalSection.Create;
-  inherited Create(Collection);
-end;
+  constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>; const AComparer: IEqualityComparer<TKey>);
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create(Collection, AComparer);
+  end;
+
+  constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>);
+  begin
+    FLock := TCriticalSection.Create;
+    inherited Create(Collection);
+  end;
+{$ENDIF FPC}
 
 destructor TLKDictionary<TKey, TValue>.Destroy;
 begin
@@ -729,15 +758,7 @@ end;
 
 function TLKListBase<T>.Add(const AItem: T): Integer;
 begin
-  Lock;
-  try
-    CheckCapacity(FCount + 1);
-    Result := FCount;
-    FArray[Result] := AItem;
-    Inc(FCount);
-  finally
-    Unlock;
-  end;
+  AddActual(AItem);
 end;
 
 procedure TLKListBase<T>.CheckCapacity;
@@ -755,7 +776,7 @@ var
   I: Integer;
 begin
   for I := Low(AItems) to High(AItems) do
-    Add(AItems[I]);
+    AddActual(AItems[I]);
 end;
 
 procedure TLKListBase<T>.CheckCapacity(const ATotalRequiredCapacity: Integer);
@@ -806,7 +827,7 @@ begin
     Result := True; // Optimistic
     for I := Low(AItems) to High(AItems) do
     begin
-      Result := Contains(AItems[I]);
+      Result := IndexOf(AItems[I]) >= 0;
       if (not Result) then
         Break; // No point looking further if one of the items isn't present
     end;
@@ -817,17 +838,24 @@ end;
 
 constructor TLKListBase<T>.Create;
 begin
-  Create(nil);
+  {$IFDEF FPC}
+    inherited Create;
+    InitializeArray;
+  {$ELSE}
+    Create(nil);
+  {$ENDIF FPC}
 end;
 
-constructor TLKListBase<T>.Create(const AComparer: IComparer<T>);
-begin
-  inherited Create;
-  FComparer := AComparer;
-  if FComparer = nil then
-    FComparer := TComparer<T>.Default;
-  InitializeArray;
-end;
+{$IFNDEF FPC}
+  constructor TLKListBase<T>.Create(const AComparer: IComparer<T>);
+  begin
+    inherited Create;
+    FComparer := AComparer;
+    if FComparer = nil then
+      FComparer := TComparer<T>.Default;
+    InitializeArray;
+  end;
+{$ENDIF FPC}
 
 function TLKListBase<T>.Contains(const AItem: T): Boolean;
 begin
@@ -954,7 +982,7 @@ begin
   Lock;
   try
     for I := 0 to FCount - 1 do
-      if FComparer.Compare(FArray[I], AItem) = 0 then
+      if {$IFDEF FPC}CompareByte(FArray[I], AItem, SizeOf(AItem)) > 0{$ELSE}FComparer.Compare(FArray[I], AItem) = 0{$ENDIF FPC} then
       begin
         Result := I;
         Break; // No point going further if we've already found it
@@ -970,6 +998,19 @@ begin
   SetLength(FArray, LKSL_LIST_CAPACITY_DEFAULT);
   FCapacityThreshold := LKSL_LIST_THRESHOLD_DEFAULT;
   FCapacityMultiplier := LKSL_LIST_MULTIPLIER_DEFAULT;
+end;
+
+function TLKListBase<T>.AddActual(const AItem: T): Integer;
+begin
+  Lock;
+  try
+    CheckCapacity(FCount + 1);
+    Result := FCount;
+    FArray[Result] := AItem;
+    Inc(FCount);
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKListBase<T>.InsertActual(const AItem: T; const AIndex: Integer);
@@ -1102,7 +1143,8 @@ begin
   System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
 end;
 
-procedure TLKListBase<T>.QuickSort(const ASortHandler: TLKSortHandler<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
+
+procedure TLKListBase<T>.QuickSort(const ASortHandler: TLKSortHandlerT; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
 var
   I, J: Integer;
   LPivot, LTemp: T;
@@ -1151,10 +1193,15 @@ var
   I: Integer;
 begin
   for I := Low(AItems) to High(AItems) do
-    Remove(AItems[I]);
+    RemoveActual(AItems[I]);
 end;
 
 function TLKListBase<T>.Remove(const AItem: T): Integer;
+begin
+  RemoveActual(AItem);
+end;
+
+function TLKListBase<T>.RemoveActual(const AItem: T): Integer;
 begin
   Result := IndexOf(AItem);
   if Result >= 0 then
@@ -1203,7 +1250,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+procedure TLKListBase<T>.Sort(const ASortHandler: TLKSortHandlerT; const ASortOrder: TLKListSortOrder = soAscending);
 begin
   QuickSort(ASortHandler, 0, FCount - 1, ASortOrder);
 end;
@@ -1254,7 +1301,7 @@ begin
     if FOwnsObjects then
     begin
       for I := 0 to FCount - 1 do
-        FArray[I].DisposeOf;
+        {$IFDEF FPC}FArray[I].Free;{$ELSE}FArray[I].DisposeOf;{$ENDIF FPC}
     end;
     inherited;
   finally
@@ -1268,18 +1315,24 @@ begin
   FOwnsObjects := AOwnsObjects;
 end;
 
-constructor TLKObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
-begin
-  inherited Create(AComparer);
-  FOwnsObjects := True;
-end;
+{$IFNDEF FPC}
+  constructor TLKObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
+  begin
+    inherited Create(AComparer);
+    FOwnsObjects := True;
+  end;
+{$ENDIF FPC}
 
 procedure TLKObjectList<T>.Delete(const AIndex: Integer);
 begin
   Lock;
   try
     if FOwnsObjects then
-      FArray[AIndex].DisposeOf;
+      {$IFDEF FPC}
+        FArray[AIndex].Free;
+      {$ELSE}
+        FArray[AIndex].DisposeOf;
+      {$ENDIF FPC}
     inherited;
   finally
     Unlock;
@@ -1344,14 +1397,14 @@ end;
 
 { TLKSortedList<T> }
 
-function TLKSortedList<T>.Add(const AItem: T): Integer;
+function TLKSortedList<T>.AddActual(const AItem: T): Integer;
 begin
   Lock;
   try
     CheckCapacity(FCount + 1);
     Result := GetSortedPosition(AItem);
     if Result = FCount then
-      inherited Add(AItem)
+      inherited AddActual(AItem)
     else
       InsertActual(AItem, Result);
   finally
@@ -1370,7 +1423,11 @@ begin
     if FOwnsObjects then
     begin
       for I := 0 to FCount - 1 do
-        FArray[I].DisposeOf;
+        {$IFDEF FPC}
+          FArray[I].Free;
+        {$ELSE}
+          FArray[I].DisposeOf;
+        {$ENDIF FPC}
     end;
     inherited;
   finally
@@ -1384,18 +1441,24 @@ begin
   FOwnsObjects := AOwnsObjects;
 end;
 
-constructor TLKSortedObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
-begin
-  inherited Create(AComparer);
-  FOwnsObjects := AOwnsObjects;
-end;
+{$IFNDEF FPC}
+  constructor TLKSortedObjectList<T>.Create(const AComparer: IComparer<T>; const AOwnsObjects: Boolean);
+  begin
+    inherited Create(AComparer);
+    FOwnsObjects := AOwnsObjects;
+  end;
+{$ENDIF FPC}
 
 procedure TLKSortedObjectList<T>.Delete(const AIndex: Integer);
 begin
   Lock;
   try
     if FOwnsObjects then
-      FArray[AIndex].DisposeOf;
+      {$IFDEF FPC}
+        FArray[AIndex].Free;
+      {$ELSE}
+        FArray[AIndex].DisposeOf;
+      {$ENDIF FPC}
     inherited;
   finally
     Unlock;
