@@ -65,9 +65,7 @@ uses
     Classes, SysUtils;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
   {$IFNDEF FPC}
     type

@@ -63,9 +63,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types, LKSL.Common.Performance;
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
 type
   { Forward Declarations }

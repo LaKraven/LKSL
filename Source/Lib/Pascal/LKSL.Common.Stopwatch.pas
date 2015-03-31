@@ -52,6 +52,8 @@ interface
   uses
     SysUtils {$IFDEF LINUX},unixtype, linux{$ENDIF LINUX};
 
+{$I LKSL_RTTI.inc}
+
 type
 
   { TStopWatch }

@@ -71,9 +71,7 @@ uses
   LKSL.Common.Types,
   LKSL.Streams.System;
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
 type
   { Forward Declarations }

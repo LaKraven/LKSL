@@ -57,9 +57,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types;
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
 // Delete Methods
 procedure StreamDeleteLKFloat(const AStream: TStream); overload;

@@ -68,9 +68,7 @@ uses
   {$ENDIF FPC}
   LKSL.Common.Types;
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
 type
   { Forward Declaration }

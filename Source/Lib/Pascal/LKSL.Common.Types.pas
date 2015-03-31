@@ -92,9 +92,7 @@ uses
     Classes, SysUtils, SyncObjs;
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
 
-  {$IFNDEF FPC}
-    {$I LKSL_RTTI.inc}
-  {$ENDIF FPC}
+  {$I LKSL_RTTI.inc}
 
 type
   { Forward Declarations }
