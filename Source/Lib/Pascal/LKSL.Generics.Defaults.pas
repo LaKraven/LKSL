@@ -60,6 +60,7 @@ interface
 ///    <para><c>Translation by: Davy Landman</c></para>
 ///    <para><c>Translation found at: http://landman-code.blogspot.co.uk/2008/06/superfasthash-from-paul-hsieh.html</c></para>
 ///    <para><c>Source appears to be made available as "Public Domain" and is used in good faith.</c></para>
+///    <para><c>64bit Fixes by: LaKraven Studios Ltd</c></para>
 ///  </comments>
 function LKSuperFastHash(AData: Pointer; ADataLength: Integer): LongWord;
 
