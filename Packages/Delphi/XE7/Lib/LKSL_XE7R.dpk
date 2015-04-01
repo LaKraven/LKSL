@@ -1,0 +1,49 @@
+package LKSL_XE7R;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$RUNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  LKSL.Common.Performance in '..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas',
+  LKSL.Common.Streams in '..\..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas',
+  LKSL.Common.Types in '..\..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas',
+  LKSL.Events.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas',
+  LKSL.Events.Streams in '..\..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
+  LKSL.Generics.Collections in '..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas',
+  LKSL.Generics.Defaults in '..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas',
+  LKSL.Math.SIUnits in '..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
+  LKSL.Math.Time in '..\..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas',
+  LKSL.Streamables.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
+  LKSL.Streams.System in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
+  LKSL.Streams.Types in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
+  LKSL.Threads.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas';
+
+end.

@@ -29,7 +29,7 @@ implementation
 
 procedure TForm1.btnDispatchEventClick(Sender: TObject);
 begin
-  TTestEvent.Create('Bar').Queue;
+  TTestEvent.Create('Bar').Stack;
 end;
 
 end.

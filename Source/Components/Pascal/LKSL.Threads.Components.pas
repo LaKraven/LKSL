@@ -87,17 +87,13 @@ type
     function GetOnTick: TLKThreadTickCallback;
     function GetTickRate: Double;
     function GetTickRateAverage: Double;
-    function GetTickRateAverageOver: Double;
+    function GetTickRateAverageOver: Cardinal;
     function GetTickRateDesired: Double;
-    function GetTickRateExtraTicks: Double;
-    function GetTickRateExtraTime: Double;
-    function GetTickRateExtraTicksAverage: Double;
-    function GetTickRateExtraTimeAverage: Double;
     function GetTickRateLimit: Double;
     // Setters
     procedure SetActive(const AActive: Boolean);
     procedure SetOnTick(const AOnTick: TLKThreadTickCallback);
-    procedure SetTickRateAverageOver(const AAverageOver: Double);
+    procedure SetTickRateAverageOver(const AAverageOver: Cardinal);
     procedure SetTickRateDesired(const ATickRateDesired: Double);
     procedure SetTickRateLimit(const ATickRateLimit: Double);
   public
@@ -109,12 +105,8 @@ type
     property OnTick: TLKThreadTickCallback read GetOnTick write SetOnTick;
     property TickRate: Double read GetTickRate;
     property TickRateAverage: Double read GetTickRateAverage;
-    property TickRateAverageOver: Double read GetTickRateAverageOver write SetTickRateAverageOver;
+    property TickRateAverageOver: Cardinal read GetTickRateAverageOver write SetTickRateAverageOver;
     property TickRateDesired: Double read GetTickRateDesired write SetTickRateDesired;
-    property TickRateExtraTicks: Double read GetTickRateExtraTicks;
-    property TickRateExtraTime: Double read GetTickRateExtraTime;
-    property TickRateExtraTicksAverage: Double read GetTickRateExtraTicksAverage;
-    property TickRateExtraTimeAverage: Double read GetTickRateExtraTimeAverage;
     property TickRateLimit: Double read GetTickRateLimit write SetTickRateLimit;
   end;
 
@@ -148,7 +140,7 @@ end;
 
 destructor TLKPrecisionThread.Destroy;
 begin
-  FThread.Kill;
+  FThread.Free;
   inherited;
 end;
 
@@ -180,7 +172,7 @@ begin
   Result := FThread.TickRateAverage;
 end;
 
-function TLKPrecisionThread.GetTickRateAverageOver: Double;
+function TLKPrecisionThread.GetTickRateAverageOver: Cardinal;
 begin
   Result := FThread.TickRateAverageOver;
 end;
@@ -188,26 +180,6 @@ end;
 function TLKPrecisionThread.GetTickRateDesired: Double;
 begin
   Result := FThread.TickRateDesired;
-end;
-
-function TLKPrecisionThread.GetTickRateExtraTicksAverage: Double;
-begin
-  Result := FThread.TickRateExtraTicksAverage;
-end;
-
-function TLKPrecisionThread.GetTickRateExtraTicks: Double;
-begin
-  Result := FThread.TickRateExtraTicks;
-end;
-
-function TLKPrecisionThread.GetTickRateExtraTime: Double;
-begin
-  Result := FThread.TickRateExtraTime;
-end;
-
-function TLKPrecisionThread.GetTickRateExtraTimeAverage: Double;
-begin
-  Result := FThread.TickRateExtraTimeAverage;
 end;
 
 function TLKPrecisionThread.GetTickRateLimit: Double;
@@ -230,7 +202,7 @@ begin
   FThread.OnTick := AOnTick;
 end;
 
-procedure TLKPrecisionThread.SetTickRateAverageOver(const AAverageOver: Double);
+procedure TLKPrecisionThread.SetTickRateAverageOver(const AAverageOver: Cardinal);
 begin
   FThread.TickRateAverageOver := AAverageOver;
 end;

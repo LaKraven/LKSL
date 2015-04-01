@@ -14,7 +14,8 @@ uses
   LKSL.Streamables.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
   LKSL.Streams.System in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
   LKSL.Math.SIUnits in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
-  LKSL.Common.Performance in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas';
+  LKSL.Common.Performance in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas',
+  LKSL.Generics.Defaults in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas';
 
 {$R *.res}
 
