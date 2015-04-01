@@ -66,7 +66,8 @@ uses
   {$ELSE}
     fgl,
   {$ENDIF FPC}
-  LKSL.Common.Types;
+  LKSL.Common.Types,
+  LKSL.Generics.Defaults;
 
   {$I LKSL_RTTI.inc}
 
@@ -78,7 +79,7 @@ type
     TLKSortHandler<T> = class;
     TLKArray<T> = class;
     TLKDictionary<TKey, TValue> = class;
-    TLKHashMap<TKey, TValue> = class;
+//    TLKHashMap<TKey, TValue> = class;
     TLKListBase<T> = class;
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
@@ -185,7 +186,7 @@ type
 
   ///  <summary><c>Thread-safe Hashed Key/Value Map.</c></summary>
   ///  <remarks><c>Note that this is not ready for use at this time!</c></remarks>
-  TLKHashMap<TKey, TValue> = class(TLKPersistent)
+{  TLKHashMap<TKey, TValue> = class(TLKPersistent)
   private type
     TItem = record
       HashCode: Integer;
@@ -194,14 +195,14 @@ type
     end;
     TItemArray = Array of TItem;
   private
-//    FItems: TItemArray;
-//    FCapacityMultiplier: Single;
-//    FCapacityThreshold: Integer;
-//    FCount: Integer;
-//    FLock: TCriticalSection;
+    FItems: TItemArray;
+    FCapacityMultiplier: Single;
+    FCapacityThreshold: Integer;
+    FCount: Integer;
+    FLock: TCriticalSection;
 
-//    function Hash(const AKey: TKey): Integer;
-  end;
+    function Hash(const AKey: TKey): Integer;
+  end;}
 
   {
     TLKListBase<T>
@@ -792,12 +793,14 @@ begin
 end;
 
 { TLKHashMap<TKey, TValue> }
-
-//function TLKHashMap<TKey, TValue>.Hash(const AKey: TKey): Integer;
-//begin
-//  Result := 0;
-//end;
-
+{
+function TLKHashMap<TKey, TValue>.Hash(const AKey: TKey): Integer;
+const
+  POSMASK = not Integer($80000000);
+begin
+  Result := POSMASK and ((POSMASK and LKSuperFastHash(@AKey, SizeOf(AKey))) + 1);
+end;
+}
 { TLKListBase<T> }
 
 function TLKListBase<T>.Add(const AItem: T): Integer;
