@@ -85,6 +85,7 @@ type
   }
   TLKThread = class abstract(TThread)
   private
+    FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;
     FNextTickTime: LKFloat;
     FPerformance: TLKPerformanceCounter;
@@ -200,6 +201,7 @@ type
     ///  <summary><c>Wakes the Thread if it is an Inactive state (see </c><see DisplayName="Rest" cref="LKSL.Threads.Main|TLKThread.Rest"/><c> for details)</c></summary>
     procedure Wake;
 
+    property InstanceGUID: TGUID read FInstanceGUID;
     ///  <summary><c>The Absolute Reference Time at which the next Tick will occur.</c></summary>
     property NextTickTime: LKFloat read GetNextTickTime;
     ///  <summary><c>The current State of the Thread (running or paused).</c></summary>
@@ -259,6 +261,7 @@ const
   THREAD_STATES: Array[TLKThreadState] of Boolean = (True, False);
 begin
   inherited Create(False);
+  CreateGUID(FInstanceGUID);
   FPerformance := TLKPerformanceCounter.Create(GetDefaultTickRateAverageOver);
   FThrottleInterval := GetDefaultThrottleInterval;
   FLock := TLKCriticalSection.Create;

@@ -226,6 +226,7 @@
       <Unit5>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Common.Types"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
@@ -250,7 +251,6 @@
       <Unit11>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Generics.Collections"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>

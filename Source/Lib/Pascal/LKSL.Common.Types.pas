@@ -115,6 +115,7 @@ type
   }
   TLKPersistent = class(TPersistent)
   private
+    FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;
   public
     constructor Create; virtual;
@@ -123,6 +124,8 @@ type
     function LockIfAvailable: Boolean; inline;
     procedure Lock; inline;
     procedure Unlock; inline;
+
+    property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
   {
@@ -131,6 +134,7 @@ type
   }
   TLKObject = class(TObject)
   private
+    FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;
   public
     constructor Create; virtual;
@@ -139,6 +143,8 @@ type
     function LockIfAvailable: Boolean; inline;
     procedure Lock; inline;
     procedure Unlock; inline;
+
+    property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
   {$IFDEF LKSL_FLOAT_SINGLE}
@@ -162,6 +168,7 @@ constructor TLKPersistent.Create;
 begin
   inherited Create;
   FLock := TLKCriticalSection.Create;
+  CreateGUID(FInstanceGUID);
 end;
 
 destructor TLKPersistent.Destroy;
@@ -191,6 +198,7 @@ constructor TLKObject.Create;
 begin
   inherited Create;
   FLock := TLKCriticalSection.Create;
+  CreateGUID(FInstanceGUID);
 end;
 
 destructor TLKObject.Destroy;
