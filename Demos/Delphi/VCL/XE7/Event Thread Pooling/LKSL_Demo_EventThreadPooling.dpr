@@ -16,7 +16,8 @@ uses
   LKSL.Math.SIUnits in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas',
   LKSL.Common.Performance in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas',
   LKSL.Generics.Defaults in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas',
-  LKSL.Streams.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas';
+  LKSL.Streams.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas',
+  LKSL.Streams.Helpers in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Helpers.pas';
 
 {$R *.res}
 

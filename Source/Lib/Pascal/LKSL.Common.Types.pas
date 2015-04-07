@@ -99,6 +99,8 @@ type
   TLKCriticalSection = class;
   TLKPersistent = class;
   TLKObject = class;
+  TLKInterfacedPersistent = class;
+  TLKInterfacedObject = class;
 
   { Exception Types }
   ELKException = class(Exception);
@@ -133,6 +135,36 @@ type
       - Provides a "Critical Section" (or "Lock") to make members "Thread-Safe"
   }
   TLKObject = class(TObject)
+  private
+    FInstanceGUID: TGUID;
+    FLock: TLKCriticalSection;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+
+    function LockIfAvailable: Boolean; inline;
+    procedure Lock; inline;
+    procedure Unlock; inline;
+
+    property InstanceGUID: TGUID read FInstanceGUID;
+  end;
+
+  TLKInterfacedPersistent = class(TInterfacedPersistent)
+  private
+    FInstanceGUID: TGUID;
+    FLock: TLKCriticalSection;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+
+    function LockIfAvailable: Boolean; inline;
+    procedure Lock; inline;
+    procedure Unlock; inline;
+
+    property InstanceGUID: TGUID read FInstanceGUID;
+  end;
+
+  TLKInterfacedObject = class(TInterfacedObject)
   private
     FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;
@@ -218,6 +250,66 @@ begin
 end;
 
 procedure TLKObject.Unlock;
+begin
+  FLock.Release;
+end;
+
+{ TLKInterfacedPersistent }
+
+constructor TLKInterfacedPersistent.Create;
+begin
+  inherited Create;
+  FLock := TLKCriticalSection.Create;
+  CreateGUID(FInstanceGUID);
+end;
+
+destructor TLKInterfacedPersistent.Destroy;
+begin
+  FLock.Free;
+  inherited;
+end;
+
+procedure TLKInterfacedPersistent.Lock;
+begin
+  FLock.Acquire;
+end;
+
+function TLKInterfacedPersistent.LockIfAvailable: Boolean;
+begin
+  Result := FLock.TryEnter;
+end;
+
+procedure TLKInterfacedPersistent.Unlock;
+begin
+  FLock.Release;
+end;
+
+{ TLKInterfacedObject }
+
+constructor TLKInterfacedObject.Create;
+begin
+  inherited Create;
+  FLock := TLKCriticalSection.Create;
+  CreateGUID(FInstanceGUID);
+end;
+
+destructor TLKInterfacedObject.Destroy;
+begin
+  FLock.Free;
+  inherited;
+end;
+
+procedure TLKInterfacedObject.Lock;
+begin
+  FLock.Acquire;
+end;
+
+function TLKInterfacedObject.LockIfAvailable: Boolean;
+begin
+  Result := FLock.TryEnter;
+end;
+
+procedure TLKInterfacedObject.Unlock;
 begin
   FLock.Release;
 end;
