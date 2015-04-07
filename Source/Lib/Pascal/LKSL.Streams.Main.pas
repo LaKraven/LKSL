@@ -56,96 +56,146 @@ interface
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils;
+    System.Classes, System.SysUtils, System.SyncObjs,
   {$ELSE}
-    Classes, SysUtils;
+    Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  LKSL.Common.Types,
+  LKSL.Generics.Collections;
+
+type
+  { Forward Declarations }
+  TLKStreamCaret = class;
+  TLKStream = class;
+
+  { Class References }
+  TLKStreamCaretClass = class of TLKStreamCaret;
+
+  TLKStreamCaretList = class(TLKObjectList<TLKStreamCaret>);
+
+  ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
+  TLKStreamCaret = class abstract(TLKPersistent)
+  private
+    FPosition: Int64;
+    FStream: TLKStream;
+    function GetPosition: Int64;
+
+    procedure SetPosition(const APosition: Int64);
+  public
+    constructor Create(const AStream: TLKStream); reintroduce;
+    destructor Destroy; override;
+
+    property Position: Int64 read GetPosition write SetPosition;
+
+    function Read(var ABuffer; const ALength: Int64): Int64; overload; virtual;
+    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; virtual;
+
+    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+  end;
+
+  ///  <summary><c>Abstract Base Type for all Multi-Thread Access Streams.</c></summary>
+  ///  <remarks>
+  ///    <para><c>Each consuming Thread provides its own Caret.</c></para>
+  ///    <para><c>Locking only occurs to prevent Write-During-Read and Read-During-Write.</c></para>
+  ///  </remarks>
+  TLKStream = class abstract(TLKPersistent)
+  protected
+    function GetCaretType: TLKStreamCaretClass; virtual; abstract;
+  private
+    FCarets: TLKStreamCaretList;
+
+    procedure RegisterCaret(const ACaret: TLKStreamCaret);
+    procedure UnregisterCaret(const ACaret: TLKStreamCaret);
+  public
+    constructor Create; overload; override;
+    destructor Destroy; override;
+
+    function NewCaret: TLKStreamCaret;
+  end;
 
   {$IFNDEF FPC}
-    type
-      StreamManager = class abstract
-      public
-        class procedure CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64); overload; inline;
-        class procedure CustomDelete<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64); overload; inline;
-        class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
-        class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
-        class function CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T; overload; inline;
-        class function CustomRead<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64): T; overload; inline;
-        class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
-        class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+    StreamManager = class abstract
+    public
+      class procedure CustomDelete<T>(const AStream: TStream; const ASizeOf: Int64); overload; inline;
+      class procedure CustomDelete<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+      class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+      class procedure CustomInsert<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
+      class function CustomRead<T>(const AStream: TStream; const ASizeOf: Int64): T; overload; inline;
+      class function CustomRead<T>(const AStream: TStream; const APosition: Int64; const ASizeOf: Int64): T; overload; inline;
+      class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
+      class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
 
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Delete<T>(const AStream: TStream); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class function Read<T>(const AStream: TStream): T; overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
-      end;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Delete<T>(const AStream: TStream); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class function Read<T>(const AStream: TStream): T; overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
+    end;
   {$ENDIF FPC}
 
   {$IFDEF LKSL_USE_HELPERS}
-    type
-      TLKStreamHelper = class helper for TStream
-      public
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure DeleteValue<T>; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure DeleteValue<T>(const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure DeleteArray<T>; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure DeleteArray<T>(const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure InsertValue<T>(const AValue: T); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure InsertArray<T>(const AValues: Array of T); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        function ReadValue<T>: T; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        function ReadValue<T>(const APosition: Int64): T; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        function ReadArray<T>: TArray<T>; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure WriteValue<T>(const AValue: T); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure WriteArray<T>(const AValues: TArray<T>); overload;
-        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
-        procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
-      end;
+    TLKStreamHelper = class helper for TStream
+    public
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure DeleteValue<T>; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure DeleteValue<T>(const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure DeleteArray<T>; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure DeleteArray<T>(const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure InsertValue<T>(const AValue: T); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure InsertArray<T>(const AValues: Array of T); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      function ReadValue<T>: T; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      function ReadValue<T>(const APosition: Int64): T; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      function ReadArray<T>: TArray<T>; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure WriteValue<T>(const AValue: T); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure WriteArray<T>(const AValues: TArray<T>); overload;
+      ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
+      procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
+    end;
   {$ENDIF}
 
 // Utility Methods
@@ -200,6 +250,95 @@ begin
     I := I - 1;
   until I = APosition - 1;
   AStream.Position := APosition;
+end;
+
+{ TLKStreamCaret }
+
+constructor TLKStreamCaret.Create(const AStream: TLKStream);
+begin
+  inherited Create;
+  FStream := AStream;
+  FStream.RegisterCaret(Self);
+end;
+
+destructor TLKStreamCaret.Destroy;
+begin
+  FStream.UnregisterCaret(Self);
+  inherited;
+end;
+
+function TLKStreamCaret.GetPosition: Int64;
+begin
+  Lock;
+  try
+    Result := FPosition;
+  finally
+    Unlock;
+  end;
+end;
+
+function TLKStreamCaret.Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64;
+begin
+  { TODO -oSJS -cTLKStreamCaret: Implement Read from Buffer}
+end;
+
+function TLKStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
+begin
+  Result := 0;
+end;
+
+function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+begin
+  { TODO -oSJS -cTLKStreamCaret: Implement Seek (Relative)}
+end;
+
+procedure TLKStreamCaret.SetPosition(const APosition: Int64);
+begin
+  Seek(APosition, soBeginning);
+end;
+
+{ TLKStream }
+
+constructor TLKStream.Create;
+begin
+  inherited;
+  FCarets := TLKStreamCaretList.Create(True);
+end;
+
+destructor TLKStream.Destroy;
+begin
+  FCarets.Free;
+  inherited;
+end;
+
+function TLKStream.NewCaret: TLKStreamCaret;
+begin
+  Result := GetCaretType.Create(Self);
+end;
+
+procedure TLKStream.RegisterCaret(const ACaret: TLKStreamCaret);
+begin
+  FCarets.Lock;
+  try
+    if (not FCarets.Contains(ACaret)) then
+      FCarets.Add(ACaret);
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
+procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
+var
+  LIndex: Integer;
+begin
+  FCarets.Lock;
+  try
+    LIndex := FCarets.IndexOf(ACaret);
+    if LIndex > -1 then
+      FCarets.Delete(LIndex);
+  finally
+    FCarets.Unlock;
+  end;
 end;
 
 {$IFNDEF FPC}
