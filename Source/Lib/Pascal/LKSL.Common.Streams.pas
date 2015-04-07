@@ -75,7 +75,7 @@ procedure StreamWriteLKFloat(const AStream: TStream; const AValue: LKFloat; cons
 implementation
 
 uses
-  LKSL.Streams.System;
+  LKSL.Streams.Main, LKSL.Streams.System;
 
 procedure StreamDeleteLKFloat(const AStream: TStream);
 begin

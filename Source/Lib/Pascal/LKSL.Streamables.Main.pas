@@ -69,7 +69,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Generics.Collections,
   LKSL.Common.Types,
-  LKSL.Streams.System;
+  LKSL.Streams.Main, LKSL.Streams.System;
 
   {$I LKSL_RTTI.inc}
 

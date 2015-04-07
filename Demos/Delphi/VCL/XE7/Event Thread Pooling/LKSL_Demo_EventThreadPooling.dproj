@@ -105,6 +105,7 @@
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -133,7 +134,7 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
-                <DeployFile LocalName="Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -145,7 +146,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>
                         <Overwrite>true</Overwrite>

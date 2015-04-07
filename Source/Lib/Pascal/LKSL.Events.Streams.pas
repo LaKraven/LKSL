@@ -107,7 +107,7 @@ procedure StreamWriteTLKEventTarget(const AStream: TStream; const AValue: TLKEve
 implementation
 
 uses
-  LKSL.Streams.System;
+  LKSL.Streams.Main, LKSL.Streams.System;
 
   {$I LKSL_RTTI.inc}
 
