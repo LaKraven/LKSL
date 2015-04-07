@@ -2,10 +2,6 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
-## This Library is still in EARLY DEVELOPMENT!
-Please keep in mind that this library is still in its infancy, and while many of its features work very well, the interfaces are by no means "final" at this point.
-In fact, there are plans to change many of them (particularly in the Event Engine units). This redesign effort is referred to internally as the "redux". You will see it mentioned quite often in recent commits.
-
 ## Installation
 On *Windows*, don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
 
