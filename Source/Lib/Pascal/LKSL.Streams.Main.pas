@@ -74,21 +74,37 @@ uses
         class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const ASizeOf: Int64); overload; inline;
         class procedure CustomWrite<T>(const AStream: TStream; const AValue: T; const APosition: Int64; const ASizeOf: Int64); overload; inline;
 
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Delete<T>(const AStream: TStream); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Delete<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure DeleteArray<T>(const AStream: TStream); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure DeleteArray<T>(const AStream: TStream; const APosition: Int64); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Insert<T>(const AStream: TStream; const AValue: T); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Insert<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure InsertArray<T>(const AStream: TStream; const AValues: Array of T; const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class function Read<T>(const AStream: TStream): T; overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class function Read<T>(const AStream: TStream; const APosition: Int64): T; overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class function ReadArray<T>(const AStream: TStream): TArray<T>; overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class function ReadArray<T>(const AStream: TStream; const APosition: Int64): TArray<T>; overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Write<T>(const AStream: TStream; const AValue: T); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure Write<T>(const AStream: TStream; const AValue: T; const APosition: Int64); overload; inline;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         class procedure WriteArray<T>(const AStream: TStream; const AValues: TArray<T>; const APosition: Int64); overload;
       end;
   {$ENDIF FPC}
@@ -97,21 +113,37 @@ uses
     type
       TLKStreamHelper = class helper for TStream
       public
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure DeleteValue<T>; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure DeleteValue<T>(const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure DeleteArray<T>; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure DeleteArray<T>(const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure InsertValue<T>(const AValue: T); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure InsertValue<T>(const AValue: T; const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure InsertArray<T>(const AValues: Array of T); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure InsertArray<T>(const AValues: Array of T; const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         function ReadValue<T>: T; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         function ReadValue<T>(const APosition: Int64): T; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         function ReadArray<T>: TArray<T>; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         function ReadArray<T>(const APosition: Int64): TArray<T>; overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure WriteValue<T>(const AValue: T); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure WriteValue<T>(const AValue: T; const APosition: Int64); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure WriteArray<T>(const AValues: TArray<T>); overload;
+        ///  <remarks><c>Do not use this for Dynamic Length Types such as </c>String</remarks>
         procedure WriteArray<T>(const AValues: TArray<T>; const APosition: Int64); overload;
       end;
   {$ENDIF}
