@@ -206,10 +206,7 @@ type
     function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; virtual; abstract;
     function ReadActual(var ABuffer; const ALength: Int64): Int64; virtual; abstract;
     function WriteActual(const ABuffer; const ALength: Int64): Int64; virtual; abstract;
-
-    function SeekBeginning(const AOffset: Int64): Int64;
-    function SeekCurrent(const AOffset: Int64): Int64;
-    function SeekEnd(const AOffset: Int64): Int64;
+    function SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; virtual; abstract;
   public
     constructor Create(const AStream: TLKStream); reintroduce;
     destructor Destroy; override;
@@ -252,7 +249,7 @@ type
     function Write(const ABuffer; const ALength: Int64): Int64;
 
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
-    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; inline;
+    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 
     property Position: Int64 read GetPosition write SetPosition;
   end;
@@ -283,16 +280,6 @@ type
     ///    <para><c>Where the new Size is smaller than the previous Size, all Carets no longer in range will have their Position shifted to the new End Of Stream</c></para>
     ///  </remarks>
     procedure SetSize(const ASize: Int64);
-
-    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
-    procedure AcquireRead;
-    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
-    procedure ReleaseRead;
-
-    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
-    procedure AcquireWrite;
-    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
-    procedure ReleaseWrite;
   protected
     ///  <summary><c>Override to define the correct Stream Caret Type to use for this Stream</c></summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
@@ -303,6 +290,15 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
+    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
+    procedure AcquireRead;
+    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
+    procedure AcquireWrite;
+    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
+    procedure ReleaseRead;
+    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
+    procedure ReleaseWrite;
+
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
 
@@ -310,11 +306,13 @@ type
   end;
 
   TLKHandleStreamCaret = class(TLKStreamCaret, ILKHandleStreamCaret)
+  protected
     function DeleteActual(const ALength: Int64): Int64; override;
     function InsertActual(const ABuffer; const ALength: Int64): Int64;  override;
     function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; override;
     function ReadActual(var ABuffer; const ALength: Int64): Int64; override;
     function WriteActual(const ABuffer; const ALength: Int64): Int64; override;
+    function SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; override;
   end;
 
   TLKHandleStream = class(TLKStream, ILKHandleStream)
@@ -440,7 +438,7 @@ constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
   FStream := AStream;
-  FPosition := 0;
+  Seek(0, soBeginning);
   GetStream.RegisterCaret(Self);
 end;
 
@@ -463,12 +461,7 @@ end;
 
 function TLKStreamCaret.GetPosition: Int64;
 begin
-  Lock;
-  try
-    Result := FPosition;
-  finally
-    Unlock;
-  end;
+  Result := Seek(0, soCurrent);
 end;
 
 function TLKStreamCaret.GetStream: TLKStream;
@@ -511,36 +504,18 @@ end;
 
 function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  case AOrigin of
-    soBeginning: Result := SeekBeginning(AOffset);
-    soCurrent: Result := SeekCurrent(AOffset);
-    soEnd: Result := SeekEnd(AOffset);
-    else
-      Result := 0;
+  GetStream.AcquireRead;
+  try
+    Result := SeekActual(AOffset, AOrigin);
+  finally
+    GetStream.ReleaseRead;
   end;
-end;
-
-function TLKStreamCaret.SeekBeginning(const AOffset: Int64): Int64;
-begin
-  FPosition := AOffset;
-  Result := FPosition;
-end;
-
-function TLKStreamCaret.SeekCurrent(const AOffset: Int64): Int64;
-begin
-  FPosition := FPosition + AOffset;
-  Result := FPosition;
-end;
-
-function TLKStreamCaret.SeekEnd(const AOffset: Int64): Int64;
-begin
-  FPosition := GetStream.Size - AOffset;
-  Result := FPosition;
+  FPosition := Result;
 end;
 
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
 begin
-  SeekBeginning(APosition);
+  Seek(APosition, soBeginning);
 end;
 
 function TLKStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
@@ -691,31 +666,72 @@ end;
 { TLKHandleStreamCaret }
 
 function TLKHandleStreamCaret.DeleteActual(const ALength: Int64): Int64;
+var
+  LStartPosition, I: Int64;
+  LValue: Byte;
 begin
-
+  Result := 0;
+  GetStream.Lock;
+  try
+    FileSeek(TLKHandleStream(GetStream).FHandle, Position, Ord(soBeginning));
+    LStartPosition := Position;
+    I := Position + (ALength - 1);
+    repeat
+      Position := I;
+      ReadActual(LValue, 1);
+      FileSeek(TLKHandleStream(GetStream).FHandle, I - ALength, Ord(soBeginning));
+      WriteActual(LValue, 1);
+      Inc(I);
+      Inc(Result);
+    until I = GetStream.Size + 1;
+    GetStream.Size := GetStream.Size - ALength;
+    Position := LStartPosition;
+  finally
+    GetStream.Unlock;
+  end;
 end;
 
 function TLKHandleStreamCaret.InsertActual(const ABuffer; const ALength: Int64): Int64;
 begin
-
+  Result := 0;
+{ TODO -oSJS -cTLKMemoryStream : Implement Insert }
 end;
 
 function TLKHandleStreamCaret.MoveBytesActual(const ACount, AOffset: Int64): Int64;
 begin
-
+  Result := 0;
+{ TODO -oSJS -cTLKMemoryStream : Implement Move Bytes }
 end;
 
 function TLKHandleStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int64;
 begin
-  Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
-  if Result = -1 then
-    Result := 0;
+  GetStream.Lock;
+  try
+    FileSeek(TLKHandleStream(GetStream).FHandle, Position, Ord(soBeginning));
+    Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
+    if Result = -1 then
+      Result := 0;
+  finally
+    GetStream.Unlock;
+  end;
+end;
+
+function TLKHandleStreamCaret.SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+begin
+  Result := FileSeek(TLKHandleStream(GetStream).FHandle, AOffset, Ord(AOrigin));
 end;
 
 function TLKHandleStreamCaret.WriteActual(const ABuffer; const ALength: Int64): Int64;
 begin
-  Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
-  if Result = -1 then Result := 0;
+  GetStream.Lock;
+  try
+    FileSeek(TLKHandleStream(GetStream).FHandle, FPosition, Ord(soBeginning));
+    Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
+    if Result = -1 then
+      Result := 0;
+  finally
+    GetStream.Unlock;
+  end;
 end;
 
 { TLKHandleStream }
@@ -728,12 +744,13 @@ end;
 
 function TLKHandleStream.GetCaretType: TLKStreamCaretClass;
 begin
-
+  Result := TLKHandleStreamCaret;
 end;
 
 function TLKHandleStream.GetSizeActual: Int64;
 begin
-
+  Result := 0;
+  { TODO -oSJS -cTLKHandleStream : Implement GetSizeActual }
 end;
 
 procedure TLKHandleStream.SetSizeActual(const ASize: Int64);

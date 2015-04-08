@@ -58,11 +58,6 @@ unit LKSL.Common.Types;
       {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
       {$DEFINE LKSL_WARNING_VERSION}
     {$ENDIF DELPHIXE2}
-
-    {$IFDEF DELPHIXE8}
-      {$MESSAGE WARN 'Delphi XE8 is in Beta, problems may be bugs in Delphi itself! Please report any issues on https://github.com/LaKraven/LKSL'}
-      {$DEFINE LKSL_WARNING_VERSION}
-    {$ENDIF DELPHIXE8}
   {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
 {$ENDIF FPC}
 
