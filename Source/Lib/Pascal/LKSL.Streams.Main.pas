@@ -77,9 +77,6 @@ type
   TLKMemoryStreamCaret = class;
   TLKMemoryStream = class;
 
-  { Enums }
-  TLKStreamOperationOrder = (sooBefore, sooAfter);
-
   { Class References }
   TLKStreamCaretClass = class of TLKStreamCaret;
 
@@ -91,18 +88,33 @@ type
     function GetPosition: Int64;
     procedure SetPosition(const APosition: Int64);
 
-    procedure Delete(const ALength: Int64);
+    ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
+    ///  <returns><c>Returns the new </c>Size<c> of the Stream.</c></returns>
+    function Delete(const ALength: Int64): Int64;
 
-    procedure Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload;
-    procedure Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload;
+    ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Insert(const ABuffer; const ALength: Int64): Int64; overload;
+    ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Insert(const ABuffer: TBytes; const ALength: Int64): Int64; overload;
 
-    procedure Read(var ABuffer; const ALength: Int64); overload;
-    procedure Read(const ABuffer: TBytes; const AOffset, ACount: Int64); overload;
+    ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    function Read(var ABuffer; const ALength: Int64): Int64; overload;
+    ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload;
 
-    procedure Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload;
-    procedure Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload;
+    ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Write(const ABuffer; const ALength: Int64): Int64; overload;
+    ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Write(const ABuffer: TBytes; const ALength: Int64): Int64; overload;
 
-    procedure Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
+    ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
+    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 
     property Position: Int64 read GetPosition write SetPosition;
   end;
@@ -137,22 +149,44 @@ type
     function GetPosition: Int64;
     // Setters
     procedure SetPosition(const APosition: Int64);
+  protected
+    function SeekBeginning(const AOffset: Int64): Int64; virtual; abstract;
+    function SeekCurrent(const AOffset: Int64): Int64; virtual; abstract;
+    function SeekEnd(const AOffset: Int64): Int64; virtual; abstract;
   public
     constructor Create(const AStream: TLKStream); reintroduce;
     destructor Destroy; override;
 
-    procedure Delete(const ALength: Int64); virtual; abstract;
+    ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
+    ///  <returns><c>Returns the new </c>Size<c> of the Stream.</c></returns>
+    ///  <remarks>
+    ///    <para><c></c></para>
+    ///  </remarks>
+    function Delete(const ALength: Int64): Int64; virtual; abstract;
 
-    procedure Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
-    procedure Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
+    ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Insert(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Insert(const ABuffer: TBytes; const ALength: Int64): Int64; overload; virtual; abstract;
 
-    procedure Read(var ABuffer; const ALength: Int64); overload; virtual; abstract;
-    procedure Read(const ABuffer: TBytes; const AOffset, ACount: Int64); overload; virtual; abstract;
+    ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    function Read(var ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; virtual; abstract;
 
-    procedure Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
-    procedure Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
+    ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Write(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
+    ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    function Write(const ABuffer: TBytes; const ALength: Int64): Int64; overload; virtual; abstract;
 
-    procedure Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
+    ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
+    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; inline;
 
     property Position: Int64 read GetPosition write SetPosition;
   end;
@@ -171,8 +205,8 @@ type
     ///  <summary>Override to define the correct Stream Caret Type to use for this Stream</summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
 
-    function GetSize: Int64; virtual;
-    procedure SetSize(const ASize: Int64); virtual;
+    function GetSize: Int64; virtual; abstract;
+    procedure SetSize(const ASize: Int64); virtual; abstract;
   public
     constructor Create; overload; override;
     destructor Destroy; override;
@@ -255,6 +289,7 @@ constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
   FStream := AStream;
+  FPosition := 0;
   FStream.RegisterCaret(Self);
 end;
 
@@ -274,14 +309,20 @@ begin
   end;
 end;
 
-procedure TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
+function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  { TODO -oSJS -cTLKStreamCaret: Implement Seek (Relative)}
+  case AOrigin of
+    soBeginning: Result := SeekBeginning(AOffset);
+    soCurrent: Result := SeekCurrent(AOffset);
+    soEnd: Result := SeekEnd(AOffset);
+    else
+      Result := 0;
+  end;
 end;
 
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
 begin
-  Seek(APosition, soBeginning);
+  SeekBeginning(APosition);
 end;
 
 { TLKStream }
@@ -296,11 +337,6 @@ destructor TLKStream.Destroy;
 begin
   FCarets.Free;
   inherited;
-end;
-
-function TLKStream.GetSize: Int64;
-begin
-
 end;
 
 function TLKStream.NewCaret(const APosition: Int64): ILKStreamCaret;
@@ -318,11 +354,6 @@ begin
   finally
     FCarets.Unlock;
   end;
-end;
-
-procedure TLKStream.SetSize(const ASize: Int64);
-begin
-
 end;
 
 procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
