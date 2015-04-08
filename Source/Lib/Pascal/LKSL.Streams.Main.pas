@@ -56,9 +56,9 @@ interface
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils, System.SyncObjs,
+    System.Classes, System.SysUtils, System.SyncObjs, System.RTLConsts,
   {$ELSE}
-    Classes, SysUtils, SyncObjs,
+    Classes, SysUtils, SyncObjs, RTLConsts,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Generics.Collections;
@@ -90,28 +90,60 @@ type
 
     ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
     ///  <returns><c>Returns the new </c>Size<c> of the Stream.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes deleted.</c></para>
+    ///  </remarks>
     function Delete(const ALength: Int64): Int64;
 
     ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
+    ///  </remarks>
     function Insert(const ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
+    ///  </remarks>
     function Insert(const ABuffer: TBytes; const ALength: Int64): Int64; overload;
+
+    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for the duration of operation</c></para>
+    ///  </remarks>
+    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64;
 
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream only when reading each Byte (releases Lock between Bytes)</c></para>
+    ///  </remarks>
     function Read(var ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream only when reading each Byte (releases Lock between Bytes)</c></para>
+    ///  </remarks>
     function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload;
 
     ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>DOES NOT shift the position of any subsequent Carets!</c></para>
+    ///  </remarks>
     function Write(const ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
-    function Write(const ABuffer: TBytes; const ALength: Int64): Int64; overload;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>DOES NOT shift the position of any subsequent Carets!</c></para>
+    ///  </remarks>
+    function Write(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64; overload;
 
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
     function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
@@ -130,12 +162,12 @@ type
     property Size: Int64 read GetSize write SetSize;
   end;
 
-  ILKMemoryStreamCaret = interface
+  ILKMemoryStreamCaret = interface(ILKStreamCaret)
   ['{1FB5A4F9-8FFB-4A79-B364-01D6E428A718}']
 
   end;
 
-  ILKMemoryStream  = interface
+  ILKMemoryStream  = interface(ILKStream)
   ['{289F1193-AE69-47D6-B66B-0174070963B5}']
 
   end;
@@ -150,9 +182,18 @@ type
     // Setters
     procedure SetPosition(const APosition: Int64);
   protected
-    function SeekBeginning(const AOffset: Int64): Int64; virtual; abstract;
-    function SeekCurrent(const AOffset: Int64): Int64; virtual; abstract;
-    function SeekEnd(const AOffset: Int64): Int64; virtual; abstract;
+    function DeleteActual(const ALength: Int64): Int64; virtual; abstract;
+    function InsertActual(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    function InsertActual(const ABuffer: TBytes; const ALength: Int64): Int64; overload; virtual; abstract;
+    function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; virtual; abstract;
+    function ReadActual(var ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    function ReadActual(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; virtual; abstract;
+    function WriteActual(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    function WriteActual(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64; overload; virtual; abstract;
+
+    function SeekBeginning(const AOffset: Int64): Int64;
+    function SeekCurrent(const AOffset: Int64): Int64;
+    function SeekEnd(const AOffset: Int64): Int64;
   public
     constructor Create(const AStream: TLKStream); reintroduce;
     destructor Destroy; override;
@@ -160,30 +201,59 @@ type
     ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
     ///  <returns><c>Returns the new </c>Size<c> of the Stream.</c></returns>
     ///  <remarks>
-    ///    <para><c></c></para>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes deleted.</c></para>
     ///  </remarks>
-    function Delete(const ALength: Int64): Int64; virtual; abstract;
+    function Delete(const ALength: Int64): Int64;
 
     ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
-    function Insert(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
+    ///  </remarks>
+    function Insert(const ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
-    function Insert(const ABuffer: TBytes; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
+    ///  </remarks>
+    function Insert(const ABuffer: TBytes; const ALength: Int64): Int64; overload;
+
+    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for the duration of operation</c></para>
+    ///  </remarks>
+    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64;
 
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
-    function Read(var ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream only when reading each Byte (releases Lock between Bytes)</c></para>
+    ///  </remarks>
+    function Read(var ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
-    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream only when reading each Byte (releases Lock between Bytes)</c></para>
+    ///  </remarks>
+    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload;
 
     ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
-    function Write(const ABuffer; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>DOES NOT shift the position of any subsequent Carets!</c></para>
+    ///  </remarks>
+    function Write(const ABuffer; const ALength: Int64): Int64; overload;
     ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
-    function Write(const ABuffer: TBytes; const ALength: Int64): Int64; overload; virtual; abstract;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for duration of operation</c></para>
+    ///    <para><c>DOES NOT shift the position of any subsequent Carets!</c></para>
+    ///  </remarks>
+    function Write(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64; overload;
 
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
     function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; inline;
@@ -198,13 +268,36 @@ type
   ///  </remarks>
   TLKStream = class abstract(TLKInterfacedObject, ILKStream)
   private
+    FDestroying: Boolean;
+    //  <summary><c>Event is Set when all Read Operations are complete.</c></summary>
+    FReadOpen: TEvent;
+    ///  <summary><c>Keeps track of the number of Read Operations in progress (atomic)</c></summary>
+    FReads: Integer;
+    ///  <summary><c>Event is Set when all Write Operations are complete.</c></summary>
+    FWriteOpen: TEvent;
+    ///  <summary><c>Keeps track of the number of Write Operations in progress (atomic)</c></summary>
+    FWrites: Integer;
     FCarets: TLKStreamCaretList;
     procedure RegisterCaret(const ACaret: TLKStreamCaret);
     procedure UnregisterCaret(const ACaret: TLKStreamCaret);
+
+    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
+    procedure AcquireRead;
+    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
+    procedure ReleaseRead;
+
+    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
+    procedure AcquireWrite;
+    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
+    procedure ReleaseWrite;
   protected
-    ///  <summary>Override to define the correct Stream Caret Type to use for this Stream</summary>
+    ///  <summary><c>Override to define the correct Stream Caret Type to use for this Stream</c></summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
 
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for the duration of operation</c></para>
+    ///    <para><c>Where the new Size is smaller than the previous Size, all Carets no longer in range will have their Position shifted to the new End Of Stream</c></para>
+    ///  </remarks>
     function GetSize: Int64; virtual; abstract;
     procedure SetSize(const ASize: Int64); virtual; abstract;
   public
@@ -219,15 +312,34 @@ type
 
   ///  <summary><c>Caret specifically set up for Memory Streams.</c></summary>
   TLKMemoryStreamCaret = class(TLKStreamCaret, ILKMemoryStreamCaret)
-
+  protected
+    function DeleteActual(const ALength: Int64): Int64; override;
+    function InsertActual(const ABuffer; const ALength: Int64): Int64; overload; override;
+    function InsertActual(const ABuffer: TBytes; const ALength: Int64): Int64; overload; override;
+    function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; override;
+    function ReadActual(var ABuffer; const ALength: Int64): Int64; overload; override;
+    function ReadActual(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; override;
+    function WriteActual(const ABuffer; const ALength: Int64): Int64; overload; override;
+    function WriteActual(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64; overload; override;
   end;
 
   ///  <summary><c>Special Memory Stream built for Multi-Thread Asynchronous (and Random) Access</c></summary>
   TLKMemoryStream = class(TLKStream, ILKMemoryStream)
   private
-    FBuffer: TBytes;
+    FCapacity: Int64;
+    FMemory: Pointer;
+    FSize: Int64;
+    function Realloc(var ACapacity: Int64): Pointer;
+    procedure SetCapacity(ACapacity: Int64);
+    procedure SetPointer(const APointer: Pointer; const ASize: Int64);
   protected
+    procedure Clear;
     function GetCaretType: TLKStreamCaretClass; override;
+
+    function GetSize: Int64; override;
+    procedure SetSize(const ASize: Int64); override;
+  public
+    destructor Destroy; override;
   end;
 
 // Utility Methods
@@ -293,6 +405,16 @@ begin
   FStream.RegisterCaret(Self);
 end;
 
+function TLKStreamCaret.Delete(const ALength: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := DeleteActual(ALength);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
 destructor TLKStreamCaret.Destroy;
 begin
   FStream.UnregisterCaret(Self);
@@ -309,6 +431,56 @@ begin
   end;
 end;
 
+function TLKStreamCaret.Insert(const ABuffer: TBytes; const ALength: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := InsertActual(ABuffer, ALength);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
+function TLKStreamCaret.MoveBytes(const ACount, AOffset: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := MoveBytes(ACount, AOffset);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
+function TLKStreamCaret.Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64;
+begin
+  FStream.AcquireRead;
+  try
+    Result := ReadActual(ABuffer, AOffset, ACount);
+  finally
+    FStream.ReleaseRead;
+  end;
+end;
+
+function TLKStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
+begin
+  FStream.AcquireRead;
+  try
+    Result := ReadActual(ABuffer, ALength);
+  finally
+    FStream.ReleaseRead;
+  end;
+end;
+
+function TLKStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := InsertActual(ABuffer, ALength);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
 function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
   case AOrigin of
@@ -320,21 +492,83 @@ begin
   end;
 end;
 
+function TLKStreamCaret.SeekBeginning(const AOffset: Int64): Int64;
+begin
+  FPosition := AOffset;
+end;
+
+function TLKStreamCaret.SeekCurrent(const AOffset: Int64): Int64;
+begin
+  FPosition := FPosition + AOffset;
+end;
+
+function TLKStreamCaret.SeekEnd(const AOffset: Int64): Int64;
+begin
+  FPosition := FStream.Size - AOffset;
+end;
+
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
 begin
   SeekBeginning(APosition);
 end;
 
+function TLKStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := WriteActual(ABuffer, ALength);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
+function TLKStreamCaret.Write(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64;
+begin
+  FStream.AcquireWrite;
+  try
+    Result := WriteActual(ABuffer, AOffset, ALength);
+  finally
+    FStream.ReleaseWrite;
+  end;
+end;
+
 { TLKStream }
+
+procedure TLKStream.AcquireRead;
+begin
+  FWriteOpen.WaitFor(INFINITE);
+  AtomicIncrement(FReads);
+  if FReads = 1 then
+    FReadOpen.ResetEvent;
+end;
+
+procedure TLKStream.AcquireWrite;
+begin
+  FReadOpen.WaitFor(INFINITE);
+  AtomicIncrement(FWrites);
+  if FWrites = 1 then
+    FWriteOpen.ResetEvent;
+end;
 
 constructor TLKStream.Create;
 begin
   inherited;
+  FDestroying := False;
   FCarets := TLKStreamCaretList.Create;
+  FReadOpen := TEvent.Create(nil, True, True, '');
+  FReads := 0;
+  FWriteOpen := TEvent.Create(nil, True, True, '');
+  FWrites := 0;
+  Size := 0;
 end;
 
 destructor TLKStream.Destroy;
 begin
+  FDestroying := True; // Mark this Stream as "in destruction"
+  FReadOpen.SetEvent; // Prevent wait halting
+  FWriteOpen.SetEvent; // Prevent wait halting
+  FReadOpen.Free;
+  FWriteOpen.Free;
   FCarets.Free;
   inherited;
 end;
@@ -354,6 +588,20 @@ begin
   finally
     FCarets.Unlock;
   end;
+end;
+
+procedure TLKStream.ReleaseRead;
+begin
+  AtomicDecrement(FReads);
+  if FReads = 0 then
+    FReadOpen.SetEvent;
+end;
+
+procedure TLKStream.ReleaseWrite;
+begin
+  AtomicDecrement(FWrites);
+  if FWrites = 0 then
+    FWriteOpen.SetEvent;
 end;
 
 procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
@@ -377,9 +625,181 @@ end;
 
 { TLKMemoryStream }
 
+procedure TLKMemoryStream.Clear;
+begin
+  SetCapacity(0);
+  FSize := 0;
+end;
+
+destructor TLKMemoryStream.Destroy;
+begin
+  Clear;
+  inherited;
+end;
+
 function TLKMemoryStream.GetCaretType: TLKStreamCaretClass;
 begin
   Result := TLKMemoryStreamCaret;
+end;
+
+function TLKMemoryStream.GetSize: Int64;
+begin
+  Result := FSize;
+end;
+
+function TLKMemoryStream.Realloc(var ACapacity: Int64): Pointer;
+const
+  MemoryDelta = $2000;
+begin
+  if (ACapacity > 0) and (ACapacity <> FSize) then
+    ACapacity := (ACapacity + (MemoryDelta - 1)) and not (MemoryDelta - 1);
+  Result := FMemory;
+  if ACapacity <> FCapacity then
+  begin
+    if ACapacity = 0 then
+    begin
+      FreeMem(FMemory);
+      Result := nil;
+    end else
+    begin
+      if FCapacity = 0 then
+        GetMem(Result, ACapacity)
+      else
+        ReallocMem(Result, ACapacity);
+      if Result = nil then raise EStreamError.CreateRes(@SMemoryStreamError);
+    end;
+  end;
+end;
+
+procedure TLKMemoryStream.SetCapacity(ACapacity: Int64);
+begin
+  SetPointer(Realloc(ACapacity), FSize);
+  FCapacity := ACapacity;
+end;
+
+procedure TLKMemoryStream.SetPointer(const APointer: Pointer; const ASize: Int64);
+begin
+  FMemory := APointer;
+  FSize := ASize;
+end;
+
+procedure TLKMemoryStream.SetSize(const ASize: Int64);
+var
+  LOldSize: Longint;
+begin
+  AcquireWrite;
+  try
+    LOldSize := FSize;
+    SetCapacity(ASize);
+    FSize := ASize;
+    if LOldSize < ASize then
+    begin
+    { TODO -oSJS -cTLKMemoryStream : Shift all Carets that're off the end of the Stream }
+    end;
+  finally
+    ReleaseWrite;
+  end;
+end;
+
+{ TLKMemoryStreamCaret }
+
+function TLKMemoryStreamCaret.DeleteActual(const ALength: Int64): Int64;
+begin
+
+end;
+
+function TLKMemoryStreamCaret.InsertActual(const ABuffer: TBytes; const ALength: Int64): Int64;
+begin
+
+end;
+
+function TLKMemoryStreamCaret.InsertActual(const ABuffer; const ALength: Int64): Int64;
+begin
+
+end;
+
+function TLKMemoryStreamCaret.MoveBytesActual(const ACount, AOffset: Int64): Int64;
+begin
+
+end;
+
+function TLKMemoryStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int64;
+begin
+  Result := 0;
+  if (FPosition < 0) or (ALength < 0) then
+    Exit;
+
+  Result := TLKMemoryStream(FStream).FSize - FPosition;
+  if Result > 0 then
+  begin
+    if Result > ALength then Result := ALength;
+    System.Move((PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ABuffer, Result);
+    Inc(FPosition, Result);
+  end;
+end;
+
+function TLKMemoryStreamCaret.ReadActual(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64;
+begin
+  if (FPosition >= 0) and (ACount >= 0) then
+  begin
+    Result := TLKMemoryStream(FStream).FSize - FPosition;
+    if Result > 0 then
+    begin
+      if Result > ACount then Result := ACount;
+
+      System.Move((PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ABuffer[AOffset], Result);
+      Inc(FPosition, Result);
+      Exit;
+    end;
+  end;
+  Result := 0;
+end;
+
+function TLKMemoryStreamCaret.WriteActual(const ABuffer; const ALength: Int64): Int64;
+var
+  Pos: Longint;
+begin
+  Result := 0;
+  if (FPosition < 0) or (ALength < 0) then
+    Exit;
+
+  Pos := FPosition + ALength;
+  if Pos > 0 then
+  begin
+    if Pos > TLKMemoryStream(FStream).FSize then
+    begin
+      if Pos > TLKMemoryStream(FStream).FCapacity then
+        TLKMemoryStream(FStream).SetCapacity(Pos);
+      TLKMemoryStream(FStream).FSize := Pos;
+    end;
+    System.Move(ABuffer, (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
+    FPosition := Pos;
+    Result := ALength;
+  end;
+end;
+
+function TLKMemoryStreamCaret.WriteActual(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64;
+var
+  Pos: Longint;
+begin
+  if (FPosition >= 0) and (ALength >= 0) then
+  begin
+    Pos := FPosition + ALength;
+    if Pos > 0 then
+    begin
+      if Pos > TLKMemoryStream(FStream).FSize then
+      begin
+        if Pos > TLKMemoryStream(FStream).FCapacity then
+          TLKMemoryStream(FStream).SetCapacity(Pos);
+        TLKMemoryStream(FStream).FSize := Pos;
+      end;
+      System.Move(ABuffer[AOffset], (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
+      FPosition := Pos;
+      Result := ALength;
+      Exit;
+    end;
+  end;
+  Result := 0;
 end;
 
 end.
