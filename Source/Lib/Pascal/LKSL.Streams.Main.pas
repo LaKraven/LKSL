@@ -545,7 +545,12 @@ end;
 procedure TLKStream.AcquireRead;
 begin
   FWriteOpen.WaitFor(INFINITE);
-  AtomicIncrement(FReads);
+  Lock;
+  try
+    Inc(FReads);
+  finally
+    Unlock;
+  end;
   if FReads = 1 then
     FReadOpen.ResetEvent;
 end;
@@ -553,7 +558,12 @@ end;
 procedure TLKStream.AcquireWrite;
 begin
   FReadOpen.WaitFor(INFINITE);
-  AtomicIncrement(FWrites);
+  Lock;
+  try
+    Inc(FWrites);
+  finally
+    Unlock;
+  end;
   if FWrites = 1 then
     FWriteOpen.ResetEvent;
 end;
@@ -614,14 +624,24 @@ end;
 
 procedure TLKStream.ReleaseRead;
 begin
-  AtomicDecrement(FReads);
+  Lock;
+  try
+    Dec(FReads);
+  finally
+    Unlock;
+  end;
   if FReads = 0 then
     FReadOpen.SetEvent;
 end;
 
 procedure TLKStream.ReleaseWrite;
 begin
-  AtomicDecrement(FWrites);
+  Lock;
+  try
+    Dec(FWrites);
+  finally
+    Unlock;
+  end;
   if FWrites = 0 then
     FWriteOpen.SetEvent;
 end;

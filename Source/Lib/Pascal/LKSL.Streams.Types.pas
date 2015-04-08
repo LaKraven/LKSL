@@ -49,10 +49,11 @@ interface
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils, System.Types;
+    System.Classes, System.SysUtils, System.Types,
   {$ELSE}
-    Classes, SysUtils, Types;
+    Classes, SysUtils, Types,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  LKSL.Streams.Main;
 
   {$I LKSL_RTTI.inc}
 
