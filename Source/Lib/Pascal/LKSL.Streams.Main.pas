@@ -89,7 +89,7 @@ type
     procedure SetPosition(const APosition: Int64);
 
     ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
-    ///  <returns><c>Returns the new </c>Size<c> of the Stream.</c></returns>
+    ///  <returns><c>Returns the number of Bytes deleted.</c></returns>
     ///  <remarks>
     ///    <para><c>Locks the Stream for duration of operation</c></para>
     ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes deleted.</c></para>
@@ -281,6 +281,13 @@ type
     procedure RegisterCaret(const ACaret: TLKStreamCaret);
     procedure UnregisterCaret(const ACaret: TLKStreamCaret);
 
+    function GetSize: Int64;
+    ///  <remarks>
+    ///    <para><c>Locks the Stream for the duration of operation</c></para>
+    ///    <para><c>Where the new Size is smaller than the previous Size, all Carets no longer in range will have their Position shifted to the new End Of Stream</c></para>
+    ///  </remarks>
+    procedure SetSize(const ASize: Int64);
+
     ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
     procedure AcquireRead;
     ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
@@ -294,12 +301,8 @@ type
     ///  <summary><c>Override to define the correct Stream Caret Type to use for this Stream</c></summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
 
-    ///  <remarks>
-    ///    <para><c>Locks the Stream for the duration of operation</c></para>
-    ///    <para><c>Where the new Size is smaller than the previous Size, all Carets no longer in range will have their Position shifted to the new End Of Stream</c></para>
-    ///  </remarks>
-    function GetSize: Int64; virtual; abstract;
-    procedure SetSize(const ASize: Int64); virtual; abstract;
+    function GetSizeActual: Int64; virtual; abstract;
+    procedure SetSizeActual(const ASize: Int64); virtual; abstract;
   public
     constructor Create; overload; override;
     destructor Destroy; override;
@@ -336,9 +339,10 @@ type
     procedure Clear;
     function GetCaretType: TLKStreamCaretClass; override;
 
-    function GetSize: Int64; override;
-    procedure SetSize(const ASize: Int64); override;
+    function GetSizeActual: Int64; override;
+    procedure SetSizeActual(const ASize: Int64); override;
   public
+    constructor Create; override;
     destructor Destroy; override;
   end;
 
@@ -417,7 +421,8 @@ end;
 
 destructor TLKStreamCaret.Destroy;
 begin
-  FStream.UnregisterCaret(Self);
+  if FStream <> nil then
+    FStream.UnregisterCaret(Self);
   inherited;
 end;
 
@@ -495,16 +500,19 @@ end;
 function TLKStreamCaret.SeekBeginning(const AOffset: Int64): Int64;
 begin
   FPosition := AOffset;
+  Result := FPosition;
 end;
 
 function TLKStreamCaret.SeekCurrent(const AOffset: Int64): Int64;
 begin
   FPosition := FPosition + AOffset;
+  Result := FPosition;
 end;
 
 function TLKStreamCaret.SeekEnd(const AOffset: Int64): Int64;
 begin
   FPosition := FStream.Size - AOffset;
+  Result := FPosition;
 end;
 
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
@@ -563,14 +571,28 @@ begin
 end;
 
 destructor TLKStream.Destroy;
+var
+  I: Integer;
 begin
   FDestroying := True; // Mark this Stream as "in destruction"
   FReadOpen.SetEvent; // Prevent wait halting
   FWriteOpen.SetEvent; // Prevent wait halting
   FReadOpen.Free;
   FWriteOpen.Free;
+  for I := 0 to FCarets.Count - 1 do
+    FCarets[I].FStream := nil;
   FCarets.Free;
   inherited;
+end;
+
+function TLKStream.GetSize: Int64;
+begin
+  AcquireRead;
+  try
+    Result := GetSizeActual;
+  finally
+    ReleaseRead;
+  end;
 end;
 
 function TLKStream.NewCaret(const APosition: Int64): ILKStreamCaret;
@@ -604,6 +626,16 @@ begin
     FWriteOpen.SetEvent;
 end;
 
+procedure TLKStream.SetSize(const ASize: Int64);
+begin
+  AcquireWrite;
+  try
+    SetSizeActual(ASize);
+  finally
+    ReleaseWrite;
+  end;
+end;
+
 procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
 var
   LIndex: Integer;
@@ -631,6 +663,12 @@ begin
   FSize := 0;
 end;
 
+constructor TLKMemoryStream.Create;
+begin
+  inherited;
+  Clear;
+end;
+
 destructor TLKMemoryStream.Destroy;
 begin
   Clear;
@@ -642,7 +680,7 @@ begin
   Result := TLKMemoryStreamCaret;
 end;
 
-function TLKMemoryStream.GetSize: Int64;
+function TLKMemoryStream.GetSizeActual: Int64;
 begin
   Result := FSize;
 end;
@@ -683,21 +721,16 @@ begin
   FSize := ASize;
 end;
 
-procedure TLKMemoryStream.SetSize(const ASize: Int64);
+procedure TLKMemoryStream.SetSizeActual(const ASize: Int64);
 var
   LOldSize: Longint;
 begin
-  AcquireWrite;
-  try
-    LOldSize := FSize;
-    SetCapacity(ASize);
-    FSize := ASize;
-    if LOldSize < ASize then
-    begin
+  LOldSize := FSize;
+  SetCapacity(ASize);
+  FSize := ASize;
+  if LOldSize < ASize then
+  begin
     { TODO -oSJS -cTLKMemoryStream : Shift all Carets that're off the end of the Stream }
-    end;
-  finally
-    ReleaseWrite;
   end;
 end;
 
@@ -705,7 +738,17 @@ end;
 
 function TLKMemoryStreamCaret.DeleteActual(const ALength: Int64): Int64;
 begin
-
+  { TODO -oSJS -cTLKMemoryStreamCaret : Implement Delete Routine }
+  // Shift elements after Position + Length back to Position
+  if FPosition + ALength < TLKMemoryStream(FStream).FSize then
+    System.Move(
+                  (PByte(TLKMemoryStream(FStream).FMemory) + FPosition + ALength)^,
+                  (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^,
+                  TLKMemoryStream(FStream).FSize - (FPosition + ALength)
+               );
+  // Dealloc Memory
+  TLKMemoryStream(FStream).Size := TLKMemoryStream(FStream).FSize - ALength;
+  Result := ALength
 end;
 
 function TLKMemoryStreamCaret.InsertActual(const ABuffer: TBytes; const ALength: Int64): Int64;
@@ -740,66 +783,60 @@ end;
 
 function TLKMemoryStreamCaret.ReadActual(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64;
 begin
-  if (FPosition >= 0) and (ACount >= 0) then
-  begin
-    Result := TLKMemoryStream(FStream).FSize - FPosition;
-    if Result > 0 then
-    begin
-      if Result > ACount then Result := ACount;
-
-      System.Move((PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ABuffer[AOffset], Result);
-      Inc(FPosition, Result);
-      Exit;
-    end;
-  end;
   Result := 0;
+  if (FPosition <= 0) and (ACount <= 0) then
+    Exit;
+
+  Result := TLKMemoryStream(FStream).FSize - FPosition;
+  if Result > 0 then
+  begin
+    if Result > ACount then Result := ACount;
+
+    System.Move((PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ABuffer[AOffset], Result);
+    Inc(FPosition, Result);
+  end;
 end;
 
 function TLKMemoryStreamCaret.WriteActual(const ABuffer; const ALength: Int64): Int64;
 var
-  Pos: Longint;
+  LPos: Int64;
 begin
   Result := 0;
-  if (FPosition < 0) or (ALength < 0) then
+  LPos := FPosition + ALength;
+
+  if (FPosition < 0) or (ALength < 0) or (LPos <= 0) then
     Exit;
 
-  Pos := FPosition + ALength;
-  if Pos > 0 then
+  if LPos > TLKMemoryStream(FStream).FSize then
   begin
-    if Pos > TLKMemoryStream(FStream).FSize then
-    begin
-      if Pos > TLKMemoryStream(FStream).FCapacity then
-        TLKMemoryStream(FStream).SetCapacity(Pos);
-      TLKMemoryStream(FStream).FSize := Pos;
-    end;
-    System.Move(ABuffer, (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
-    FPosition := Pos;
-    Result := ALength;
+    if LPos > TLKMemoryStream(FStream).FCapacity then
+      TLKMemoryStream(FStream).SetCapacity(LPos);
+    TLKMemoryStream(FStream).FSize := LPos;
   end;
+  System.Move(ABuffer, (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
+  FPosition := LPos;
+  Result := ALength;
 end;
 
 function TLKMemoryStreamCaret.WriteActual(const ABuffer: TBytes; const AOffset, ALength: Int64): Int64;
 var
-  Pos: Longint;
+  LPos: Int64;
 begin
-  if (FPosition >= 0) and (ALength >= 0) then
-  begin
-    Pos := FPosition + ALength;
-    if Pos > 0 then
-    begin
-      if Pos > TLKMemoryStream(FStream).FSize then
-      begin
-        if Pos > TLKMemoryStream(FStream).FCapacity then
-          TLKMemoryStream(FStream).SetCapacity(Pos);
-        TLKMemoryStream(FStream).FSize := Pos;
-      end;
-      System.Move(ABuffer[AOffset], (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
-      FPosition := Pos;
-      Result := ALength;
-      Exit;
-    end;
-  end;
   Result := 0;
+  LPos := FPosition + ALength;
+
+  if (FPosition < 0) or (ALength < 0) or (LPos <= 0) then
+    Exit;
+
+  if LPos > TLKMemoryStream(FStream).FSize then
+  begin
+    if LPos > TLKMemoryStream(FStream).FCapacity then
+      TLKMemoryStream(FStream).SetCapacity(LPos);
+    TLKMemoryStream(FStream).FSize := LPos;
+  end;
+  System.Move(ABuffer[AOffset], (PByte(TLKMemoryStream(FStream).FMemory) + FPosition)^, ALength);
+  FPosition := LPos;
+  Result := ALength;
 end;
 
 end.
