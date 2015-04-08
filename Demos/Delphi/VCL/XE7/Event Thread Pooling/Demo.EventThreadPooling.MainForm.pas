@@ -39,24 +39,20 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  LStream: TLKMemoryStream;
+  LStream: ILKMemoryStream;
   LCaret: ILKStreamCaret;
   LFoo: Int64;
   LBar: Integer;
 begin
   LStream := TLKMemoryStream.Create;
-  try
-    LFoo := High(Int64);
-    LCaret := LStream.NewCaret;
-    LCaret.Write(LFoo, SizeOf(Int64));
-    LCaret.Position := 0;
-    LCaret.Delete(4);
-    LCaret.Position := 0;
-    LCaret.Read(LBar, LStream.Size);
-    ShowMessage(IntToStr(LBar));
-  finally
-    LStream.Free;
-  end;
+  LFoo := High(Int64);
+  LCaret := LStream.NewCaret;
+  LCaret.Write(LFoo, SizeOf(Int64));
+  LCaret.Position := 0;
+  LCaret.Delete(4);
+  LCaret.Position := 0;
+  LCaret.Read(LBar, LStream.Size);
+  ShowMessage(IntToStr(LBar));
 end;
 
 end.
