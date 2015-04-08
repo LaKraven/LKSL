@@ -66,38 +66,66 @@ uses
   {$I LKSL_RTTI.inc}
 
 type
-  { Forward Declarations }
+  { Interface Forward Declarations }
   ILKStreamCaret = interface;
+  ILKStream = interface;
+  ILKMemoryStreamCaret = interface;
+  ILKMemoryStream  = interface;
+  { Class Forward Declarations }
   TLKStreamCaret = class;
   TLKStream = class;
+  TLKMemoryStreamCaret = class;
+  TLKMemoryStream = class;
 
   { Enums }
   TLKStreamOperationOrder = (sooBefore, sooAfter);
 
   { Class References }
   TLKStreamCaretClass = class of TLKStreamCaret;
-  TLKStreamCaretList = class(TLKList<ILKStreamCaret>);
 
-  ///  <summary><c>We reference the Carets as an Interface to exploit Reference Counting.</c></summary>
+  { Generics Collections }
+  TLKStreamCaretList = class(TLKList<TLKStreamCaret>);
+
   ILKStreamCaret = interface
   ['{D8E849E5-A5A1-4B4F-9AF6-BBD397216C5B}']
     function GetPosition: Int64;
     procedure SetPosition(const APosition: Int64);
 
-    function Delete(const ALength: Int64): Int64;
+    procedure Delete(const ALength: Int64);
 
-    function Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
-    function Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
+    procedure Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload;
+    procedure Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload;
 
-    function Read(var ABuffer; const ALength: Int64): Int64; overload;
-    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload;
+    procedure Read(var ABuffer; const ALength: Int64); overload;
+    procedure Read(const ABuffer: TBytes; const AOffset, ACount: Int64); overload;
 
-    function Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
-    function Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
+    procedure Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload;
+    procedure Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload;
 
-    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+    procedure Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
 
     property Position: Int64 read GetPosition write SetPosition;
+  end;
+
+  ILKStream = interface
+  ['{07F45B12-1DFC-453A-B95C-E00C9F5F4285}']
+    function GetSize: Int64;
+    procedure SetSize(const ASize: Int64);
+
+    function NewCaret: ILKStreamCaret; overload;
+    function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
+
+    property Size: Int64 read GetSize write SetSize;
+  end;
+
+  ILKMemoryStreamCaret = interface
+  ['{1FB5A4F9-8FFB-4A79-B364-01D6E428A718}']
+
+  end;
+
+  ILKMemoryStream  = interface
+  ['{289F1193-AE69-47D6-B66B-0174070963B5}']
+
   end;
 
   ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
@@ -113,18 +141,18 @@ type
     constructor Create(const AStream: TLKStream); reintroduce;
     destructor Destroy; override;
 
-    function Delete(const ALength: Int64): Int64;
+    procedure Delete(const ALength: Int64); virtual; abstract;
 
-    function Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
-    function Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
+    procedure Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
+    procedure Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
 
-    function Read(var ABuffer; const ALength: Int64): Int64; overload; virtual;
-    function Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64; overload; virtual;
+    procedure Read(var ABuffer; const ALength: Int64); overload; virtual; abstract;
+    procedure Read(const ABuffer: TBytes; const AOffset, ACount: Int64); overload; virtual; abstract;
 
-    function Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
-    function Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter): Int64; overload;
+    procedure Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
+    procedure Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder = sooAfter); overload; virtual; abstract;
 
-    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+    procedure Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
 
     property Position: Int64 read GetPosition write SetPosition;
   end;
@@ -134,7 +162,11 @@ type
   ///    <para><c>Each consuming Thread provides its own Caret.</c></para>
   ///    <para><c>Locking only occurs to prevent Write-During-Read and Read-During-Write.</c></para>
   ///  </remarks>
-  TLKStream = class abstract(TLKPersistent)
+  TLKStream = class abstract(TLKInterfacedObject, ILKStream)
+  private
+    FCarets: TLKStreamCaretList;
+    procedure RegisterCaret(const ACaret: TLKStreamCaret);
+    procedure UnregisterCaret(const ACaret: TLKStreamCaret);
   protected
     ///  <summary>Override to define the correct Stream Caret Type to use for this Stream</summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
@@ -151,6 +183,19 @@ type
     property Size: Int64 read GetSize write SetSize;
   end;
 
+  ///  <summary><c>Caret specifically set up for Memory Streams.</c></summary>
+  TLKMemoryStreamCaret = class(TLKStreamCaret, ILKMemoryStreamCaret)
+
+  end;
+
+  ///  <summary><c>Special Memory Stream built for Multi-Thread Asynchronous (and Random) Access</c></summary>
+  TLKMemoryStream = class(TLKStream, ILKMemoryStream)
+  private
+    FBuffer: TBytes;
+  protected
+    function GetCaretType: TLKStreamCaretClass; override;
+  end;
+
 // Utility Methods
 procedure StreamClearSpace(const AStream: TStream; const ASize: Int64); overload;
 procedure StreamClearSpace(const AStream: TStream; const APosition: Int64; const ASize: Int64); overload;
@@ -158,7 +203,6 @@ procedure StreamMakeSpace(const AStream: TStream; const ASize: Int64); overload;
 procedure StreamMakeSpace(const AStream: TStream; const APosition: Integer; const ASize: Int64); overload;
 
 implementation
-
 
 procedure StreamClearSpace(const AStream: TStream; const ASize: Int64);
 begin
@@ -211,11 +255,12 @@ constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
   FStream := AStream;
+  FStream.RegisterCaret(Self);
 end;
 
 destructor TLKStreamCaret.Destroy;
 begin
-
+  FStream.UnregisterCaret(Self);
   inherited;
 end;
 
@@ -229,27 +274,7 @@ begin
   end;
 end;
 
-function TLKStreamCaret.Insert(const ABuffer; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64;
-begin
-
-end;
-
-function TLKStreamCaret.Insert(const ABuffer: TBytes; const ALength: Int64; const AInsertOrder: TLKStreamOperationOrder = sooAfter): Int64;
-begin
-
-end;
-
-function TLKStreamCaret.Read(const ABuffer: TBytes; const AOffset, ACount: Int64): Int64;
-begin
-  { TODO -oSJS -cTLKStreamCaret: Implement Read from Buffer}
-end;
-
-function TLKStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
-begin
-  Result := 0;
-end;
-
-function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+procedure TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin);
 begin
   { TODO -oSJS -cTLKStreamCaret: Implement Seek (Relative)}
 end;
@@ -259,28 +284,23 @@ begin
   Seek(APosition, soBeginning);
 end;
 
-function TLKStreamCaret.Write(const ABuffer; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder): Int64;
-begin
-
-end;
-
-function TLKStreamCaret.Write(const ABuffer: TBytes; const ALength: Int64; const AWriteOrder: TLKStreamOperationOrder): Int64;
-begin
-
-end;
-
 { TLKStream }
 
 constructor TLKStream.Create;
 begin
   inherited;
-
+  FCarets := TLKStreamCaretList.Create;
 end;
 
 destructor TLKStream.Destroy;
 begin
-
+  FCarets.Free;
   inherited;
+end;
+
+function TLKStream.GetSize: Int64;
+begin
+
 end;
 
 function TLKStream.NewCaret(const APosition: Int64): ILKStreamCaret;
@@ -289,9 +309,46 @@ begin
   Result.Position := APosition;
 end;
 
+procedure TLKStream.RegisterCaret(const ACaret: TLKStreamCaret);
+begin
+  FCarets.Lock;
+  try
+    if (not FCarets.Contains(ACaret)) then
+      FCarets.Add(ACaret);
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
+procedure TLKStream.SetSize(const ASize: Int64);
+begin
+
+end;
+
+procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
+var
+  LIndex: Integer;
+begin
+  FCarets.Lock;
+  try
+    LIndex := FCarets.IndexOf(ACaret);
+    if LIndex > -1 then
+      FCarets.Delete(LIndex);
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
 function TLKStream.NewCaret: ILKStreamCaret;
 begin
   Result := GetCaretType.Create(Self);
+end;
+
+{ TLKMemoryStream }
+
+function TLKMemoryStream.GetCaretType: TLKStreamCaretClass;
+begin
+  Result := TLKMemoryStreamCaret;
 end;
 
 end.
