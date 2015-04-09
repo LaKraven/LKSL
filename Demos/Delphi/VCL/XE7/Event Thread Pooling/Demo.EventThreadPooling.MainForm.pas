@@ -39,20 +39,24 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 var
-  LStream: ILKFileStream;
+  LStream: ILKStream;
   LCaret: ILKStreamCaret;
   LFoo: Integer;
-  LBar: Byte;
+  LBar: TBytes;
 begin
-  LStream := TLKFileStream.Create('C:\Users\Simons.EVALUATEGROUP\Documents\LKFileStream.dat', fmCreate);
+  LStream := TLKMemoryStream.Create;
   LFoo := High(Integer) div 2;
   LCaret := LStream.NewCaret;
   LCaret.Write(LFoo, SizeOf(Integer));
   LCaret.Position := 0;
+  SetLength(LBar, LStream.Size);
+  LCaret.Read(LBar[0], LStream.Size);
+  LCaret.Position := 0;
   LCaret.Delete(3);
   LCaret.Position := 0;
-  LCaret.Read(LBar, LStream.Size);
-  ShowMessage(IntToStr(LBar));
+  SetLength(LBar, LStream.Size);
+  LCaret.Read(LBar[0], LStream.Size);
+  ShowMessage(IntToStr(LBar[0]));
 end;
 
 end.
