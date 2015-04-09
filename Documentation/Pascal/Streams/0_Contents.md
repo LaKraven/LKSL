@@ -8,6 +8,7 @@
     * [Interfaced Streams](./1_Introduction.md#interfaced-streams)
   * [Carets](./1_Introduction.md#carets)
     * [Interfaced Carets](./1_Introduction.md#interfaced-carets)
+  * [Stream Types](./1_Introduction.md#stream-types)
 
 
 ## Donations

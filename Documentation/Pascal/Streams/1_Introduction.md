@@ -1,6 +1,4 @@
 <!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
-> This page is currently incomplete.
-
 # [Streams](./0_Contents.md)
 ## Introduction
 
@@ -9,6 +7,7 @@
   * [Interfaced Streams](#interfaced-streams)
 * [Carets](#carets)
   * [Interfaced Carets](#interfaced-carets)
+* [Stream Types](#stream-types)
 
 ## What are the LKSL Streams for?
 The LKSL provides a set of bespoke *Stream* types, designed specifically to play nicely when being accessed (*read or modified*) from multiple *Threads* at the same time.
@@ -52,7 +51,6 @@ The most powerful feature of the LSKL *Streams* is that they allow individual *c
 A *Caret* behaves much in the same way as they do in a text or code editor: they provide their own *Position* reference within the *Stream*, and all actions executed against a particular *Caret* take place in the context of that *Position*.
 
 ### Interfaced Carets
-
 The *Caret Types* are also *Interfaced*, so you don't need to worry about managing their respective lifetimes.
 
 > It's important to note that the implemented *Stream Caret Types* may also extend the base *Interface* with unique properties and methods particular to that *Stream Caret Type*.
@@ -93,6 +91,16 @@ While this interface should be fairly self-explanatory, here is a table describi
 | `Seek`            | Adjusts the Position of this Caret (behaves like `TStream.Seek`)                                          |
 | `Position`        | Gets/Sets the Position of this Caret within the Stream                                                    |
 | `Stream`          | Returns the Stream which owns this Caret                                                                  |
+
+## Stream Types
+The *LKSL Streams Library* provides the following *Stream Types*:
+
+| Stream Type       | Abstract? | Basic Description                               | Access Methodology          | Caret Type             |
+| ----------------- | --------- | ----------------------------------------------- | --------------------------- | ---------------------- |
+| `TLKStream`       | Yes       | Absolute Base Type for all *LKSL Stream Types*  | n/a                         | `TLKStreamCaret`       |
+| `TLKHandleStream` | No        | Analogous of `THandleStream` in the RTL.        | Read-In-Turn, Write-In-Turn | `TLKHandleStreamCaret` |
+| `TLKFileStream`   | No        | Analogous of `TFileStream` in the RTL.          | Read-In-Turn, Write-In-Turn | `TLKFileStreamCaret`   |
+| `TLKMemoryStream` | No        | Analogous of `TMemoryStream` in the RTL.        | Multi-Read, Exclusive Write | `TLKMemoryStreamCaret` |
 
 ## Donations
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
