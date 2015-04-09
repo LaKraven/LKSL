@@ -58,9 +58,11 @@ uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.SyncObjs, System.RTLConsts,
     {$IFDEF MSWINDOWS}WinApi.Windows,{$ENDIF MSWINDOWS}
+    {$IFDEF POSIX}Posix.Stdlib,{$ENDIF POSIX}
   {$ELSE}
     Classes, SysUtils, SyncObjs, RTLConsts,
     {$IFDEF MSWINDOWS}Windows,{$ENDIF MSWINDOWS}
+    {$IFDEF POSIX}Stdlib,{$ENDIF POSIX}
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Generics.Collections;
@@ -318,9 +320,8 @@ type
   end;
 
   TLKHandleStream = class(TLKStream, ILKHandleStream)
-  private
-    FHandle: THandle;
   protected
+    FHandle: THandle;
     function GetCaretType: TLKStreamCaretClass; override;
 
     function GetSizeActual: Int64; override;
@@ -330,21 +331,20 @@ type
   end;
 
   TLKFileStreamCaret = class(TLKHandleStreamCaret, ILKFileStreamCaret)
-  protected
-    function DeleteActual(const ALength: Int64): Int64; override;
-    function InsertActual(const ABuffer; const ALength: Int64): Int64; override;
-    function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; override;
-    function ReadActual(var ABuffer; const ALength: Int64): Int64; override;
-    function WriteActual(const ABuffer; const ALength: Int64): Int64; override;
+
   end;
 
   ///  <summary><c>Special File Stream built for Multi-Thread Asynchronous (and Random) Access.</c></summary>
   ///  <remarks><c>Multi-Read, Exclusive-Write</c></remarks>
-  TLKFileStream = class(TLKStream, ILKFileStream)
+  TLKFileStream = class(TLKHandleStream, ILKFileStream)
+  private
+    FFileName: String;
   protected
     function GetCaretType: TLKStreamCaretClass; override;
   public
-    constructor Create(const AFileName: String; const AMode: Word); reintroduce;
+    constructor Create(const AFileName: String; const AMode: Word); reintroduce; overload;
+    constructor Create(const AFileName: String; const AMode: Word; const ARights: Cardinal); reintroduce; overload;
+    destructor Destroy; override;
   end;
 
   ///  <summary><c>Caret specifically set up for Memory Streams.</c></summary>
@@ -441,7 +441,7 @@ constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
   FStream := AStream;
-  Seek(0, soBeginning);
+  SeekActual(0, soBeginning);
   GetStream.RegisterCaret(Self);
 end;
 
@@ -673,24 +673,27 @@ end;
 function TLKHandleStreamCaret.DeleteActual(const ALength: Int64): Int64;
 var
   LStartPosition, I: Int64;
+  LSize: Int64;
   LValue: Byte;
 begin
   Result := 0;
   GetStream.Lock;
   try
-    FileSeek(TLKHandleStream(GetStream).FHandle, Position, Ord(soBeginning));
-    LStartPosition := Position;
-    I := Position + (ALength - 1);
+    FPosition := SeekActual(FPosition, soBeginning);
+    LStartPosition := FPosition;
+    I := FPosition + (ALength - 1);
+    LSize := GetStream.GetSizeActual;
     repeat
-      Position := I;
+      FPosition := I;
+      SeekActual(FPosition, soBeginning);
       ReadActual(LValue, 1);
-      FileSeek(TLKHandleStream(GetStream).FHandle, I - ALength, Ord(soBeginning));
+      SeekActual(I - ALength, soBeginning);
       WriteActual(LValue, 1);
       Inc(I);
       Inc(Result);
-    until I = GetStream.Size + 1;
-    GetStream.Size := GetStream.Size - ALength;
-    Position := LStartPosition;
+    until I = LSize + 1;
+    GetStream.SetSizeActual(LSize - ALength);
+    FPosition := LStartPosition;
   finally
     GetStream.Unlock;
   end;
@@ -712,7 +715,7 @@ function TLKHandleStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int
 begin
   GetStream.Lock;
   try
-    FileSeek(TLKHandleStream(GetStream).FHandle, Position, Ord(soBeginning));
+    SeekActual(FPosition, soBeginning);
     Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
       Result := 0;
@@ -730,7 +733,7 @@ function TLKHandleStreamCaret.WriteActual(const ABuffer; const ALength: Int64): 
 begin
   GetStream.Lock;
   try
-    FileSeek(TLKHandleStream(GetStream).FHandle, FPosition, Ord(soBeginning));
+    SeekActual(FPosition, soBeginning);
     Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
       Result := 0;
@@ -743,8 +746,8 @@ end;
 
 constructor TLKHandleStream.Create(const AHandle: THandle);
 begin
-  inherited Create;;
   FHandle := AHandle;
+  inherited Create;
 end;
 
 function TLKHandleStream.GetCaretType: TLKStreamCaretClass;
@@ -754,52 +757,58 @@ end;
 
 function TLKHandleStream.GetSizeActual: Int64;
 begin
-  Result := 0;
-  { TODO -oSJS -cTLKHandleStream : Implement GetSizeActual }
+  Result := FileSeek(FHandle, 0, Ord(soEnd));
 end;
 
 procedure TLKHandleStream.SetSizeActual(const ASize: Int64);
 begin
+  FileSeek(FHandle, ASize, Ord(soBeginning));
+{$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
 {$IF Defined(MSWINDOWS)}
   Win32Check(SetEndOfFile(FHandle));
 {$ELSEIF Defined(POSIX)}
   if ftruncate(FHandle, Position) = -1 then
     raise EStreamError(sStreamSetSize);
-{$ENDIF POSIX}
-end;
-
-{ TLKFileStreamCaret }
-
-function TLKFileStreamCaret.DeleteActual(const ALength: Int64): Int64;
-begin
-
-end;
-
-function TLKFileStreamCaret.InsertActual(const ABuffer; const ALength: Int64): Int64;
-begin
-
-end;
-
-function TLKFileStreamCaret.MoveBytesActual(const ACount, AOffset: Int64): Int64;
-begin
-
-end;
-
-function TLKFileStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int64;
-begin
-
-end;
-
-function TLKFileStreamCaret.WriteActual(const ABuffer; const ALength: Int64): Int64;
-begin
-
+{$ELSE}
+  {$FATAL 'No implementation for this platform! Please report this issue on https://github.com/LaKraven/LKSL'}
+{$ENDIF}
+{$WARNINGS ON}
 end;
 
 { TLKFileStream }
 
 constructor TLKFileStream.Create(const AFileName: String; const AMode: Word);
 begin
+  Create(AFilename, AMode, 0);
+end;
 
+constructor TLKFileStream.Create(const AFileName: String; const AMode: Word; const ARights: Cardinal);
+var
+  LShareMode: Word;
+begin
+  if (AMode and fmCreate = fmCreate) then
+  begin
+    LShareMode := AMode and $FF;
+    if LShareMode = $FF then
+      LShareMode := fmShareExclusive;
+    inherited Create(FileCreate(AFileName, LShareMode, ARights));
+    if FHandle = INVALID_HANDLE_VALUE then
+      raise EFCreateError.CreateResFmt(@SFCreateErrorEx, [ExpandFileName(AFileName), SysErrorMessage(GetLastError)]);
+  end
+  else
+  begin
+    inherited Create(FileOpen(AFileName, AMode));
+    if FHandle = INVALID_HANDLE_VALUE then
+      raise EFOpenError.CreateResFmt(@SFOpenErrorEx, [ExpandFileName(AFileName), SysErrorMessage(GetLastError)]);
+  end;
+  FFileName := AFileName;
+end;
+
+destructor TLKFileStream.Destroy;
+begin
+  if FHandle <> INVALID_HANDLE_VALUE then
+    FileClose(FHandle);
+  inherited;
 end;
 
 function TLKFileStream.GetCaretType: TLKStreamCaretClass;
@@ -959,6 +968,8 @@ begin
     soBeginning: Result := AOffset;
     soCurrent: Result := FPosition + AOffset;
     soEnd: Result := TLKMemoryStream(FStream).FSize - AOffset;
+  else
+    Result := FPosition;
   end;
 end;
 
