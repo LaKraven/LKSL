@@ -5,6 +5,9 @@
 ## Contents:
 * [**Introduction**](./1_Introduction.md)
   * [What are the LKSL Streams for?](./1_Introduction.md#what-are-the-lksl-streams-for)
+    * [Interfaced Streams](./1_Introduction.md#interfaced-streams)
+  * [Carets](./1_Introduction.md#carets)
+    * [Interfaced Carets](./1_Introduction.md#interfaced-carets)
 
 
 ## Donations

@@ -104,7 +104,7 @@ type
     function GetPosition: Int64;
     procedure SetPosition(const APosition: Int64);
 
-    function GetStream: TLKStream;
+    function GetStream: ILKStream;
 
     ///  <summary><c>Deletes the given number of Bytes from the current Position in the Stream, then compacts the Stream by that number of Bytes (shifting any subsequent Bytes to the left)</c></summary>
     ///  <returns><c>Returns the number of Bytes deleted.</c></returns>
@@ -147,7 +147,7 @@ type
     function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 
     property Position: Int64 read GetPosition write SetPosition;
-    property Stream: TLKStream read GetStream;
+    property Stream: ILKStream read GetStream;
   end;
 
   ILKStream = interface
@@ -194,12 +194,12 @@ type
 
   ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
   TLKStreamCaret = class abstract(TLKInterfacedObject, ILKStreamCaret)
-  private
+  protected
     FPosition: Int64;
     FStream: TLKStream;
     // Getters
     function GetPosition: Int64;
-    function GetStream: TLKStream;
+    function GetStream: ILKStream;
     // Setters
     procedure SetPosition(const APosition: Int64);
   public
@@ -512,13 +512,13 @@ begin
   inherited Create;
   FStream := AStream;
   Seek(0, soBeginning);
-  GetStream.RegisterCaret(Self);
+  FStream.RegisterCaret(Self);
 end;
 
 destructor TLKStreamCaret.Destroy;
 begin
   if FStream <> nil then
-    GetStream.UnregisterCaret(Self);
+    FStream.UnregisterCaret(Self);
   inherited;
 end;
 
@@ -527,7 +527,7 @@ begin
   Result := Seek(0, soCurrent);
 end;
 
-function TLKStreamCaret.GetStream: TLKStream;
+function TLKStreamCaret.GetStream: ILKStream;
 begin
   if FStream = nil then
     raise ELKStreamHasGoneAwayException.Create('The Stream to which this Caret belongs has been Destroyed!')
@@ -602,20 +602,20 @@ var
   LStartPosition: Int64;
   LValue: TBytes;
 begin
-  GetStream.Lock;
+  FStream.Lock;
   try
     LStartPosition := Position;
-    if GetStream.Size > Position + ALength then
+    if FStream.Size > Position + ALength then
     begin
-      SetLength(LValue, GetStream.Size - ALength);
+      SetLength(LValue, FStream.Size - ALength);
       Position := Position + ALength;
-      Read(LValue[0], GetStream.Size - ALength);
+      Read(LValue[0], FStream.Size - ALength);
       Position := LStartPosition;
       Write(LValue[0], ALength);
     end;
-    GetStream.Size := GetStream.Size - ALength;
+    FStream.Size := FStream.Size - ALength;
   finally
-    GetStream.Unlock;
+    FStream.Unlock;
   end;
   Result := ALength;
 end;
@@ -634,37 +634,37 @@ end;
 
 function TLKHandleStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
-  GetStream.Lock;
+  FStream.Lock;
   try
     Seek(FPosition, soBeginning);
     Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
       Result := 0;
   finally
-    GetStream.Unlock;
+    FStream.Unlock;
   end;
 end;
 
 function TLKHandleStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  GetStream.Lock;
+  FStream.Lock;
   try
     Result := FileSeek(TLKHandleStream(GetStream).FHandle, AOffset, Ord(AOrigin));
   finally
-    GetStream.Unlock;
+    FStream.Unlock;
   end;
 end;
 
 function TLKHandleStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 begin
-  GetStream.Lock;
+  FStream.Lock;
   try
     Seek(FPosition, soBeginning);
     Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
       Result := 0;
   finally
-    GetStream.Unlock;
+    FStream.Unlock;
   end;
 end;
 
