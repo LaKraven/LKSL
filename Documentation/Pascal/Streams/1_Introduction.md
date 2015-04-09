@@ -95,12 +95,12 @@ While this interface should be fairly self-explanatory, here is a table describi
 ## Stream Types
 The *LKSL Streams Library* provides the following *Stream Types*:
 
-| Stream Type       | Abstract? | Basic Description                               | Access Methodology          | Caret Type             |
-| ----------------- | --------- | ----------------------------------------------- | --------------------------- | ---------------------- |
-| `TLKStream`       | Yes       | Absolute Base Type for all *LKSL Stream Types*  | n/a                         | `TLKStreamCaret`       |
-| `TLKHandleStream` | No        | Analogous of `THandleStream` in the RTL.        | Read-In-Turn, Write-In-Turn | `TLKHandleStreamCaret` |
-| `TLKFileStream`   | No        | Analogous of `TFileStream` in the RTL.          | Read-In-Turn, Write-In-Turn | `TLKFileStreamCaret`   |
-| `TLKMemoryStream` | No        | Analogous of `TMemoryStream` in the RTL.        | Multi-Read, Exclusive Write | `TLKMemoryStreamCaret` |
+| Stream Type       | Interface Type    | Abstract? | Basic Description                               | Access Methodology          | Caret Type             | Caret Interface Type   |
+| ----------------- | ----------------- | --------- | ----------------------------------------------- | --------------------------- | ---------------------- | ---------------------- |
+| `TLKStream`       | `ILKStream`       | Yes       | Absolute Base Type for all *LKSL Stream Types*  | n/a                         | `TLKStreamCaret`       | `ILKStreamCaret`       |
+| `TLKHandleStream` | `ILKHandleStream` | No        | Analogous of `THandleStream` in the RTL.        | Read-In-Turn, Write-In-Turn | `TLKHandleStreamCaret` | `ILKHandleStreamCaret` |
+| `TLKFileStream`   | `ILKFileStream`   | No        | Analogous of `TFileStream` in the RTL.          | Read-In-Turn, Write-In-Turn | `TLKFileStreamCaret`   | `ILKFileStreamCaret`   |
+| `TLKMemoryStream` | `ILKMemoryStream` | No        | Analogous of `TMemoryStream` in the RTL.        | Multi-Read, Exclusive Write | `TLKMemoryStreamCaret` | `ILKMemoryStreamCaret` |
 
 ## Donations
 Donations (while by no means mandatory) are always appreciated, and can be made by clicking this button: <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=84FXYZX27EUJL"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="[paypal]" /></a>
