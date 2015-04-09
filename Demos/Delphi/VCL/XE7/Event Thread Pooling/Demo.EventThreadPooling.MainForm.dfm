@@ -18,7 +18,7 @@ object Form1: TForm1
     Left = 2
     Top = 25
     Width = 471
-    Height = 196
+    Height = 221
     Margins.Left = 2
     Margins.Top = 2
     Margins.Right = 2
@@ -32,6 +32,7 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssBoth
     TabOrder = 0
+    ExplicitHeight = 196
   end
   object btnDispatchEvent: TButton
     AlignWithMargins = True
@@ -47,15 +48,5 @@ object Form1: TForm1
     Caption = 'Dispatch an Event for Processing'
     TabOrder = 1
     OnClick = btnDispatchEventClick
-  end
-  object Button1: TButton
-    Left = 0
-    Top = 223
-    Width = 475
-    Height = 25
-    Align = alBottom
-    Caption = 'Button1'
-    TabOrder = 2
-    OnClick = Button1Click
   end
 end

@@ -599,7 +599,7 @@ end;
 
 function TLKHandleStreamCaret.Delete(const ALength: Int64): Int64;
 var
-  LStartPosition, I: Int64;
+  LStartPosition: Int64;
   LValue: TBytes;
 begin
   GetStream.Lock;
