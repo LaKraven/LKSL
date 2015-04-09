@@ -266,6 +266,8 @@ type
     FReadOpen: TEvent;
     ///  <summary><c>Keeps track of the number of Read Operations in progress (atomic)</c></summary>
     FReads: Integer;
+    ///  <summary><c>Write operations MUST be Exclusive not only of Readers, but also of others attempting to Write</c></summary>
+    FWriteLock: TCriticalSection;
     ///  <summary><c>Event is Set when all Write Operations are complete.</c></summary>
     FWriteOpen: TEvent;
     ///  <summary><c>Keeps track of the number of Write Operations in progress (atomic)</c></summary>
@@ -353,6 +355,7 @@ type
     function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64; override;
     function ReadActual(var ABuffer; const ALength: Int64): Int64; override;
     function WriteActual(const ABuffer; const ALength: Int64): Int64; override;
+    function SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; override;
   end;
 
   ///  <summary><c>Special Memory Stream built for Multi-Thread Asynchronous (and Random) Access.</c></summary>
@@ -559,6 +562,7 @@ end;
 constructor TLKStream.Create;
 begin
   inherited;
+  FWriteLock := TCriticalSection.Create;
   FDestroying := False;
   FCarets := TLKStreamCaretList.Create;
   FReadOpen := TEvent.Create(nil, True, True, '');
@@ -580,6 +584,7 @@ begin
   for I := 0 to FCarets.Count - 1 do
     FCarets[I].FStream := nil;
   FCarets.Free;
+  FWriteLock.Free;
   inherited;
 end;
 
@@ -945,6 +950,15 @@ begin
     if Result > ALength then Result := ALength;
     System.Move((PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^, ABuffer, Result);
     Inc(FPosition, Result);
+  end;
+end;
+
+function TLKMemoryStreamCaret.SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+begin
+  case AOrigin of
+    soBeginning: Result := AOffset;
+    soCurrent: Result := FPosition + AOffset;
+    soEnd: Result := TLKMemoryStream(FStream).FSize - AOffset;
   end;
 end;
 

@@ -32,7 +32,6 @@ object Form1: TForm1
     ParentFont = False
     ScrollBars = ssBoth
     TabOrder = 0
-    ExplicitHeight = 221
   end
   object btnDispatchEvent: TButton
     AlignWithMargins = True
@@ -58,8 +57,5 @@ object Form1: TForm1
     Caption = 'Button1'
     TabOrder = 2
     OnClick = Button1Click
-    ExplicitLeft = 208
-    ExplicitTop = 128
-    ExplicitWidth = 75
   end
 end
