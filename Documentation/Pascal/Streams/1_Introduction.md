@@ -82,6 +82,7 @@ The definition of `ILKStreamCaret` is as follows:
 ```
 
 While this interface should be fairly self-explanatory, here is a table describing them in brief:
+
 | Method/Property   | Description                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------------------- |
 | `Delete`          | Removes the given number of Bytes from the current Position (shifting subsequent Bytes to the Left)       |
