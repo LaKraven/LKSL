@@ -418,7 +418,7 @@ type
     ///  <summary><c>Keeps track of the number of Read Operations in progress (atomic)</c></summary>
     FReads: Integer;
     ///  <summary><c>Write operations MUST be Exclusive not only of Readers, but also of others attempting to Write</c></summary>
-    FWriteLock: TCriticalSection;
+    FWriteLock: TLKCriticalSection;
     ///  <summary><c>Event is Set when all Write Operations are complete.</c></summary>
     FWriteOpen: TEvent;
     ///  <summary><c>Keeps track of the number of Write Operations in progress (atomic)</c></summary>
@@ -918,7 +918,7 @@ end;
 
 constructor TLKMemoryStream.Create;
 begin
-  FWriteLock := TCriticalSection.Create;
+  FWriteLock := TLKCriticalSection.Create;
   FDestroying := False;
   FReadOpen := TEvent.Create(nil, True, True, '');
   FReads := 0;
