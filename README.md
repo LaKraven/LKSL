@@ -22,9 +22,10 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Generics Collections    | Highly efficient, Thread-Safe Collection Types (*lists, trees etc.*)                             | Suitable for real-world use (being used in production software) |
 | High Precision Threads  | A special Thread Base Type designed to provide supremely High Precision Tick Rates.              | Suitable for real-world use (being used in production software) |
 | Math Library            | A library for Unit Conversion, special calculation and other useful mathematics routines.        | Early in development                                            |
+| Package Engine          | Extension of the Streamables Engine supporting the packaging of files together (a VFS of sorts)  | Planned, not yet implemented.                                   |
+| Shared Streams Library  | 100% Thread-Safe Stream Classes (Interfaced too) allowing read/write from multiple Threads.      | Initial Types written and implemented, improvements underway!   |
 | Stream Handling Library | Makes working with Streams *much* easier! Handles Deleting, Inserting, Reading and Writing data. | Suitable for real-world use (being used in production software) |
 | Streamables Engine      | A system to serialize Object Instances into Streams, and to dynamically reconstitute them, too.  | Suitable for real-world use (being used in production software) |
-| Package Engine          | Extension of the Streamables Engine supporting the packaging of files together (a VFS of sorts)  | Planned, not yet implemented.                                   |
 
 ## Support Matrix:
 
@@ -35,9 +36,10 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Generics Collections    | Yes              | Soon                  | Soon            |
 | High Precision Threads  | Yes              | Soon                  | Yes             |
 | Math Library            | Yes              | Soon                  | Yes             |
+| Package Engine          | Soon             | Soon                  | Soon            |
+| Shared Streams Library  | Yes              | Soon                  | Yes             |
 | Stream Handling Library | Yes              | Soon                  | Yes             |
 | Streamables Engine      | Yes              | Soon                  | Soon            |
-| Package Engine          | Soon             | Soon                  | Soon            |
 
 ## Other Platforms currently in Consideration:
 
@@ -48,9 +50,10 @@ Environment Variables registered by **INSTALL.BAT** on *Windows*:
 | Generics Collections    | No   | Yes  | Yes  | Yes  | No   | Yes    |
 | High Precision Threads  | Yes  | Yes  | Yes  | Yes  | No   | Yes    |
 | Math Library            | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
+| Package Engine          | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
+| Shared Streams Library  | Yes  | Yes  | Yes  | Yes  | No   | Yes    |
 | Stream Handling Library | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
 | Streamables Engine      | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
-| Package Engine          | Yes  | Yes  | Yes  | Yes  | Yes  | Yes    |
 *Note: There are no promises with the above table! It depends on who is willing to support what!**
 
 > If there's another platform that you think could benefit from the features of the LKSL, please raise an issue. Better yet, if you feel you can produce a viable LKSL translation (in part or whole) for another programming/scripting language, please consider contributing that work back to this original repository!
