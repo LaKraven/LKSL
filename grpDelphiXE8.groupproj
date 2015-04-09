@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{7A56C05A-A38D-42A4-9435-E06E4F537A35}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Packages\Delphi\XE8\Components\LKSL_Components_XE8R.dproj">
+            <Dependencies>Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj</Dependencies>
+        </Projects>
+        <Projects Include="Packages\Delphi\XE8\Components\LKSL_Components_XE8D.dproj">
+            <Dependencies>Packages\Delphi\XE8\Components\LKSL_Components_XE8R.dproj;Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="LKSL_XE8R">
+        <MSBuild Projects="Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj"/>
+    </Target>
+    <Target Name="LKSL_XE8R:Clean">
+        <MSBuild Projects="Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_XE8R:Make">
+        <MSBuild Projects="Packages\Delphi\XE8\Lib\LKSL_XE8R.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8R" DependsOnTargets="LKSL_XE8R">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8R.dproj"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8R:Clean" DependsOnTargets="LKSL_XE8R:Clean">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8R.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8R:Make" DependsOnTargets="LKSL_XE8R:Make">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8R.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8D" DependsOnTargets="LKSL_Components_XE8R;LKSL_XE8R">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8D.dproj"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8D:Clean" DependsOnTargets="LKSL_Components_XE8R:Clean;LKSL_XE8R:Clean">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8D.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_Components_XE8D:Make" DependsOnTargets="LKSL_Components_XE8R:Make;LKSL_XE8R:Make">
+        <MSBuild Projects="Packages\Delphi\XE8\Components\LKSL_Components_XE8D.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="LKSL_XE8R;LKSL_Components_XE8R;LKSL_Components_XE8D"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="LKSL_XE8R:Clean;LKSL_Components_XE8R:Clean;LKSL_Components_XE8D:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="LKSL_XE8R:Make;LKSL_Components_XE8R:Make;LKSL_Components_XE8D:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
