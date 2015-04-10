@@ -155,6 +155,10 @@ type
     function GetSize: Int64;
     procedure SetSize(const ASize: Int64);
 
+    procedure LoadFromFile(const AFileName: String);
+    procedure LoadFromStream(const AStream: ILKStream); overload;
+    procedure LoadFromStream(const AStream: TStream); overload;
+
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
 
@@ -283,6 +287,10 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
+    procedure LoadFromFile(const AFileName: String); virtual; abstract;
+    procedure LoadFromStream(const AStream: ILKStream); overload; virtual; abstract;
+    procedure LoadFromStream(const AStream: TStream); overload; virtual; abstract;
+
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
 
@@ -348,6 +356,10 @@ type
     procedure SetSize(const ASize: Int64); override;
   public
     constructor Create(const AHandle: THandle); reintroduce;
+
+    procedure LoadFromFile(const AFileName: String); override;
+    procedure LoadFromStream(const AStream: ILKStream); overload; override;
+    procedure LoadFromStream(const AStream: TStream); overload; override;
 
     procedure SaveToFile(const AFileName: String); override;
     procedure SaveToStream(const AStream: ILKStream); overload; override;
@@ -465,6 +477,10 @@ type
     procedure ReleaseRead;
     ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
     procedure ReleaseWrite;
+
+    procedure LoadFromFile(const AFileName: String); override;
+    procedure LoadFromStream(const AStream: ILKStream); overload; override;
+    procedure LoadFromStream(const AStream: TStream); overload; override;
 
     procedure SaveToFile(const AFileName: String); override;
     procedure SaveToStream(const AStream: ILKStream); overload; override;
@@ -714,6 +730,57 @@ begin
   end;
 end;
 
+procedure TLKHandleStream.LoadFromFile(const AFileName: String);
+var
+  LStream: ILKFileStream;
+begin
+  LStream := TLKFileStream.Create(AFileName, fmOpenRead);
+  LoadFromSTream(LStream);
+end;
+
+procedure TLKHandleStream.LoadFromStream(const AStream: ILKStream);
+var
+  LReadCaret, LWriteCaret: ILKStreamCaret;
+  I: Int64;
+  LValue: Byte;
+begin
+  Lock;
+  try
+    Size := AStream.Size;
+    LReadCaret := AStream.NewCaret;
+    LWriteCaret := NewCaret;
+    I := 0;
+    repeat
+      LReadCaret.Read(LValue, 1);
+      LWriteCaret.Write(LValue, 1);
+      Inc(I);
+    until I > AStream.Size;;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKHandleStream.LoadFromStream(const AStream: TStream);
+var
+  LWriteCaret: ILKStreamCaret;
+  I: Int64;
+  LValue: Byte;
+begin
+  Lock;
+  try
+    AStream.Position := 0;
+    Size := AStream.Size;
+    LWriteCaret := NewCaret;
+    I := 0;
+    repeat
+      AStream.Read(LValue, 1);
+      LWriteCaret.Write(LValue, 1);
+    until I > AStream.Size;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKHandleStream.SaveToFile(const AFileName: String);
 var
   LStream: ILKFileStream;
@@ -730,6 +797,7 @@ var
 begin
   Lock;
   try
+    AStream.Size := 0;
     LReadCaret := NewCaret;
     LWriteCaret := AStream.NewCaret;
     I := 0;
@@ -751,6 +819,7 @@ var
 begin
   Lock;
   try
+    AStream.Size := 0;
     I := 0;
     repeat
       LReadCaret.Read(LValue, 1);
@@ -1035,6 +1104,40 @@ end;
 function TLKMemoryStream.GetSizeActual: Int64;
 begin
   Result := FSize;
+end;
+
+procedure TLKMemoryStream.LoadFromFile(const AFileName: String);
+var
+  LStream: ILKStream;
+begin
+  LStream := TLKFileStream.Create(AFileName, fmOpenRead);
+  LoadFromStream(LStream);
+end;
+
+procedure TLKMemoryStream.LoadFromStream(const AStream: ILKStream);
+var
+  LReadCaret: ILKStreamCaret;
+begin
+  AcquireWrite;
+  try
+    Size := AStream.Size;
+    LReadCaret := AStream.NewCaret;
+    LReadCaret.Read(FMemory^, AStream.Size);
+  finally
+    ReleaseWrite;
+  end;
+end;
+
+procedure TLKMemoryStream.LoadFromStream(const AStream: TStream);
+begin
+  AcquireWrite;
+  try
+    AStream.Position := 0;
+    Size := AStream.Size;
+    AStream.Read(FMemory^, AStream.Size);
+  finally
+    ReleaseWrite;
+  end;
 end;
 
 function TLKMemoryStream.Realloc(var ACapacity: Int64): Pointer;

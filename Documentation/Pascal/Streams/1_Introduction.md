@@ -36,14 +36,24 @@ The definition of `ILKStream` is currently as follows:
     function GetSize: Int64;
     procedure SetSize(const ASize: Int64);
 
+    procedure LoadFromFile(const AFileName: String);
+    procedure LoadFromStream(const AStream: ILKStream); overload;
+    procedure LoadFromStream(const AStream: TStream); overload;
+
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
+
+    procedure SaveToFile(const AFileName: String);
+    procedure SaveToStream(const AStream: ILKStream); overload;
+    procedure SaveToStream(const AStream: TStream); overload;
 
     property Size: Int64 read GetSize write SetSize;
   end;
 ```
 
 As you would expect, the `Size` property retrieves the current size of the Stream, and (on assignment) will expand or collapse the Stream to the specified size.
+
+> Note that you can *Load* and *Save* **any** `ILKStream` implementing type (descendants of `TLKStream` in this case) from and to (*respectively*) a *File* or *Stream*.
 
 ## Carets
 The most powerful feature of the LSKL *Streams* is that they allow individual *consumers* to request their own *Carets*.
