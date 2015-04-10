@@ -158,6 +158,10 @@ type
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
 
+    procedure SaveToFile(const AFileName: String);
+    procedure SaveToStream(const AStream: ILKStream); overload;
+    procedure SaveToStream(const AStream: TStream); overload;
+
     property Size: Int64 read GetSize write SetSize;
   end;
 
@@ -196,10 +200,6 @@ type
     procedure ReleaseRead;
     ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
     procedure ReleaseWrite;
-
-    procedure SaveToFile(const AFileName: String);
-    procedure SaveToStream(const AStream: ILKStream); overload;
-    procedure SaveToStream(const AStream: TStream); overload;
   end;
 
   ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
@@ -286,6 +286,10 @@ type
     function NewCaret: ILKStreamCaret; overload;
     function NewCaret(const APosition: Int64): ILKStreamCaret; overload;
 
+    procedure SaveToFile(const AFileName: String); virtual; abstract;
+    procedure SaveToStream(const AStream: ILKStream); overload; virtual; abstract;
+    procedure SaveToStream(const AStream: TStream); overload; virtual; abstract;
+
     property Size: Int64 read GetSize write SetSize;
   end;
 
@@ -344,6 +348,10 @@ type
     procedure SetSize(const ASize: Int64); override;
   public
     constructor Create(const AHandle: THandle); reintroduce;
+
+    procedure SaveToFile(const AFileName: String); override;
+    procedure SaveToStream(const AStream: ILKStream); overload; override;
+    procedure SaveToStream(const AStream: TStream); overload; override;
   end;
 
   ///  <summary><c>Caret specifically set up for File Streams.</c></summary>
@@ -458,9 +466,9 @@ type
     ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
     procedure ReleaseWrite;
 
-    procedure SaveToFile(const AFileName: String);
-    procedure SaveToStream(const AStream: ILKStream); overload;
-    procedure SaveToStream(const AStream: TStream); overload;
+    procedure SaveToFile(const AFileName: String); override;
+    procedure SaveToStream(const AStream: ILKStream); overload; override;
+    procedure SaveToStream(const AStream: TStream); overload; override;
   end;
 
 // Utility Methods
@@ -696,24 +704,82 @@ function TLKHandleStream.GetSize: Int64;
 var
   LPos: Int64;
 begin
-  LPos := FileSeek(FHandle, 0, Ord(soCurrent));
-  Result := FileSeek(FHandle, 0, Ord(soEnd));
-  FileSeek(FHandle, LPos, Ord(soBeginning));  
+  Lock;
+  try
+    LPos := FileSeek(FHandle, 0, Ord(soCurrent));
+    Result := FileSeek(FHandle, 0, Ord(soEnd));
+    FileSeek(FHandle, LPos, Ord(soBeginning));
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKHandleStream.SaveToFile(const AFileName: String);
+var
+  LStream: ILKFileStream;
+begin
+  LStream := TLKFileStream.Create(AFileName, fmCreate);
+  SaveToStream(LStream);
+end;
+
+procedure TLKHandleStream.SaveToStream(const AStream: ILKStream);
+var
+  LReadCaret, LWriteCaret: ILKStreamCaret;
+  I: Int64;
+  LValue: Byte;
+begin
+  Lock;
+  try
+    LReadCaret := NewCaret;
+    LWriteCaret := AStream.NewCaret;
+    I := 0;
+    repeat
+      LReadCaret.Read(LValue, 1);
+      LWriteCaret.Write(LValue, 1);
+      Inc(I);
+    until I > Size;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKHandleStream.SaveToStream(const AStream: TStream);
+var
+  LReadCaret: ILKStreamCaret;
+  I: Int64;
+  LValue: Byte;
+begin
+  Lock;
+  try
+    I := 0;
+    repeat
+      LReadCaret.Read(LValue, 1);
+      AStream.Write(LValue, 1);
+      Inc(I);
+    until I > Size;
+  finally
+    Unlock;
+  end;
 end;
 
 procedure TLKHandleStream.SetSize(const ASize: Int64);
 begin
-  FileSeek(FHandle, ASize, Ord(soBeginning));
-{$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
-{$IF Defined(MSWINDOWS)}
-  Win32Check(SetEndOfFile(FHandle));
-{$ELSEIF Defined(POSIX)}
-  if ftruncate(FHandle, Position) = -1 then
-    raise EStreamError(sStreamSetSize);
-{$ELSE}
-  {$FATAL 'No implementation for this platform! Please report this issue on https://github.com/LaKraven/LKSL'}
-{$ENDIF}
-{$WARNINGS ON}
+  Lock;
+  try
+    FileSeek(FHandle, ASize, Ord(soBeginning));
+    {$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
+    {$IF Defined(MSWINDOWS)}
+      Win32Check(SetEndOfFile(FHandle));
+    {$ELSEIF Defined(POSIX)}
+    if ftruncate(FHandle, Position) = -1 then
+      raise EStreamError(sStreamSetSize);
+    {$ELSE}
+      {$FATAL 'No implementation for this platform! Please report this issue on https://github.com/LaKraven/LKSL'}
+    {$ENDIF}
+    {$WARNINGS ON}
+  finally
+    Unlock;
+  end;
 end;
 
 { TLKFileStream }
