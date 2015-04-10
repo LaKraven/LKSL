@@ -188,8 +188,18 @@ type
 
   ILKMemoryStream  = interface(ILKStream)
   ['{289F1193-AE69-47D6-B66B-0174070963B5}']
+    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
+    procedure AcquireRead;
+    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
+    procedure AcquireWrite;
+    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
+    procedure ReleaseRead;
+    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
+    procedure ReleaseWrite;
+
     procedure SaveToFile(const AFileName: String);
-    procedure SaveToStream(const AStream: ILKStream);
+    procedure SaveToStream(const AStream: ILKStream); overload;
+    procedure SaveToStream(const AStream: TStream); overload;
   end;
 
   ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
@@ -449,7 +459,8 @@ type
     procedure ReleaseWrite;
 
     procedure SaveToFile(const AFileName: String);
-    procedure SaveToStream(const AStream: ILKStream);
+    procedure SaveToStream(const AStream: ILKStream); overload;
+    procedure SaveToStream(const AStream: TStream); overload;
   end;
 
 // Utility Methods
@@ -1014,6 +1025,17 @@ var
 begin
   LStream := TLKFileStream.Create(AFileName, fmCreate);
   SaveToStream(LStream);
+end;
+
+procedure TLKMemoryStream.SaveToStream(const AStream: TStream);
+begin
+  AcquireRead;
+  try
+    if FSize > 0 then
+      AStream.WriteBuffer(FMemory^, FSize);
+  finally
+    ReleaseRead;
+  end;
 end;
 
 procedure TLKMemoryStream.SaveToStream(const AStream: ILKStream);
