@@ -92,6 +92,7 @@ type
   { Exceptions }
   ELKStreamException = class(ELKException);
     ELKStreamHasGoneAwayException = class(ELKStreamException);
+    ELKStreamCaretInvalid = class(ELKStreamException);
 
   { Class References }
   TLKStreamCaretClass = class of TLKStreamCaret;
@@ -208,6 +209,7 @@ type
     FPosition: Int64;
     FInvalid: Boolean;
     FStream: TLKStream;
+    procedure CheckCaretValid; inline;
     // Getters
     function GetInvalid: Boolean;
     function GetPosition: Int64;
@@ -224,7 +226,7 @@ type
     ///    <para><c>Locks the Stream for duration of operation</c></para>
     ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes deleted.</c></para>
     ///  </remarks>
-    function Delete(const ALength: Int64): Int64; virtual; abstract;
+    function Delete(const ALength: Int64): Int64; virtual;
 
     ///  <summary><c>Inserts the given Buffer into the current Position within the Stream (shifting any subsequent Bytes to the right)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
@@ -232,14 +234,14 @@ type
     ///    <para><c>Locks the Stream for duration of operation</c></para>
     ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
     ///  </remarks>
-    function Insert(const ABuffer; const ALength: Int64): Int64; virtual; abstract;
+    function Insert(const ABuffer; const ALength: Int64): Int64; virtual;
 
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
     ///  <remarks>
     ///    <para><c>Locks the Stream only when reading each Byte (releases Lock between Bytes)</c></para>
     ///  </remarks>
-    function Read(var ABuffer; const ALength: Int64): Int64; virtual; abstract;
+    function Read(var ABuffer; const ALength: Int64): Int64; virtual;
 
     ///  <summary><c>Writes the given Buffer into the current Position within the Stream (overwriting any existing data, and expanding the Size of the Stream if required)</c></summary>
     ///  <returns><c>Returns the number of Bytes actually written.</c></returns>
@@ -247,10 +249,10 @@ type
     ///    <para><c>Locks the Stream for duration of operation</c></para>
     ///    <para><c>DOES NOT shift the position of any subsequent Carets!</c></para>
     ///  </remarks>
-    function Write(const ABuffer; const ALength: Int64): Int64; virtual; abstract;
+    function Write(const ABuffer; const ALength: Int64): Int64; virtual;
 
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
-    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; virtual; abstract;
+    function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; virtual;
 
     property Invalid: Boolean read GetInvalid;
     property Position: Int64 read GetPosition write SetPosition;
@@ -527,6 +529,12 @@ end;
 
 { TLKStreamCaret }
 
+procedure TLKStreamCaret.CheckCaretValid;
+begin
+  if FInvalid then
+    raise ELKStreamCaretInvalid.Create('The binary data at the position referenced by this Caret has been removed or modified.');
+end;
+
 constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
@@ -534,6 +542,11 @@ begin
   FStream := AStream;
   Seek(0, soBeginning);
   FStream.RegisterCaret(Self);
+end;
+
+function TLKStreamCaret.Delete(const ALength: Int64): Int64;
+begin
+  CheckCaretValid;
 end;
 
 destructor TLKStreamCaret.Destroy;
@@ -561,9 +574,29 @@ begin
     Result := FStream;
 end;
 
+function TLKStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
+begin
+  CheckCaretValid;
+end;
+
+function TLKStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
+begin
+  CheckCaretValid;
+end;
+
+function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
+begin
+  CheckCaretValid;
+end;
+
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
 begin
   FPosition := Seek(APosition, soBeginning);
+end;
+
+function TLKStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
+begin
+  CheckCaretValid;
 end;
 
 { TLKStream }
@@ -691,6 +724,7 @@ var
   LStartPosition, LSize: Int64;
   LValue: TBytes;
 begin
+  inherited;
   FStream.Lock;
   try
     LStartPosition := Position;
@@ -721,6 +755,7 @@ var
   I, LStartPosition, LNewSize: Int64;
   LByte: Byte;
 begin
+  inherited;
   Result := 0;
   LStartPosition := FPosition;
   FStream.Lock;
@@ -751,6 +786,7 @@ end;
 
 function TLKHandleStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
+  inherited;
   FStream.Lock;
   try
     Seek(FPosition, soBeginning);
@@ -766,6 +802,7 @@ end;
 
 function TLKHandleStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
+  inherited;
   FStream.Lock;
   try
     Result := FileSeek(TLKHandleStream(GetStream).FHandle, AOffset, Ord(AOrigin));
@@ -778,6 +815,7 @@ function TLKHandleStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 var
   LStartPosition: Int64;
 begin
+  inherited;
   LStartPosition := FPosition;
   FStream.Lock;
   try
@@ -992,6 +1030,7 @@ end;
 
 function TLKMemoryStreamCaret.Delete(const ALength: Int64): Int64;
 begin
+  inherited;
   Lock;
   try
     TLKMemoryStream(GetStream).AcquireWrite;
@@ -1030,6 +1069,7 @@ end;
 
 function TLKMemoryStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
 begin
+  inherited;
   Lock;
   try
     TLKMemoryStream(GetStream).AcquireWrite;
@@ -1070,6 +1110,7 @@ end;
 
 function TLKMemoryStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
+  inherited;
   Lock;
   try
     TLKMemoryStream(GetStream).AcquireRead;
@@ -1105,6 +1146,7 @@ end;
 
 function TLKMemoryStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
+  inherited;
   Lock;
   try
     TLKMemoryStream(GetStream).AcquireRead;
@@ -1137,6 +1179,7 @@ end;
 
 function TLKMemoryStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 begin
+  inherited;
   Lock;
   try
     TLKMemoryStream(GetStream).AcquireWrite;
