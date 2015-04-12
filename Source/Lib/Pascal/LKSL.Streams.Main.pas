@@ -123,12 +123,6 @@ type
     ///  </remarks>
     function Insert(const ABuffer; const ALength: Int64): Int64;
 
-    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
-    ///  <remarks>
-    ///    <para><c>Locks the Stream for the duration of operation</c></para>
-    ///  </remarks>
-    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64;
-
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
     ///  <remarks>
@@ -240,12 +234,6 @@ type
     ///  </remarks>
     function Insert(const ABuffer; const ALength: Int64): Int64; virtual; abstract;
 
-    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
-    ///  <remarks>
-    ///    <para><c>Locks the Stream for the duration of operation</c></para>
-    ///  </remarks>
-    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64; virtual; abstract;
-
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
     ///  <remarks>
@@ -330,12 +318,6 @@ type
     ///  </remarks>
     function Insert(const ABuffer; const ALength: Int64): Int64; override;
 
-    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
-    ///  <remarks>
-    ///    <para><c>Locks the Stream for the duration of operation</c></para>
-    ///  </remarks>
-    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64; override;
-
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
     ///  <remarks>
@@ -399,7 +381,6 @@ type
   protected
     function DeleteActual(const ALength: Int64): Int64;
     function InsertActual(const ABuffer; const ALength: Int64): Int64;
-    function MoveBytesActual(const ACount: Int64; const AOffset: Int64): Int64;
     function ReadActual(var ABuffer; const ALength: Int64): Int64;
     function WriteActual(const ABuffer; const ALength: Int64): Int64;
     function SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
@@ -419,12 +400,6 @@ type
     ///    <para><c>Automatically shifts the Position of subsequent Carets by the offset of Bytes inserted.</c></para>
     ///  </remarks>
     function Insert(const ABuffer; const ALength: Int64): Int64; override;
-
-    ///  <summary><c>Moves the block of Bytes (from Position to Position + ACount) in the direction of AOffset, then nulls the original Addresses (accounting for any overlap).</c></summary>
-    ///  <remarks>
-    ///    <para><c>Locks the Stream for the duration of operation</c></para>
-    ///  </remarks>
-    function MoveBytes(const ACount: Int64; const AOffset: Int64): Int64; override;
 
     ///  <summary><c>Reads the specified number of Bytes from the Array into the specified Address</c></summary>
     ///  <returns><c>Returns the number of Bytes actually read.</c></returns>
@@ -774,12 +749,6 @@ begin
   end;
 end;
 
-function TLKHandleStreamCaret.MoveBytes(const ACount, AOffset: Int64): Int64;
-begin
-  Result := 0;
-{ TODO -oSJS -cTLKMemoryStream : Implement Move Bytes }
-end;
-
 function TLKHandleStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
   FStream.Lock;
@@ -1097,27 +1066,6 @@ begin
   finally
     Unlock;
   end;
-end;
-
-function TLKMemoryStreamCaret.MoveBytes(const ACount, AOffset: Int64): Int64;
-begin
-  Lock;
-  try
-    TLKMemoryStream(GetStream).AcquireWrite;
-    try
-      Result := MoveBytes(ACount, AOffset);
-    finally
-      TLKMemoryStream(GetStream).ReleaseWrite;
-    end;
-  finally
-    Unlock;
-  end;
-end;
-
-function TLKMemoryStreamCaret.MoveBytesActual(const ACount, AOffset: Int64): Int64;
-begin
-  Result := 0;
-{ TODO -oSJS -cTLKMemoryStream : Implement Move Bytes }
 end;
 
 function TLKMemoryStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;

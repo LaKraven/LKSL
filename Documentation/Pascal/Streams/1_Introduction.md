@@ -95,7 +95,6 @@ While this interface should be fairly self-explanatory, here is a table describi
 | ----------------- | --------------------------------------------------------------------------------------------------------- |
 | `Delete`          | Removes the given number of Bytes from the current Position (shifting subsequent Bytes to the Left)       |
 | `Insert`          | Inserts the given Buffer into the Stream at the current Position (shifting subsequent Bytes to the Right) |
-| `MoveBytes`       | Moves the given number of Bytes within the Stream from the current Position by the given Offset           |
 | `Read`            | Populates the given Buffer with Bytes of the given number                                                 |
 | `Write`           | Writes a given Buffer of a given Size into the Stream from the current Position                           |
 | `Seek`            | Adjusts the Position of this Caret (behaves like `TStream.Seek`)                                          |
