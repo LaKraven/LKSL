@@ -101,6 +101,7 @@ type
 
   ILKStreamCaret = interface
   ['{D8E849E5-A5A1-4B4F-9AF6-BBD397216C5B}']
+    function GetInvalid: Boolean;
     function GetPosition: Int64;
     procedure SetPosition(const APosition: Int64);
 
@@ -146,6 +147,7 @@ type
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
     function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 
+    property Invalid: Boolean read GetInvalid;
     property Position: Int64 read GetPosition write SetPosition;
     property Stream: ILKStream read GetStream;
   end;
@@ -210,8 +212,10 @@ type
   TLKStreamCaret = class abstract(TLKInterfacedObject, ILKStreamCaret)
   protected
     FPosition: Int64;
+    FInvalid: Boolean;
     FStream: TLKStream;
     // Getters
+    function GetInvalid: Boolean;
     function GetPosition: Int64;
     function GetStream: ILKStream;
     // Setters
@@ -260,6 +264,7 @@ type
     ///  <returns><c>Returns the new </c>Position<c> in the Stream.</c></returns>
     function Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64; virtual; abstract;
 
+    property Invalid: Boolean read GetInvalid;
     property Position: Int64 read GetPosition write SetPosition;
   end;
 
@@ -273,6 +278,11 @@ type
     FCarets: TLKStreamCaretList;
     procedure RegisterCaret(const ACaret: TLKStreamCaret);
     procedure UnregisterCaret(const ACaret: TLKStreamCaret);
+
+    procedure InvalidateCarets(const AFromPosition, ACount: Int64);
+
+    procedure ShiftCaretsLeft(const AFromPosition, ACount: Int64);
+    procedure ShiftCaretsRight(const AFromPosition, ACount: Int64);
   protected
     ///  <summary><c>Override to define the correct Stream Caret Type to use for this Stream</c></summary>
     function GetCaretType: TLKStreamCaretClass; virtual; abstract;
@@ -545,6 +555,7 @@ end;
 constructor TLKStreamCaret.Create(const AStream: TLKStream);
 begin
   inherited Create;
+  FInvalid := False;
   FStream := AStream;
   Seek(0, soBeginning);
   FStream.RegisterCaret(Self);
@@ -555,6 +566,11 @@ begin
   if FStream <> nil then
     FStream.UnregisterCaret(Self);
   inherited;
+end;
+
+function TLKStreamCaret.GetInvalid: Boolean;
+begin
+  Result := FInvalid;
 end;
 
 function TLKStreamCaret.GetPosition: Int64;
@@ -594,6 +610,27 @@ begin
   inherited;
 end;
 
+procedure TLKStream.InvalidateCarets(const AFromPosition, ACount: Int64);
+var
+  I: Integer;
+begin
+  FCarets.Lock;
+  try
+    for I := 0 to FCarets.Count - 1 do
+    begin
+      FCarets[I].Lock;
+      try
+        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
+          FCarets[I].FInvalid := True;
+      finally
+        FCarets[I].Unlock;
+      end;
+    end;
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
 function TLKStream.NewCaret(const APosition: Int64): ILKStreamCaret;
 begin
   Result := NewCaret;
@@ -606,6 +643,48 @@ begin
   try
     if (not FCarets.Contains(ACaret)) then
       FCarets.Add(ACaret);
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
+procedure TLKStream.ShiftCaretsLeft(const AFromPosition, ACount: Int64);
+var
+  I: Integer;
+begin
+  FCarets.Lock;
+  try
+    for I := 0 to FCarets.Count - 1 do
+    begin
+      FCarets[I].Lock;
+      try
+        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
+          FCarets[I].Position := FCarets[I].Position - ACount;
+      finally
+        FCarets[I].Unlock;
+      end;
+    end;
+  finally
+    FCarets.Unlock;
+  end;
+end;
+
+procedure TLKStream.ShiftCaretsRight(const AFromPosition, ACount: Int64);
+var
+  I: Integer;
+begin
+  FCarets.Lock;
+  try
+    for I := 0 to FCarets.Count - 1 do
+    begin
+      FCarets[I].Lock;
+      try
+        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
+          FCarets[I].Position := FCarets[I].Position + ACount;
+      finally
+        FCarets[I].Unlock;
+      end;
+    end;
   finally
     FCarets.Unlock;
   end;
@@ -634,21 +713,28 @@ end;
 
 function TLKHandleStreamCaret.Delete(const ALength: Int64): Int64;
 var
-  LStartPosition: Int64;
+  LStartPosition, LSize: Int64;
   LValue: TBytes;
 begin
   FStream.Lock;
   try
     LStartPosition := Position;
+    LSize := FStream.Size;
     if FStream.Size > Position + ALength then
     begin
-      SetLength(LValue, FStream.Size - ALength);
+      SetLength(LValue, LSize - ALength);
       Position := Position + ALength;
-      Read(LValue[0], FStream.Size - ALength);
+      Read(LValue[0], LSize - ALength);
       Position := LStartPosition;
       Write(LValue[0], ALength);
     end;
-    FStream.Size := FStream.Size - ALength;
+    FStream.Size := LSize - ALength;
+    // Invalidate the Carets representing the Bytes we've deleted
+    FStream.InvalidateCarets(LStartPosition, ALength);
+    // Shift subsequent Carets to the left
+    FStream.ShiftCaretsLeft(LStartPosition + ALength, LSize - (LStartPosition + ALength));
+    // Set this Caret's position back to where it began
+    Position := LStartPosition;
   finally
     FStream.Unlock;
   end;
@@ -656,9 +742,36 @@ begin
 end;
 
 function TLKHandleStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
+var
+  I, LStartPosition, LNewSize: Int64;
+  LByte: Byte;
 begin
   Result := 0;
-{ TODO -oSJS -cTLKMemoryStream : Implement Insert }
+  LStartPosition := FPosition;
+  FStream.Lock;
+  try
+    // Expand the Stream
+    LNewSize := FStream.Size + ALength;
+    FStream.Size := LNewSize;
+    // Move subsequent Bytes to the Right
+    I := LStartPosition;
+    repeat
+      Seek(I, soBeginning); // Navigate to the Byte
+      Read(LByte, 1); // Read this byte
+      Seek(I + ALength + 1, soBeginning); // Navigate to this Byte's new location
+      Write(LByte, 1); // Write this byte
+      Inc(I); // On to the next
+      Inc(Result);
+    until I > LNewSize;
+    // Insert the Value
+    Position := LStartPosition;
+    Write(ABuffer, ALength);
+    // Shift overlapping Carets to the Right
+    FStream.ShiftCaretsRight(LStartPosition, ALength);
+    Position := LStartPosition + ALength;
+  finally
+    FStream.Unlock;
+  end;
 end;
 
 function TLKHandleStreamCaret.MoveBytes(const ACount, AOffset: Int64): Int64;
@@ -674,7 +787,9 @@ begin
     Seek(FPosition, soBeginning);
     Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
-      Result := 0;
+      Result := 0
+    else
+      Inc(FPosition, ALength);
   finally
     FStream.Unlock;
   end;
@@ -691,13 +806,20 @@ begin
 end;
 
 function TLKHandleStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
+var
+  LStartPosition: Int64;
 begin
+  LStartPosition := FPosition;
   FStream.Lock;
   try
     Seek(FPosition, soBeginning);
     Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
-      Result := 0;
+      Result := 0
+    else begin
+      Inc(FPosition, ALength);
+      FStream.InvalidateCarets(LStartPosition, ALength);
+    end;
   finally
     FStream.Unlock;
   end;
@@ -832,9 +954,12 @@ begin
 end;
 
 procedure TLKHandleStream.SetSize(const ASize: Int64);
+var
+  LOldSize: Int64;
 begin
   Lock;
   try
+    LOldSize := GetSize;
     FileSeek(FHandle, ASize, Ord(soBeginning));
     {$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
     {$IF Defined(MSWINDOWS)}
@@ -846,6 +971,8 @@ begin
       {$FATAL 'No implementation for this platform! Please report this issue on https://github.com/LaKraven/LKSL'}
     {$ENDIF}
     {$WARNINGS ON}
+    if ASize < LOldSize then
+      InvalidateCarets(LOldSize, ASize - LOldSize);
   finally
     Unlock;
   end;
@@ -896,51 +1023,94 @@ end;
 
 function TLKMemoryStreamCaret.Delete(const ALength: Int64): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireWrite;
+  Lock;
   try
-    Result := DeleteActual(ALength);
+    TLKMemoryStream(GetStream).AcquireWrite;
+    try
+      Result := DeleteActual(ALength);
+    finally
+      TLKMemoryStream(GetStream).ReleaseWrite;
+    end;
   finally
-    TLKMemoryStream(GetStream).ReleaseWrite;
+    Unlock;
   end;
 end;
 
 function TLKMemoryStreamCaret.DeleteActual(const ALength: Int64): Int64;
 begin
-  // Shift elements after Position + Length back to Position
-  if FPosition + ALength < TLKMemoryStream(GetStream).FSize then
-    System.Move(
-                  (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition + ALength)^,
-                  (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^,
-                  TLKMemoryStream(GetStream).FSize - (FPosition + ALength)
-               );
-  // Dealloc Memory
-  TLKMemoryStream(GetStream).Size := TLKMemoryStream(GetStream).FSize - ALength;
-  Result := ALength
+  Lock;
+  try
+    // Shift elements after Position + Length back to Position
+    if FPosition + ALength < TLKMemoryStream(GetStream).FSize then
+      System.Move(
+                    (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition + ALength)^,
+                    (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^,
+                    TLKMemoryStream(GetStream).FSize - (FPosition + ALength)
+                 );
+    // Dealloc Memory
+    TLKMemoryStream(GetStream).Size := TLKMemoryStream(GetStream).FSize - ALength;
+    // Invalidate the Carets representing the Bytes we've deleted
+    FStream.InvalidateCarets(FPosition, ALength);
+    // Shift subsequent Carets to the left
+    FStream.ShiftCaretsLeft(FPosition + ALength, ALength - (FPosition + ALength));
+    Result := ALength;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKMemoryStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireWrite;
+  Lock;
   try
-    Result := InsertActual(ABuffer, ALength);
+    TLKMemoryStream(GetStream).AcquireWrite;
+    try
+      Result := InsertActual(ABuffer, ALength);
+    finally
+      TLKMemoryStream(GetStream).ReleaseWrite;
+    end;
   finally
-    TLKMemoryStream(GetStream).ReleaseWrite;
+    Unlock;
   end;
 end;
 
 function TLKMemoryStreamCaret.InsertActual(const ABuffer; const ALength: Int64): Int64;
+var
+  LStartPosition: Int64;
 begin
-  Result := 0;
-{ TODO -oSJS -cTLKMemoryStream : Implement Insert }
+  Lock;
+  try
+    Result := 0;
+    LStartPosition := FPosition;
+    FStream.Size := FStream.Size + ALength;
+    // Shift subsequent Bytes to the Right
+    System.Move(
+                  (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^,
+                  (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition + ALength)^,
+                  TLKMemoryStream(GetStream).FSize - (FPosition + ALength)
+               );
+    // Write the Data
+    WriteActual(ABuffer, ALength);
+    // Shift subsequent Carets to the Right
+    FStream.ShiftCaretsRight(LStartPosition, (FStream.Size - ALength) - LStartPosition);
+    Result := ALength;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKMemoryStreamCaret.MoveBytes(const ACount, AOffset: Int64): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireWrite;
+  Lock;
   try
-    Result := MoveBytes(ACount, AOffset);
+    TLKMemoryStream(GetStream).AcquireWrite;
+    try
+      Result := MoveBytes(ACount, AOffset);
+    finally
+      TLKMemoryStream(GetStream).ReleaseWrite;
+    end;
   finally
-    TLKMemoryStream(GetStream).ReleaseWrite;
+    Unlock;
   end;
 end;
 
@@ -952,58 +1122,83 @@ end;
 
 function TLKMemoryStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireRead;
+  Lock;
   try
-    Result := ReadActual(ABuffer, ALength);
+    TLKMemoryStream(GetStream).AcquireRead;
+    try
+      Result := ReadActual(ABuffer, ALength);
+    finally
+      TLKMemoryStream(GetStream).ReleaseRead;
+    end;
   finally
-    TLKMemoryStream(GetStream).ReleaseRead;
+    Unlock;
   end;
 end;
 
 function TLKMemoryStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int64;
 begin
-  Result := 0;
-  if (FPosition < 0) or (ALength < 0) then
-    Exit;
+  Lock;
+  try
+    Result := 0;
+    if (FPosition < 0) or (ALength < 0) then
+      Exit;
 
-  Result := TLKMemoryStream(GetStream).FSize - FPosition;
-  if Result > 0 then
-  begin
-    if Result > ALength then Result := ALength;
-    System.Move((PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^, ABuffer, Result);
-    Inc(FPosition, Result);
+    Result := TLKMemoryStream(GetStream).FSize - FPosition;
+    if Result > 0 then
+    begin
+      if Result > ALength then Result := ALength;
+      System.Move((PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^, ABuffer, Result);
+      Inc(FPosition, Result);
+    end;
+  finally
+    Unlock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireRead;
+  Lock;
   try
-    Result := SeekActual(AOffset, AOrigin);
+    TLKMemoryStream(GetStream).AcquireRead;
+    try
+      Result := SeekActual(AOffset, AOrigin);
+    finally
+      TLKMemoryStream(GetStream).ReleaseRead;
+    end;
+    FPosition := Result;
   finally
-    TLKMemoryStream(GetStream).ReleaseRead;
+    Unlock;
   end;
-  FPosition := Result;
 end;
 
 function TLKMemoryStreamCaret.SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  case AOrigin of
-    soBeginning: Result := AOffset;
-    soCurrent: Result := FPosition + AOffset;
-    soEnd: Result := TLKMemoryStream(FStream).FSize - AOffset;
-  else
-    Result := FPosition;
+  Lock;
+  try
+    case AOrigin of
+      soBeginning: Result := AOffset;
+      soCurrent: Result := FPosition + AOffset;
+      soEnd: Result := TLKMemoryStream(FStream).FSize - AOffset;
+    else
+      Result := FPosition;
+    end;
+  finally
+    Unlock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 begin
-  TLKMemoryStream(GetStream).AcquireWrite;
+  Lock;
   try
-    Result := WriteActual(ABuffer, ALength);
+    TLKMemoryStream(GetStream).AcquireWrite;
+    try
+      Result := WriteActual(ABuffer, ALength);
+    finally
+      TLKMemoryStream(GetStream).ReleaseWrite;
+    end;
   finally
-    TLKMemoryStream(GetStream).ReleaseWrite;
+    Unlock;
   end;
 end;
 
@@ -1011,21 +1206,26 @@ function TLKMemoryStreamCaret.WriteActual(const ABuffer; const ALength: Int64): 
 var
   LPos: Int64;
 begin
-  Result := 0;
-  LPos := FPosition + ALength;
+  Lock;
+  try
+    Result := 0;
+    LPos := FPosition + ALength;
 
-  if (FPosition < 0) or (ALength < 0) or (LPos <= 0) then
-    Exit;
+    if (FPosition < 0) or (ALength < 0) or (LPos <= 0) then
+      Exit;
 
-  if LPos > TLKMemoryStream(GetStream).FSize then
-  begin
-    if LPos > TLKMemoryStream(GetStream).FCapacity then
-      TLKMemoryStream(GetStream).SetCapacity(LPos);
-    TLKMemoryStream(GetStream).FSize := LPos;
+    if LPos > TLKMemoryStream(GetStream).FSize then
+    begin
+      if LPos > TLKMemoryStream(GetStream).FCapacity then
+        TLKMemoryStream(GetStream).SetCapacity(LPos);
+      TLKMemoryStream(GetStream).FSize := LPos;
+    end;
+    System.Move(ABuffer, (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^, ALength);
+    FPosition := LPos;
+    Result := ALength;
+  finally
+    Unlock;
   end;
-  System.Move(ABuffer, (PByte(TLKMemoryStream(GetStream).FMemory) + FPosition)^, ALength);
-  FPosition := LPos;
-  Result := ALength;
 end;
 
 { TLKMemoryStream }
@@ -1252,10 +1452,8 @@ begin
   LOldSize := FSize;
   SetCapacity(ASize);
   FSize := ASize;
-  if LOldSize < ASize then
-  begin
-    { TODO -oSJS -cTLKMemoryStream : Shift all Carets that're off the end of the Stream }
-  end;
+  if ASize < LOldSize then
+    InvalidateCarets(LOldSize, ASize - LOldSize);
 end;
 
 end.
