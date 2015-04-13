@@ -90,7 +90,9 @@ uses
   {$I LKSL_RTTI.inc}
 
 type
-  { Forward Declarations }
+  { Interface Forward Declarations }
+  ILKInterface = interface;
+  { Class Forward Declarations }
   TLKCriticalSection = class;
   TLKPersistent = class;
   TLKObject = class;
@@ -99,6 +101,14 @@ type
 
   { Exception Types }
   ELKException = class(Exception);
+
+  ///
+  ILKInterface = interface
+  ['{CAC7A376-703A-4D55-BFBE-423CCAF8F43A}']
+    procedure Lock;
+    function LockIfAvailable: Boolean;
+    procedure Unlock;
+  end;
 
   ///  <summary><c>Avoids CPU caching (which causes problems)</c></summary>
   TLKCriticalSection = class(TCriticalSection)
@@ -144,7 +154,7 @@ type
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
-  TLKInterfacedPersistent = class(TInterfacedPersistent)
+  TLKInterfacedPersistent = class(TInterfacedPersistent, ILKInterface)
   private
     FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;
@@ -159,7 +169,7 @@ type
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
-  TLKInterfacedObject = class(TInterfacedObject)
+  TLKInterfacedObject = class(TInterfacedObject, ILKInterface)
   private
     FInstanceGUID: TGUID;
     FLock: TLKCriticalSection;

@@ -74,7 +74,7 @@ uses
   procedure StreamDeleteAnsiChar(const AStream: TStream; const APosition: Int64); overload; platform;
   procedure StreamDeleteAnsiString(const AStream: TStream); overload; platform;
   procedure StreamDeleteAnsiString(const AStream: TStream; const APosition: Int64); overload; platform;
-{$IFEND}
+{$ENDIF}
 procedure StreamDeleteBoolean(const AStream: TStream); overload;
 procedure StreamDeleteBoolean(const AStream: TStream; const APosition: Int64); overload;
 procedure StreamDeleteByte(const AStream: TStream); overload;
@@ -286,6 +286,223 @@ procedure StreamWriteTime(const AStream: TStream; const AValue: TTime; const APo
 {$ENDIF}
 procedure StreamWriteWord(const AStream: TStream; const AValue: Word); overload;
 procedure StreamWriteWord(const AStream: TStream; const AValue: Word; const APosition: Int64); overload;
+
+// Delete Methods
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamDeleteAnsiChar(const ACaret: ILKStreamCaret); overload; platform;
+  procedure StreamDeleteAnsiChar(const ACaret: ILKStreamCaret; const APosition: Int64); overload; platform;
+  procedure StreamDeleteAnsiString(const ACaret: ILKStreamCaret); overload; platform;
+  procedure StreamDeleteAnsiString(const ACaret: ILKStreamCaret; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamDeleteBoolean(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteBoolean(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteByte(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteByte(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteCardinal(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteCardinal(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteChar(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteChar(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteCurrency(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteCurrency(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteDate(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteDate(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteDateTime(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteDateTime(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteDouble(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteDouble(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteExtended(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteExtended(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteGUID(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteGUID(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteInt64(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteInt64(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteInteger(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteInteger(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteLongInt(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteLongInt(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteShortInt(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteShortInt(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteShortString(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteShortString(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteSingle(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteSingle(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteSmallInt(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteSmallInt(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteString(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteString(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteStream(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteStream(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTime(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTime(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteWideString(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteWideString(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteWord(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteWord(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+// Insert Methods
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar); overload; platform;
+  procedure StreamInsertAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar; const APosition: Int64); overload; platform;
+  procedure StreamInsertAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString); overload; platform;
+  procedure StreamInsertAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamInsertBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean); overload;
+procedure StreamInsertBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean; const APosition: Int64); overload;
+procedure StreamInsertByte(const ACaret: ILKStreamCaret; const AValue: Byte); overload;
+procedure StreamInsertByte(const ACaret: ILKStreamCaret; const AValue: Byte; const APosition: Int64); overload;
+procedure StreamInsertCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal); overload;
+procedure StreamInsertCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal; const APosition: Int64); overload;
+procedure StreamInsertChar(const ACaret: ILKStreamCaret; const AValue: Char); overload;
+procedure StreamInsertChar(const ACaret: ILKStreamCaret; const AValue: Char; const APosition: Int64); overload;
+procedure StreamInsertCurrency(const ACaret: ILKStreamCaret; const AValue: Currency); overload;
+procedure StreamInsertCurrency(const ACaret: ILKStreamCaret; const AValue: Currency; const APosition: Int64); overload;
+procedure StreamInsertDate(const ACaret: ILKStreamCaret; const AValue: TDate); overload;
+procedure StreamInsertDate(const ACaret: ILKStreamCaret; const AValue: TDate; const APosition: Int64); overload;
+procedure StreamInsertDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime); overload;
+procedure StreamInsertDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime; const APosition: Int64); overload;
+procedure StreamInsertDouble(const ACaret: ILKStreamCaret; const AValue: Double); overload;
+procedure StreamInsertDouble(const ACaret: ILKStreamCaret; const AValue: Double; const APosition: Int64); overload;
+procedure StreamInsertExtended(const ACaret: ILKStreamCaret; const AValue: Extended); overload;
+procedure StreamInsertExtended(const ACaret: ILKStreamCaret; const AValue: Extended; const APosition: Int64); overload;
+procedure StreamInsertGUID(const ACaret: ILKStreamCaret; const AValue: TGUID); overload;
+procedure StreamInsertGUID(const ACaret: ILKStreamCaret; const AValue: TGUID; const APosition: Int64); overload;
+procedure StreamInsertInteger(const ACaret: ILKStreamCaret; const AValue: Integer); overload;
+procedure StreamInsertInteger(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64); overload;
+procedure StreamInsertInt64(const ACaret: ILKStreamCaret; const AValue: Int64); overload;
+procedure StreamInsertInt64(const ACaret: ILKStreamCaret; const AValue, APosition: Int64); overload;
+procedure StreamInsertLongInt(const ACaret: ILKStreamCaret; const AValue: Integer); overload;
+procedure StreamInsertLongInt(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64); overload;
+procedure StreamInsertSingle(const ACaret: ILKStreamCaret; const AValue: Single); overload;
+procedure StreamInsertSingle(const ACaret: ILKStreamCaret; const AValue: Single; const APosition: Int64); overload;
+procedure StreamInsertShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt); overload;
+procedure StreamInsertShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt; const APosition: Int64); overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertShortString(const ACaret: ILKStreamCaret; const AValue: ShortString); overload; platform;
+  procedure StreamInsertShortString(const ACaret: ILKStreamCaret; const AValue: ShortString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamInsertSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt); overload;
+procedure StreamInsertSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt; const APosition: Int64); overload;
+procedure StreamInsertString(const ACaret: ILKStreamCaret; const AValue: String); overload;
+procedure StreamInsertString(const ACaret: ILKStreamCaret; const AValue: String; const APosition: Int64); overload;
+procedure StreamInsertStream(const ACaret: ILKStreamCaret; const AValue: TStream); overload;
+procedure StreamInsertStream(const ACaret: ILKStreamCaret; const AValue: TStream; const APosition: Int64); overload;
+procedure StreamInsertTime(const ACaret: ILKStreamCaret; const AValue: TTime); overload;
+procedure StreamInsertTime(const ACaret: ILKStreamCaret; const AValue: TTime; const APosition: Int64); overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertWideString(const ACaret: ILKStreamCaret; const AValue: WideString); overload; platform;
+  procedure StreamInsertWideString(const ACaret: ILKStreamCaret; const AValue: WideString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamInsertWord(const ACaret: ILKStreamCaret; const AValue: Word); overload;
+procedure StreamInsertWord(const ACaret: ILKStreamCaret; const AValue: Word; const APosition: Int64); overload;
+// Read Methods
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadAnsiChar(const ACaret: ILKStreamCaret): AnsiChar; overload; platform;
+  function StreamReadAnsiChar(const ACaret: ILKStreamCaret; const APosition: Int64): AnsiChar; overload; platform;
+  function StreamReadAnsiString(const ACaret: ILKStreamCaret): AnsiString; overload; platform;
+  function StreamReadAnsiString(const ACaret: ILKStreamCaret; const APosition: Int64): AnsiString; overload; platform;
+{$ENDIF}
+function StreamReadBoolean(const ACaret: ILKStreamCaret): Boolean; overload;
+function StreamReadBoolean(const ACaret: ILKStreamCaret; const APosition: Int64): Boolean; overload;
+function StreamReadByte(const ACaret: ILKStreamCaret): Byte; overload;
+function StreamReadByte(const ACaret: ILKStreamCaret; const APosition: Int64): Byte; overload;
+function StreamReadCardinal(const ACaret: ILKStreamCaret): Cardinal; overload;
+function StreamReadCardinal(const ACaret: ILKStreamCaret; const APosition: Int64): Cardinal; overload;
+function StreamReadChar(const ACaret: ILKStreamCaret): Char; overload;
+function StreamReadChar(const ACaret: ILKStreamCaret; const APosition: Int64): Char; overload;
+function StreamReadCurrency(const ACaret: ILKStreamCaret): Currency; overload;
+function StreamReadCurrency(const ACaret: ILKStreamCaret; const APosition: Int64): Currency; overload;
+function StreamReadDate(const ACaret: ILKStreamCaret): TDate; overload;
+function StreamReadDate(const ACaret: ILKStreamCaret; const APosition: Int64): TDate; overload;
+function StreamReadDateTime(const ACaret: ILKStreamCaret): TDateTime; overload;
+function StreamReadDateTime(const ACaret: ILKStreamCaret; const APosition: Int64): TDateTime; overload;
+function StreamReadDouble(const ACaret: ILKStreamCaret): Double; overload;
+function StreamReadDouble(const ACaret: ILKStreamCaret; const APosition: Int64): Double; overload;
+function StreamReadExtended(const ACaret: ILKStreamCaret): Extended; overload;
+function StreamReadExtended(const ACaret: ILKStreamCaret; const APosition: Int64): Extended; overload;
+function StreamReadGUID(const ACaret: ILKStreamCaret): TGUID; overload;
+function StreamReadGUID(const ACaret: ILKStreamCaret; const APosition: Int64): TGUID; overload;
+function StreamReadInteger(const ACaret: ILKStreamCaret): Integer; overload;
+function StreamReadInteger(const ACaret: ILKStreamCaret; const APosition: Int64): Integer; overload;
+function StreamReadInt64(const ACaret: ILKStreamCaret): Int64; overload;
+function StreamReadInt64(const ACaret: ILKStreamCaret; const APosition: Int64): Int64; overload;
+function StreamReadLongInt(const ACaret: ILKStreamCaret): LongInt; overload;
+function StreamReadLongInt(const ACaret: ILKStreamCaret; const APosition: Int64): LongInt; overload;
+function StreamReadSingle(const ACaret: ILKStreamCaret): Single; overload;
+function StreamReadSingle(const ACaret: ILKStreamCaret; const APosition: Int64): Single; overload;
+function StreamReadShortInt(const ACaret: ILKStreamCaret): ShortInt; overload;
+function StreamReadShortInt(const ACaret: ILKStreamCaret; const APosition: Int64): ShortInt; overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadShortString(const ACaret: ILKStreamCaret): ShortString; overload; platform;
+  function StreamReadShortString(const ACaret: ILKStreamCaret; const APosition: Int64): ShortString; overload; platform;
+{$ENDIF}
+function StreamReadSmallInt(const ACaret: ILKStreamCaret): SmallInt; overload;
+function StreamReadSmallInt(const ACaret: ILKStreamCaret; const APosition: Int64): SmallInt; overload;
+function StreamReadString(const ACaret: ILKStreamCaret): String; overload;
+function StreamReadString(const ACaret: ILKStreamCaret; const APosition: Int64): String; overload;
+procedure StreamReadStream(const ACaret: ILKStreamCaret; const AOutStream: ILKStreamCaret); overload;
+procedure StreamReadStream(const ACaret: ILKStreamCaret; const AOutStream: ILKStreamCaret; const APosition: Int64); overload;
+function StreamReadTime(const ACaret: ILKStreamCaret): TTime; overload;
+function StreamReadTime(const ACaret: ILKStreamCaret; const APosition: Int64): TTime; overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadWideString(const ACaret: ILKStreamCaret): WideString; overload; platform;
+  function StreamReadWideString(const ACaret: ILKStreamCaret; const APosition: Int64): WideString; overload; platform;
+{$ENDIF}
+function StreamReadWord(const ACaret: ILKStreamCaret): Word; overload;
+function StreamReadWord(const ACaret: ILKStreamCaret; const APosition: Int64): Word; overload;
+// Write Methods
+{$IFDEF MSWINDOWS}
+  procedure StreamWriteAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar); overload; platform;
+  procedure StreamWriteAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar; const APosition: Int64); overload; platform;
+  procedure StreamWriteAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString); overload; platform;
+  procedure StreamWriteAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamWriteBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean); overload;
+procedure StreamWriteBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean; const APosition: Int64); overload;
+procedure StreamWriteByte(const ACaret: ILKStreamCaret; const AValue: Byte); overload;
+procedure StreamWriteByte(const ACaret: ILKStreamCaret; const AValue: Byte; const APosition: Int64); overload;
+procedure StreamWriteCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal); overload;
+procedure StreamWriteCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal; const APosition: Int64); overload;
+procedure StreamWriteChar(const ACaret: ILKStreamCaret; const AValue: Char); overload;
+procedure StreamWriteChar(const ACaret: ILKStreamCaret; const AValue: Char; const APosition: Int64); overload;
+procedure StreamWriteCurrency(const ACaret: ILKStreamCaret; const AValue: Currency); overload;
+procedure StreamWriteCurrency(const ACaret: ILKStreamCaret; const AValue: Currency; const APosition: Int64); overload;
+procedure StreamWriteDate(const ACaret: ILKStreamCaret; const AValue: TDate); overload;
+procedure StreamWriteDate(const ACaret: ILKStreamCaret; const AValue: TDate; const APosition: Int64); overload;
+procedure StreamWriteDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime); overload;
+procedure StreamWriteDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime; const APosition: Int64); overload;
+procedure StreamWriteDouble(const ACaret: ILKStreamCaret; const AValue: Double); overload;
+procedure StreamWriteDouble(const ACaret: ILKStreamCaret; const AValue: Double; const APosition: Int64); overload;
+procedure StreamWriteExtended(const ACaret: ILKStreamCaret; const AValue: Extended); overload;
+procedure StreamWriteExtended(const ACaret: ILKStreamCaret; const AValue: Extended; const APosition: Int64); overload;
+procedure StreamWriteGUID(const ACaret: ILKStreamCaret; const AValue: TGUID); overload;
+procedure StreamWriteGUID(const ACaret: ILKStreamCaret; const AValue: TGUID; const APosition: Int64); overload;
+procedure StreamWriteInteger(const ACaret: ILKStreamCaret; const AValue: Integer); overload;
+procedure StreamWriteInteger(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64); overload;
+procedure StreamWriteInt64(const ACaret: ILKStreamCaret; const AValue: Int64); overload;
+procedure StreamWriteInt64(const ACaret: ILKStreamCaret; const AValue, APosition: Int64); overload;
+procedure StreamWriteLongInt(const ACaret: ILKStreamCaret; const AValue: Integer); overload;
+procedure StreamWriteLongInt(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64); overload;
+procedure StreamWriteSingle(const ACaret: ILKStreamCaret; const AValue: Single); overload;
+procedure StreamWriteSingle(const ACaret: ILKStreamCaret; const AValue: Single; const APosition: Int64); overload;
+procedure StreamWriteShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt); overload;
+procedure StreamWriteShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt; const APosition: Int64); overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteShortString(const ACaret: ILKStreamCaret; const AValue: ShortString); overload; platform;
+  procedure StreamWriteShortString(const ACaret: ILKStreamCaret; const AValue: ShortString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamWriteSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt); overload;
+procedure StreamWriteSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt; const APosition: Int64); overload;
+procedure StreamWriteString(const ACaret: ILKStreamCaret; const AValue: String); overload;
+procedure StreamWriteString(const ACaret: ILKStreamCaret; const AValue: String; const APosition: Int64); overload;
+procedure StreamWriteStream(const ACaret: ILKStreamCaret; const AValue: TStream); overload;
+procedure StreamWriteStream(const ACaret: ILKStreamCaret; const AValue: TStream; const APosition: Int64); overload;
+procedure StreamWriteTime(const ACaret: ILKStreamCaret; const AValue: TTime); overload;
+procedure StreamWriteTime(const ACaret: ILKStreamCaret; const AValue: TTime; const APosition: Int64); overload;
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteWideString(const ACaret: ILKStreamCaret; const AValue: WideString); overload; platform;
+  procedure StreamWriteWideString(const ACaret: ILKStreamCaret; const AValue: WideString; const APosition: Int64); overload; platform;
+{$ENDIF}
+procedure StreamWriteWord(const ACaret: ILKStreamCaret; const AValue: Word); overload;
+procedure StreamWriteWord(const ACaret: ILKStreamCaret; const AValue: Word; const APosition: Int64); overload;
 
 implementation
 
@@ -1450,6 +1667,1202 @@ procedure StreamWriteWord(const AStream: TStream; const AValue: Word; const APos
 begin
   AStream.Position := APosition;
   AStream.Write(AValue, SizeOf(Word));
+end;
+
+// Delete Methods
+
+{$IF Defined(MSWINDOWS) OR Defined(FPC)}
+  procedure StreamDeleteAnsiChar(const ACaret: ILKStreamCaret);
+  begin
+    ACaret.Delete(SizeOf(AnsiChar));
+  end;
+
+  procedure StreamDeleteAnsiChar(const ACaret: ILKStreamCaret; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamDeleteAnsiChar(ACaret);
+  end;
+
+  procedure StreamDeleteAnsiString(const ACaret: ILKStreamCaret);
+  var
+    LStringLength: Int64;
+  begin
+    ACaret.Read(LStringLength, SizeOf(Int64));
+    ACaret.Position := ACaret.Position - SizeOf(Int64);
+    ACaret.Delete(LStringLength + SizeOf(Int64));
+  end;
+
+  procedure StreamDeleteAnsiString(const ACaret: ILKStreamCaret; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamDeleteAnsiString(ACaret);
+  end;
+{$ENDIF}
+
+procedure StreamDeleteBoolean(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Boolean));
+end;
+
+procedure StreamDeleteBoolean(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteBoolean(ACaret);
+end;
+
+procedure StreamDeleteByte(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteByte(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteByte(ACaret);
+end;
+
+procedure StreamDeleteCardinal(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Cardinal));
+end;
+
+procedure StreamDeleteCardinal(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteCardinal(ACaret);
+end;
+
+procedure StreamDeleteChar(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Char));
+end;
+
+procedure StreamDeleteChar(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteChar(ACaret);
+end;
+
+procedure StreamDeleteCurrency(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Currency));
+end;
+
+procedure StreamDeleteCurrency(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteCurrency(ACaret);
+end;
+
+procedure StreamDeleteDate(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TDate));
+end;
+
+procedure StreamDeleteDate(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteDate(ACaret);
+end;
+
+procedure StreamDeleteDateTime(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TDateTime));
+end;
+
+procedure StreamDeleteDateTime(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteDateTime(ACaret);
+end;
+
+procedure StreamDeleteDouble(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Double));
+end;
+
+procedure StreamDeleteDouble(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteDouble(ACaret);
+end;
+
+procedure StreamDeleteExtended(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Extended));
+end;
+
+procedure StreamDeleteExtended(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteExtended(ACaret);
+end;
+
+procedure StreamDeleteGUID(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TGUID));
+end;
+
+procedure StreamDeleteGUID(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteGUID(ACaret);
+end;
+
+procedure StreamDeleteInt64(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Int64));
+end;
+
+procedure StreamDeleteInt64(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteInt64(ACaret);
+end;
+
+procedure StreamDeleteInteger(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Integer));
+end;
+
+procedure StreamDeleteInteger(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteInteger(ACaret);
+end;
+
+procedure StreamDeleteLongInt(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(LongInt));
+end;
+
+procedure StreamDeleteLongInt(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteLongInt(ACaret);
+end;
+
+procedure StreamDeleteShortInt(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(ShortInt));
+end;
+
+procedure StreamDeleteShortInt(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteShortInt(ACaret);
+end;
+
+procedure StreamDeleteShortString(const ACaret: ILKStreamCaret);
+var
+  LStringLength: Int64;
+begin
+  ACaret.Read(LStringLength, SizeOf(Int64));
+  ACaret.Position := ACaret.Position - SizeOf(Int64);
+  ACaret.Delete(LStringLength + SizeOf(Int64));
+end;
+
+procedure StreamDeleteShortString(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteShortString(ACaret);
+end;
+
+procedure StreamDeleteSingle(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Single));
+end;
+
+procedure StreamDeleteSingle(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteSingle(ACaret);
+end;
+
+procedure StreamDeleteSmallInt(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(SmallInt));
+end;
+
+procedure StreamDeleteSmallInt(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteSmallInt(ACaret);
+end;
+
+procedure StreamDeleteString(const ACaret: ILKStreamCaret);
+var
+  LStringLength: Int64;
+begin
+  ACaret.Read(LStringLength, SizeOf(Int64));
+  ACaret.Position := ACaret.Position - SizeOf(Int64);
+  ACaret.Delete(LStringLength - SizeOf(Int64));
+end;
+
+procedure StreamDeleteString(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteString(ACaret);
+end;
+
+procedure StreamDeleteStream(const ACaret: ILKStreamCaret);
+var
+  LStreamLength: Int64;
+begin
+  ACaret.Read(LStreamLength, SizeOf(Int64));
+  ACaret.Position := ACaret.Position - SizeOf(Int64);
+  ACaret.Delete(LStreamLength + SizeOf(Int64));
+end;
+
+procedure StreamDeleteStream(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteStream(ACaret);
+end;
+
+procedure StreamDeleteTime(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TTime));
+end;
+
+procedure StreamDeleteTime(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTime(ACaret);
+end;
+
+procedure StreamDeleteWideString(const ACaret: ILKStreamCaret);
+var
+  LStringLength: Int64;
+begin
+  ACaret.Read(LStringLength, SizeOf(Int64));
+  ACaret.Position := ACaret.Position - SizeOf(Int64);
+  ACaret.Delete(LStringLength + SizeOf(Int64));
+end;
+
+procedure StreamDeleteWideString(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteWideString(ACaret);
+end;
+
+procedure StreamDeleteWord(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Word));
+end;
+
+procedure StreamDeleteWord(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteWord(ACaret);
+end;
+
+// Insert Methods
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar);
+  begin
+    ACaret.Insert(AValue, SizeOf(AnsiChar));
+  end;
+
+  procedure StreamInsertAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertAnsiChar(ACaret, AValue);
+  end;
+
+  procedure StreamInsertAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    ACaret.Insert(LStringLength, SizeOf(Int64));
+    ACaret.Insert(AValue[1], LStringLength);
+  end;
+
+  procedure StreamInsertAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertAnsiString(ACaret, AValue);
+  end;
+{$ENDIF}
+procedure StreamInsertBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertBoolean(ACaret, AValue);
+end;
+
+procedure StreamInsertByte(const ACaret: ILKStreamCaret; const AValue: Byte);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertByte(const ACaret: ILKStreamCaret; const AValue: Byte; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertByte(ACaret, AValue);
+end;
+
+procedure StreamInsertCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertCardinal(ACaret, AValue);
+end;
+
+procedure StreamInsertChar(const ACaret: ILKStreamCaret; const AValue: Char);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertChar(const ACaret: ILKStreamCaret; const AValue: Char; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertChar(ACaret, AValue);
+end;
+
+procedure StreamInsertCurrency(const ACaret: ILKStreamCaret; const AValue: Currency);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertCurrency(const ACaret: ILKStreamCaret; const AValue: Currency; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertCurrency(ACaret, AValue);
+end;
+
+procedure StreamInsertDate(const ACaret: ILKStreamCaret; const AValue: TDate);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertDate(const ACaret: ILKStreamCaret; const AValue: TDate; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertDate(ACaret, AValue);
+end;
+
+procedure StreamInsertDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertDateTime(ACaret, AValue);
+end;
+
+procedure StreamInsertDouble(const ACaret: ILKStreamCaret; const AValue: Double);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertDouble(const ACaret: ILKStreamCaret; const AValue: Double; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertDouble(ACaret, AValue);
+end;
+
+procedure StreamInsertExtended(const ACaret: ILKStreamCaret; const AValue: Extended);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertExtended(const ACaret: ILKStreamCaret; const AValue: Extended; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertExtended(ACaret, AValue);
+end;
+
+procedure StreamInsertGUID(const ACaret: ILKStreamCaret; const AValue: TGUID);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertGUID(const ACaret: ILKStreamCaret; const AValue: TGUID; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertGUID(ACaret, AValue);
+end;
+
+procedure StreamInsertInteger(const ACaret: ILKStreamCaret; const AValue: Integer);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertInteger(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertInteger(ACaret, AValue);
+end;
+
+procedure StreamInsertInt64(const ACaret: ILKStreamCaret; const AValue: Int64);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertInt64(const ACaret: ILKStreamCaret; const AValue, APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertInt64(ACaret, AValue);
+end;
+
+procedure StreamInsertLongInt(const ACaret: ILKStreamCaret; const AValue: Integer);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertLongInt(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertLongInt(ACaret, AValue);
+end;
+
+procedure StreamInsertSingle(const ACaret: ILKStreamCaret; const AValue: Single);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertSingle(const ACaret: ILKStreamCaret; const AValue: Single; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertSingle(ACaret, AValue);
+end;
+
+procedure StreamInsertShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertShortInt(ACaret, AValue);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertShortString(const ACaret: ILKStreamCaret; const AValue: ShortString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    ACaret.Insert(LStringLength, SizeOf(Int64));
+    ACaret.Insert(AValue[1], LStringLength);
+  end;
+
+  procedure StreamInsertShortString(const ACaret: ILKStreamCaret; const AValue: ShortString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertShortString(ACaret, AValue);
+  end;
+{$ENDIF}
+
+procedure StreamInsertSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertSmallInt(ACaret, AValue);
+end;
+
+procedure StreamInsertString(const ACaret: ILKStreamCaret; const AValue: String);
+var
+  LStringLength: Int64;
+begin
+  LStringLength := ByteLength(AValue);
+  ACaret.Insert(LStringLength, SizeOf(Int64));
+  ACaret.Insert(AValue[1], LStringLength);
+end;
+
+procedure StreamInsertString(const ACaret: ILKStreamCaret; const AValue: String; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertString(ACaret, AValue);
+end;
+
+procedure StreamInsertStream(const ACaret: ILKStreamCaret; const AValue: TStream);
+var
+  I: Int64;
+  LByte: Byte;
+begin
+  ACaret.Lock;
+  try
+    StreamInsertInt64(ACaret, AValue.Size); // We need to know the size of the stream...
+    I := 0;
+    repeat
+      AValue.Position := I;
+      AValue.Read(LByte, 1);
+      ACaret.Insert(LByte, 1);
+      Inc(I);
+    until I > AValue.Size;
+  finally
+    ACaret.Unlock;
+  end;
+end;
+
+procedure StreamInsertStream(const ACaret: ILKStreamCaret; const AValue: TStream; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertStream(ACaret, AValue);
+end;
+
+procedure StreamInsertTime(const ACaret: ILKStreamCaret; const AValue: TTime);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertTime(const ACaret: ILKStreamCaret; const AValue: TTime; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTime(ACaret, AValue);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamInsertWideString(const ACaret: ILKStreamCaret; const AValue: WideString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := ByteLength(AValue);
+    ACaret.Insert(LStringLength, SizeOf(Int64));
+    ACaret.Insert(AValue[1], ByteLength(AValue));
+  end;
+
+  procedure StreamInsertWideString(const ACaret: ILKStreamCaret; const AValue: WideString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertWideString(ACaret, AValue);
+  end;
+{$ENDIF}
+
+procedure StreamInsertWord(const ACaret: ILKStreamCaret; const AValue: Word);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertWord(const ACaret: ILKStreamCaret; const AValue: Word; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertWord(ACaret, AValue);
+end;
+
+// Read Methods
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadAnsiChar(const ACaret: ILKStreamCaret): AnsiChar;
+  begin
+    ACaret.Read(Result, SizeOf(AnsiChar));
+  end;
+
+  function StreamReadAnsiChar(const ACaret: ILKStreamCaret; const APosition: Int64): AnsiChar;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadAnsiChar(ACaret);
+  end;
+
+  function StreamReadAnsiString(const ACaret: ILKStreamCaret): AnsiString;
+  var
+    LStringLength: Int64;
+  begin
+    ACaret.Read(LStringLength, SizeOf(Int64));
+    SetLength(Result, LStringLength);
+    ACaret.Read(Result[1], LStringLength);
+  end;
+
+  function StreamReadAnsiString(const ACaret: ILKStreamCaret; const APosition: Int64): AnsiString;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadAnsiString(ACaret);
+  end;
+{$ENDIF}
+
+function StreamReadBoolean(const ACaret: ILKStreamCaret): Boolean;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadBoolean(const ACaret: ILKStreamCaret; const APosition: Int64): Boolean;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadBoolean(ACaret);
+end;
+
+function StreamReadByte(const ACaret: ILKStreamCaret): Byte;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadByte(const ACaret: ILKStreamCaret; const APosition: Int64): Byte;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadByte(ACaret);
+end;
+
+function StreamReadCardinal(const ACaret: ILKStreamCaret): Cardinal;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadCardinal(const ACaret: ILKStreamCaret; const APosition: Int64): Cardinal;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadCardinal(ACaret);
+end;
+
+function StreamReadChar(const ACaret: ILKStreamCaret): Char;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadChar(const ACaret: ILKStreamCaret; const APosition: Int64): Char;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadChar(ACaret);
+end;
+
+function StreamReadCurrency(const ACaret: ILKStreamCaret): Currency;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadCurrency(const ACaret: ILKStreamCaret; const APosition: Int64): Currency;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadCurrency(ACaret);
+end;
+
+function StreamReadDate(const ACaret: ILKStreamCaret): TDate;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadDate(const ACaret: ILKStreamCaret; const APosition: Int64): TDate;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadDate(ACaret);
+end;
+
+function StreamReadDateTime(const ACaret: ILKStreamCaret): TDateTime;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadDateTime(const ACaret: ILKStreamCaret; const APosition: Int64): TDateTime;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadDateTime(ACaret);
+end;
+
+function StreamReadDouble(const ACaret: ILKStreamCaret): Double;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadDouble(const ACaret: ILKStreamCaret; const APosition: Int64): Double;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadDouble(ACaret);
+end;
+
+function StreamReadExtended(const ACaret: ILKStreamCaret): Extended;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadExtended(const ACaret: ILKStreamCaret; const APosition: Int64): Extended;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadExtended(ACaret);
+end;
+
+function StreamReadGUID(const ACaret: ILKStreamCaret): TGUID;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadGUID(const ACaret: ILKStreamCaret; const APosition: Int64): TGUID;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadGUID(ACaret);
+end;
+
+function StreamReadInteger(const ACaret: ILKStreamCaret): Integer;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadInteger(const ACaret: ILKStreamCaret; const APosition: Int64): Integer;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadInteger(ACaret);
+end;
+
+function StreamReadInt64(const ACaret: ILKStreamCaret): Int64;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadInt64(const ACaret: ILKStreamCaret; const APosition: Int64): Int64;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadInt64(ACaret);
+end;
+
+function StreamReadLongInt(const ACaret: ILKStreamCaret): LongInt;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadLongInt(const ACaret: ILKStreamCaret; const APosition: Int64): LongInt;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadLongInt(ACaret);
+end;
+
+function StreamReadSingle(const ACaret: ILKStreamCaret): Single;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadSingle(const ACaret: ILKStreamCaret; const APosition: Int64): Single;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadSingle(ACaret);
+end;
+
+function StreamReadShortInt(const ACaret: ILKStreamCaret): ShortInt;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadShortInt(const ACaret: ILKStreamCaret; const APosition: Int64): ShortInt;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadShortInt(ACaret);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadShortString(const ACaret: ILKStreamCaret): ShortString;
+  var
+    LStringLength: Int64;
+  begin
+    ACaret.Read(LStringLength, SizeOf(Int64));
+    SetLength(Result, LStringLength);
+    ACaret.Read(Result[1], LStringLength);
+  end;
+
+  function StreamReadShortString(const ACaret: ILKStreamCaret; const APosition: Int64): ShortString;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadShortString(ACaret);
+  end;
+{$ENDIF}
+
+function StreamReadSmallInt(const ACaret: ILKStreamCaret): SmallInt;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadSmallInt(const ACaret: ILKStreamCaret; const APosition: Int64): SmallInt;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadSmallInt(ACaret);
+end;
+
+function StreamReadString(const ACaret: ILKStreamCaret): String;
+var
+  LStringLength: Int64;
+  LValue: TBytes;
+begin
+  ACaret.Read(LStringLength, SizeOf(Int64));
+  SetLength(LValue, LStringLength);
+  ACaret.Read(LValue[0], LStringLength);
+  {$IFDEF FPC}
+    Result := UTF8CStringToUTF8String(PChar(LValue), Length(LValue));
+  {$ELSE}
+    Result := TEncoding.Unicode.GetString(LValue);
+  {$ENDIF FPC}
+end;
+
+function StreamReadString(const ACaret: ILKStreamCaret; const APosition: Int64): String;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadString(ACaret);
+end;
+
+procedure StreamReadStream(const ACaret: ILKStreamCaret; const AOutStream: ILKStreamCaret);
+var
+  LSize: Int64;
+  LValue: Array of Byte;
+begin
+  LSize := StreamReadInt64(ACaret);
+  SetLength(LValue, LSize);
+  ACaret.Read(LValue[0], LSize);
+  AOutStream.Insert(LValue, LSize);
+end;
+
+procedure StreamReadStream(const ACaret: ILKStreamCaret; const AOutStream: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamReadStream(ACaret, AOutStream);
+end;
+
+function StreamReadTime(const ACaret: ILKStreamCaret): TTime;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadTime(const ACaret: ILKStreamCaret; const APosition: Int64): TTime;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTime(ACaret);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  function StreamReadWideString(const ACaret: ILKStreamCaret): WideString;
+  var
+    LStringLength: Int64;
+    LValue: TBytes;
+  begin
+    ACaret.Read(LStringLength, SizeOf(Int64));
+    SetLength(LValue, LStringLength);
+    ACaret.Read(LValue[0], LStringLength);
+    {$IFDEF FPC}
+      Result := UTF8CStringToUTF8String(PChar(LValue), Length(LValue));
+    {$ELSE}
+      Result := TEncoding.Unicode.GetString(LValue);
+    {$ENDIF FPC}
+  end;
+
+  function StreamReadWideString(const ACaret: ILKStreamCaret; const APosition: Int64): WideString;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadWideString(ACaret);
+  end;
+{$ENDIF}
+
+function StreamReadWord(const ACaret: ILKStreamCaret): Word;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadWord(const ACaret: ILKStreamCaret; const APosition: Int64): Word;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadWord(ACaret);
+end;
+
+// Write Methods
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar);
+  begin
+    ACaret.Write(AValue, SizeOf(AnsiChar));
+  end;
+
+  procedure StreamWriteAnsiChar(const ACaret: ILKStreamCaret; const AValue: AnsiChar; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteAnsiChar(ACaret, AValue);
+  end;
+
+  procedure StreamWriteAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    ACaret.Write(LStringLength, SizeOf(Int64));
+    ACaret.Write(AValue[1], LStringLength);
+  end;
+
+  procedure StreamWriteAnsiString(const ACaret: ILKStreamCaret; const AValue: AnsiString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteAnsiString(ACaret, AValue);
+  end;
+{$ENDIF}
+procedure StreamWriteBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteBoolean(const ACaret: ILKStreamCaret; const AValue: Boolean; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteBoolean(ACaret, AValue);
+end;
+
+procedure StreamWriteByte(const ACaret: ILKStreamCaret; const AValue: Byte);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteByte(const ACaret: ILKStreamCaret; const AValue: Byte; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteByte(ACaret, AValue);
+end;
+
+procedure StreamWriteCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteCardinal(const ACaret: ILKStreamCaret; const AValue: Cardinal; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteCardinal(ACaret, AValue);
+end;
+
+procedure StreamWriteChar(const ACaret: ILKStreamCaret; const AValue: Char);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteChar(const ACaret: ILKStreamCaret; const AValue: Char; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteChar(ACaret, AValue);
+end;
+
+procedure StreamWriteCurrency(const ACaret: ILKStreamCaret; const AValue: Currency);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteCurrency(const ACaret: ILKStreamCaret; const AValue: Currency; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteCurrency(ACaret, AValue);
+end;
+
+procedure StreamWriteDate(const ACaret: ILKStreamCaret; const AValue: TDate);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteDate(const ACaret: ILKStreamCaret; const AValue: TDate; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteDate(ACaret, AValue);
+end;
+
+procedure StreamWriteDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteDateTime(const ACaret: ILKStreamCaret; const AValue: TDateTime; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteDateTime(ACaret, AValue);
+end;
+
+procedure StreamWriteDouble(const ACaret: ILKStreamCaret; const AValue: Double);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteDouble(const ACaret: ILKStreamCaret; const AValue: Double; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteDouble(ACaret, AValue);
+end;
+
+procedure StreamWriteExtended(const ACaret: ILKStreamCaret; const AValue: Extended);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteExtended(const ACaret: ILKStreamCaret; const AValue: Extended; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteExtended(ACaret, AValue);
+end;
+
+procedure StreamWriteGUID(const ACaret: ILKStreamCaret; const AValue: TGUID);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteGUID(const ACaret: ILKStreamCaret; const AValue: TGUID; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteGUID(ACaret, AValue);
+end;
+
+procedure StreamWriteInteger(const ACaret: ILKStreamCaret; const AValue: Integer);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteInteger(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteInteger(ACaret, AValue);
+end;
+
+procedure StreamWriteInt64(const ACaret: ILKStreamCaret; const AValue: Int64);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteInt64(const ACaret: ILKStreamCaret; const AValue, APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteInt64(ACaret, AValue);
+end;
+
+procedure StreamWriteLongInt(const ACaret: ILKStreamCaret; const AValue: Integer);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteLongInt(const ACaret: ILKStreamCaret; const AValue: Integer; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteLongInt(ACaret, AValue);
+end;
+
+procedure StreamWriteSingle(const ACaret: ILKStreamCaret; const AValue: Single);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteSingle(const ACaret: ILKStreamCaret; const AValue: Single; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteSingle(ACaret, AValue);
+end;
+
+procedure StreamWriteShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteShortInt(const ACaret: ILKStreamCaret; const AValue: ShortInt; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteShortInt(ACaret, AValue);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteShortString(const ACaret: ILKStreamCaret; const AValue: ShortString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := Length(AValue) * SizeOf(AnsiChar);
+    ACaret.Write(LStringLength, SizeOf(Int64));
+    ACaret.Write(AValue[1], LStringLength);
+  end;
+
+  procedure StreamWriteShortString(const ACaret: ILKStreamCaret; const AValue: ShortString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteShortString(ACaret, AValue);
+  end;
+{$ENDIF}
+
+procedure StreamWriteSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteSmallInt(const ACaret: ILKStreamCaret; const AValue: SmallInt; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteSmallInt(ACaret, AValue);
+end;
+
+procedure StreamWriteString(const ACaret: ILKStreamCaret; const AValue: String);
+var
+  LStringLength: Int64;
+begin
+  LStringLength := ByteLength(AValue);
+  ACaret.Write(LStringLength, SizeOf(Int64));
+  ACaret.Write(AValue[1], LStringLength);
+end;
+
+procedure StreamWriteString(const ACaret: ILKStreamCaret; const AValue: String; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteString(ACaret, AValue);
+end;
+
+procedure StreamWriteStream(const ACaret: ILKStreamCaret; const AValue: TStream);
+var
+  I: Int64;
+  LByte: Byte;
+begin
+  ACaret.Lock;
+  try
+    StreamWriteInt64(ACaret, AValue.Size); // We need to know the size of the stream...
+    I := 0;
+    repeat
+      AValue.Position := I;
+      AValue.Read(LByte, 1);
+      ACaret.Write(LByte, 1);
+      Inc(I);
+    until I > AValue.Size;
+  finally
+    ACaret.Unlock;
+  end;
+end;
+
+procedure StreamWriteStream(const ACaret: ILKStreamCaret; const AValue: TStream; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteStream(ACaret, AValue);
+end;
+
+procedure StreamWriteTime(const ACaret: ILKStreamCaret; const AValue: TTime);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteTime(const ACaret: ILKStreamCaret; const AValue: TTime; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTime(ACaret, AValue);
+end;
+
+{$IF DEFINED(MSWINDOWS) OR DEFINED(FPC)}
+  procedure StreamWriteWideString(const ACaret: ILKStreamCaret; const AValue: WideString);
+  var
+    LStringLength: Int64;
+  begin
+    LStringLength := ByteLength(AValue);
+    ACaret.Write(LStringLength, SizeOf(Int64));
+    ACaret.Write(AValue[1], ByteLength(AValue));
+  end;
+
+  procedure StreamWriteWideString(const ACaret: ILKStreamCaret; const AValue: WideString; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteWideString(ACaret, AValue);
+  end;
+{$ENDIF}
+
+procedure StreamWriteWord(const ACaret: ILKStreamCaret; const AValue: Word);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteWord(const ACaret: ILKStreamCaret; const AValue: Word; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteWord(ACaret, AValue);
 end;
 
 end.

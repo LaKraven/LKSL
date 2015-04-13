@@ -100,7 +100,7 @@ type
   { Generics Collections }
   TLKStreamCaretList = class(TLKList<TLKStreamCaret>);
 
-  ILKStreamCaret = interface
+  ILKStreamCaret = interface(ILKInterface)
   ['{D8E849E5-A5A1-4B4F-9AF6-BBD397216C5B}']
     function GetInvalid: Boolean;
     function GetPosition: Int64;
@@ -147,7 +147,7 @@ type
     property Stream: ILKStream read GetStream;
   end;
 
-  ILKStream = interface
+  ILKStream = interface(ILKInterface)
   ['{07F45B12-1DFC-453A-B95C-E00C9F5F4285}']
     function GetSize: Int64;
     procedure SetSize(const ASize: Int64);
