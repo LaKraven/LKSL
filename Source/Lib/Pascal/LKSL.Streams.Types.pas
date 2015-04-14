@@ -123,6 +123,74 @@ procedure StreamWriteTSmallPoint(const AStream: TStream; const AValue: TSmallPoi
   procedure StreamWriteTSizeF(const AStream: TStream; const AValue: TSizeF); overload;
   procedure StreamWriteTSizeF(const AStream: TStream; const AValue: TSizeF; const APosition: Int64); overload;
 {$ENDIF SUPPORTS_FIREMONKEY}
+
+// Delete Methods
+procedure StreamDeleteTPoint(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTPoint(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTRect(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTRect(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTSize(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTSize(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTSmallPoint(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTSmallPoint(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+// Insert Methods
+procedure StreamInsertTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint); overload;
+procedure StreamInsertTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint; const APosition: Int64); overload;
+procedure StreamInsertTRect(const ACaret: ILKStreamCaret; const AValue: TRect); overload;
+procedure StreamInsertTRect(const ACaret: ILKStreamCaret; const AValue: TRect; const APosition: Int64); overload;
+procedure StreamInsertTSize(const ACaret: ILKStreamCaret; const AValue: TSize); overload;
+procedure StreamInsertTSize(const ACaret: ILKStreamCaret; const AValue: TSize; const APosition: Int64); overload;
+procedure StreamInsertTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint); overload;
+procedure StreamInsertTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint; const APosition: Int64); overload;
+// Read Methods
+function StreamReadTPoint(const ACaret: ILKStreamCaret): TPoint; overload;
+function StreamReadTPoint(const ACaret: ILKStreamCaret; const APosition: Int64): TPoint; overload;
+function StreamReadTRect(const ACaret: ILKStreamCaret): TRect; overload;
+function StreamReadTRect(const ACaret: ILKStreamCaret; const APosition: Int64): TRect; overload;
+function StreamReadTSize(const ACaret: ILKStreamCaret): TSize; overload;
+function StreamReadTSize(const ACaret: ILKStreamCaret; const APosition: Int64): TSize; overload;
+function StreamReadTSmallPoint(const ACaret: ILKStreamCaret): TSmallPoint; overload;
+function StreamReadTSmallPoint(const ACaret: ILKStreamCaret; const APosition: Int64): TSmallPoint; overload;
+// Write Methods
+procedure StreamWriteTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint); overload;
+procedure StreamWriteTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint; const APosition: Int64); overload;
+procedure StreamWriteTRect(const ACaret: ILKStreamCaret; const AValue: TRect); overload;
+procedure StreamWriteTRect(const ACaret: ILKStreamCaret; const AValue: TRect; const APosition: Int64); overload;
+procedure StreamWriteTSize(const ACaret: ILKStreamCaret; const AValue: TSize); overload;
+procedure StreamWriteTSize(const ACaret: ILKStreamCaret; const AValue: TSize; const APosition: Int64); overload;
+procedure StreamWriteTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint); overload;
+procedure StreamWriteTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint; const APosition: Int64); overload;
+{$IFDEF SUPPORTS_FIREMONKEY}
+  // Delete Methods
+  procedure StreamDeleteTPointF(const ACaret: ILKStreamCaret); overload;
+  procedure StreamDeleteTPointF(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+  procedure StreamDeleteTRectF(const ACaret: ILKStreamCaret); overload;
+  procedure StreamDeleteTRectF(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+  procedure StreamDeleteTSizeF(const ACaret: ILKStreamCaret); overload;
+  procedure StreamDeleteTSizeF(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+  // Insert Methods
+  procedure StreamInsertTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF); overload;
+  procedure StreamInsertTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF; const APosition: Int64); overload;
+  procedure StreamInsertTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF); overload;
+  procedure StreamInsertTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF; const APosition: Int64); overload;
+  procedure StreamInsertTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF); overload;
+  procedure StreamInsertTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF; const APosition: Int64); overload;
+  // Read Methods
+  function StreamReadTPointF(const ACaret: ILKStreamCaret): TPointF; overload;
+  function StreamReadTPointF(const ACaret: ILKStreamCaret; const APosition: Int64): TPointF; overload;
+  function StreamReadTRectF(const ACaret: ILKStreamCaret): TRectF; overload;
+  function StreamReadTRectF(const ACaret: ILKStreamCaret; const APosition: Int64): TRectF; overload;
+  function StreamReadTSizeF(const ACaret: ILKStreamCaret): TSizeF; overload;
+  function StreamReadTSizeF(const ACaret: ILKStreamCaret; const APosition: Int64): TSizeF; overload;
+  // Write Methods
+  procedure StreamWriteTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF); overload;
+  procedure StreamWriteTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF; const APosition: Int64); overload;
+  procedure StreamWriteTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF); overload;
+  procedure StreamWriteTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF; const APosition: Int64); overload;
+  procedure StreamWriteTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF); overload;
+  procedure StreamWriteTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF; const APosition: Int64); overload;
+{$ENDIF SUPPORTS_FIREMONKEY}
+
 implementation
 
 uses
@@ -436,6 +504,321 @@ end;
   begin
     AStream.Position := APosition;
     AStream.Write(AValue, SizeOf(AValue));
+  end;
+{$ENDIF SUPPORTS_FIREMONKEY}
+
+// Delete Methods
+
+procedure StreamDeleteTPoint(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TPoint));
+end;
+
+procedure StreamDeleteTPoint(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTPoint(ACaret);
+end;
+
+procedure StreamDeleteTRect(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TRect));
+end;
+
+procedure StreamDeleteTRect(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  StreamDeleteTRect(ACaret);
+end;
+
+procedure StreamDeleteTSize(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TSize));
+end;
+
+procedure StreamDeleteTSize(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  StreamDeleteTSize(ACaret);
+end;
+
+procedure StreamDeleteTSmallPoint(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(TSmallPoint));
+end;
+
+procedure StreamDeleteTSmallPoint(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  StreamDeleteTSmallPoint(ACaret);
+end;
+
+// Insert Methods
+
+procedure StreamInsertTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTPoint(ACaret, AValue);
+end;
+
+procedure StreamInsertTRect(const ACaret: ILKStreamCaret; const AValue: TRect);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertTRect(const ACaret: ILKStreamCaret; const AValue: TRect; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTRect(ACaret, AValue);
+end;
+
+procedure StreamInsertTSize(const ACaret: ILKStreamCaret; const AValue: TSize);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertTSize(const ACaret: ILKStreamCaret; const AValue: TSize; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTSize(ACaret, AValue);
+end;
+
+procedure StreamInsertTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint);
+begin
+  ACaret.Insert(AValue, SizeOf(AValue));
+end;
+
+procedure StreamInsertTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTSmallPoint(ACaret, AValue);
+end;
+
+// Read Methods
+
+function StreamReadTPoint(const ACaret: ILKStreamCaret): TPoint;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadTPoint(const ACaret: ILKStreamCaret; const APosition: Int64): TPoint;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTPoint(ACaret);
+end;
+
+function StreamReadTRect(const ACaret: ILKStreamCaret): TRect;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadTRect(const ACaret: ILKStreamCaret; const APosition: Int64): TRect;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTRect(ACaret);
+end;
+
+function StreamReadTSize(const ACaret: ILKStreamCaret): TSize;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadTSize(const ACaret: ILKStreamCaret; const APosition: Int64): TSize;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTSize(ACaret);
+end;
+
+function StreamReadTSmallPoint(const ACaret: ILKStreamCaret): TSmallPoint;
+begin
+  ACaret.Read(Result, SizeOf(Result));
+end;
+
+function StreamReadTSmallPoint(const ACaret: ILKStreamCaret; const APosition: Int64): TSmallPoint;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTSmallPoint(ACaret);
+end;
+
+// Write Methods
+
+procedure StreamWriteTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteTPoint(const ACaret: ILKStreamCaret; const AValue: TPoint; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTPoint(ACaret, AValue);
+end;
+
+procedure StreamWriteTRect(const ACaret: ILKStreamCaret; const AValue: TRect);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteTRect(const ACaret: ILKStreamCaret; const AValue: TRect; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTRect(ACaret, AValue);
+end;
+
+procedure StreamWriteTSize(const ACaret: ILKStreamCaret; const AValue: TSize);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteTSize(const ACaret: ILKStreamCaret; const AValue: TSize; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTSize(ACaret, AValue);
+end;
+
+procedure StreamWriteTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint);
+begin
+  ACaret.Write(AValue, SizeOf(AValue));
+end;
+
+procedure StreamWriteTSmallPoint(const ACaret: ILKStreamCaret; const AValue: TSmallPoint; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTSmallPoint(ACaret, AValue);
+end;
+
+{$IFDEF SUPPORTS_FIREMONKEY}
+  procedure StreamDeleteTPointF(const ACaret: ILKStreamCaret);
+  begin
+    ACaret.Delete(SizeOf(TPointF));
+  end;
+
+  procedure StreamDeleteTPointF(const ACaret: ILKStreamCaret; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamDeleteTPointF(ACaret);
+  end;
+
+  procedure StreamDeleteTRectF(const ACaret: ILKStreamCaret);
+  begin
+    ACaret.Delete(SizeOf(TRectF));
+  end;
+
+  procedure StreamDeleteTRectF(const ACaret: ILKStreamCaret; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamDeleteTRectF(ACaret);
+  end;
+
+  procedure StreamDeleteTSizeF(const ACaret: ILKStreamCaret);
+  begin
+    ACaret.Delete(SizeOf(TSizeF));
+  end;
+
+  procedure StreamDeleteTSizeF(const ACaret: ILKStreamCaret; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamDeleteTSizeF(ACaret);
+  end;
+
+  procedure StreamInsertTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF);
+  begin
+    ACaret.Insert(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamInsertTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertTPointF(ACaret, AValue);
+  end;
+
+  procedure StreamInsertTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF);
+  begin
+    ACaret.Insert(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamInsertTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertTRectF(ACaret, AValue);
+  end;
+
+  procedure StreamInsertTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF);
+  begin
+    ACaret.Insert(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamInsertTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamInsertTSizeF(ACaret, AValue);
+  end;
+
+  function StreamReadTPointF(const ACaret: ILKStreamCaret): TPointF;
+  begin
+    ACaret.Read(Result, SizeOf(Result));
+  end;
+
+  function StreamReadTPointF(const ACaret: ILKStreamCaret; const APosition: Int64): TPointF;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadTPointF(ACaret);
+  end;
+
+  function StreamReadTRectF(const ACaret: ILKStreamCaret): TRectF;
+  begin
+    ACaret.Read(Result, SizeOf(Result));
+  end;
+
+  function StreamReadTRectF(const ACaret: ILKStreamCaret; const APosition: Int64): TRectF;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadTRectF(ACaret);
+  end;
+
+  function StreamReadTSizeF(const ACaret: ILKStreamCaret): TSizeF;
+  begin
+    ACaret.Read(Result, SizeOf(Result));
+  end;
+
+  function StreamReadTSizeF(const ACaret: ILKStreamCaret; const APosition: Int64): TSizeF;
+  begin
+    ACaret.Position := APosition;
+    Result := StreamReadTSizeF(ACaret);
+  end;
+
+  procedure StreamWriteTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF);
+  begin
+    Acaret.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamWriteTPointF(const ACaret: ILKStreamCaret; const AValue: TPointF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteTPointF(ACaret, AValue);
+  end;
+
+  procedure StreamWriteTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF);
+  begin
+    Acaret.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamWriteTRectF(const ACaret: ILKStreamCaret; const AValue: TRectF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteTRectF(ACaret, AValue);
+  end;
+
+  procedure StreamWriteTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF);
+  begin
+    Acaret.Write(AValue, SizeOf(AValue));
+  end;
+
+  procedure StreamWriteTSizeF(const ACaret: ILKStreamCaret; const AValue: TSizeF; const APosition: Int64);
+  begin
+    ACaret.Position := APosition;
+    StreamWriteTSizeF(ACaret, AValue);
   end;
 {$ENDIF SUPPORTS_FIREMONKEY}
 
