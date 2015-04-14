@@ -152,6 +152,15 @@ type
     function GetSize: Int64;
     procedure SetSize(const ASize: Int64);
 
+    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
+    procedure AcquireRead;
+    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
+    procedure AcquireWrite;
+    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
+    procedure ReleaseRead;
+    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
+    procedure ReleaseWrite;
+
     procedure LoadFromFile(const AFileName: String);
     procedure LoadFromStream(const AStream: ILKStream); overload;
     procedure LoadFromStream(const AStream: TStream); overload;
@@ -193,14 +202,7 @@ type
 
   ILKMemoryStream  = interface(ILKStream)
   ['{289F1193-AE69-47D6-B66B-0174070963B5}']
-    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
-    procedure AcquireRead;
-    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
-    procedure AcquireWrite;
-    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
-    procedure ReleaseRead;
-    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
-    procedure ReleaseWrite;
+
   end;
 
   ///  <summary><c>Abstract Base Class for Stream Reading Carets.</c></summary>
@@ -287,6 +289,11 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
+    procedure AcquireRead; virtual; abstract;
+    procedure AcquireWrite; virtual; abstract;
+    procedure ReleaseRead; virtual; abstract;
+    procedure ReleaseWrite; virtual; abstract;
+
     procedure LoadFromFile(const AFileName: String); virtual; abstract;
     procedure LoadFromStream(const AStream: ILKStream); overload; virtual; abstract;
     procedure LoadFromStream(const AStream: TStream); overload; virtual; abstract;
@@ -350,6 +357,11 @@ type
     procedure SetSize(const ASize: Int64); override;
   public
     constructor Create(const AHandle: THandle); reintroduce;
+
+    procedure AcquireRead; override;
+    procedure AcquireWrite; override;
+    procedure ReleaseRead; override;
+    procedure ReleaseWrite; override;
 
     procedure LoadFromFile(const AFileName: String); override;
     procedure LoadFromStream(const AStream: ILKStream); overload; override;
@@ -457,13 +469,13 @@ type
     destructor Destroy; override;
 
     ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
-    procedure AcquireRead;
+    procedure AcquireRead; override;
     ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
-    procedure AcquireWrite;
+    procedure AcquireWrite; override;
     ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
-    procedure ReleaseRead;
+    procedure ReleaseRead; override;
     ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
-    procedure ReleaseWrite;
+    procedure ReleaseWrite; override;
 
     procedure LoadFromFile(const AFileName: String); override;
     procedure LoadFromStream(const AStream: ILKStream); overload; override;
@@ -546,6 +558,7 @@ end;
 
 function TLKStreamCaret.Delete(const ALength: Int64): Int64;
 begin
+  Result := 0;
   CheckCaretValid;
 end;
 
@@ -576,16 +589,19 @@ end;
 
 function TLKStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
 begin
+  Result := 0;
   CheckCaretValid;
 end;
 
 function TLKStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
+  Result := 0;
   CheckCaretValid;
 end;
 
 function TLKStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
+  Result := 0;
   CheckCaretValid;
 end;
 
@@ -596,6 +612,7 @@ end;
 
 function TLKStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 begin
+  Result := 0;
   CheckCaretValid;
 end;
 
@@ -834,6 +851,16 @@ end;
 
 { TLKHandleStream }
 
+procedure TLKHandleStream.AcquireRead;
+begin
+  Lock;
+end;
+
+procedure TLKHandleStream.AcquireWrite;
+begin
+  Lock;
+end;
+
 constructor TLKHandleStream.Create(const AHandle: THandle);
 begin
   FHandle := AHandle;
@@ -908,6 +935,16 @@ begin
   finally
     Unlock;
   end;
+end;
+
+procedure TLKHandleStream.ReleaseRead;
+begin
+  Unlock;
+end;
+
+procedure TLKHandleStream.ReleaseWrite;
+begin
+  Unlock;
 end;
 
 procedure TLKHandleStream.SaveToFile(const AFileName: String);

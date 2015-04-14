@@ -338,8 +338,13 @@ end;
 
 procedure TLKStreamable.LoadFromStream(const ACaret: ILKStreamCaret; const APosition: Int64);
 begin
-  ACaret.Position := APosition;
-  LoadFromStream(ACaret);
+  ACaret.Stream.AcquireRead;
+  try
+    ACaret.Position := APosition;
+    LoadFromStream(ACaret);
+  finally
+    ACaret.Stream.ReleaseRead;
+  end;
 end;
 
 class procedure TLKStreamable.OnRegistration;
@@ -363,15 +368,20 @@ var
 begin
   Lock;
   try
-    LSignature := StreamReadGUID(ACaret); // Read the GUID
-    if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
-    begin
-      {LEngineVersion := }StreamReadByte(ACaret); // Need to advance the Stream past the Engine Version byte
-      FBlockSize := StreamReadInt64(ACaret); // Read the Block Size
-      FVersion := StreamReadDouble(ACaret); // Read the Version
-      ReadFromStream(ACaret); // Read this type's specific values
-    end else
-      raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
+    ACaret.Stream.AcquireRead;
+    try
+      LSignature := StreamReadGUID(ACaret); // Read the GUID
+      if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
+      begin
+        {LEngineVersion := }StreamReadByte(ACaret); // Need to advance the Stream past the Engine Version byte
+        FBlockSize := StreamReadInt64(ACaret); // Read the Block Size
+        FVersion := StreamReadDouble(ACaret); // Read the Version
+        ReadFromStream(ACaret); // Read this type's specific values
+      end else
+        raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
+    finally
+      ACaret.Stream.ReleaseRead;
+    end;
   finally
     Unlock;
   end;
@@ -440,24 +450,29 @@ var
 begin
   Lock;
   try
-    LBlockStart := ACaret.Position;
+    ACaret.Stream.AcquireWrite;
+    try
+      LBlockStart := ACaret.Position;
 
-    StreamWriteGUID(ACaret, GetTypeGUID); // Write the GUID
-    StreamWriteByte(ACaret, STREAMABLES_ENGINE_VERSION); // Write the Engine Version
+      StreamWriteGUID(ACaret, GetTypeGUID); // Write the GUID
+      StreamWriteByte(ACaret, STREAMABLES_ENGINE_VERSION); // Write the Engine Version
 
-    LBlockSizePos := ACaret.Position;
+      LBlockSizePos := ACaret.Position;
 
-    StreamWriteInt64(ACaret, 0); // Write the default Block Size (0)
-    StreamWriteDouble(ACaret, GetTypeVersion); // Write the Version
+      StreamWriteInt64(ACaret, 0); // Write the default Block Size (0)
+      StreamWriteDouble(ACaret, GetTypeVersion); // Write the Version
 
-    WriteToStream(ACaret);
+      WriteToStream(ACaret);
 
-    LBlockEnd := ACaret.Position;
-    FBlockSize := ACaret.Position - LBlockStart;
+      LBlockEnd := ACaret.Position;
+      FBlockSize := ACaret.Position - LBlockStart;
 
-    StreamWriteInt64(ACaret, FBlockSize, LBlockSizePos); // Update the Block Size
+      StreamWriteInt64(ACaret, FBlockSize, LBlockSizePos); // Update the Block Size
 
-    ACaret.Position := LBlockEnd;
+      ACaret.Position := LBlockEnd;
+    finally
+      ACaret.Stream.ReleaseWrite;
+    end;
   finally
     Unlock;
   end;
