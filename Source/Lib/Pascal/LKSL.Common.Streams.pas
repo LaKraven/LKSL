@@ -55,7 +55,8 @@ uses
   {$ELSE}
     Classes, SysUtils,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  LKSL.Common.Types;
+  LKSL.Common.Types,
+  LKSL.Streams.Main;
 
   {$I LKSL_RTTI.inc}
 
@@ -72,10 +73,23 @@ function StreamReadLKFloat(const AStream: TStream; const APosition: Int64): LKFl
 procedure StreamWriteLKFloat(const AStream: TStream; const AValue: LKFloat); overload;
 procedure StreamWriteLKFloat(const AStream: TStream; const AValue: LKFloat; const APosition: Int64); overload;
 
+// Delete Methods
+procedure StreamDeleteLKFloat(const ACaret: ILKStreamCaret); overload; inline;
+procedure StreamDeleteLKFloat(const ACaret: ILKStreamCaret; const APosition: Int64); overload; inline;
+// Insert Methods
+procedure StreamInsertLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat); overload; inline;
+procedure StreamInsertLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat; const APosition: Int64); overload; inline;
+// Read Methods
+function StreamReadLKFloat(const ACaret: ILKStreamCaret): LKFloat; overload; inline;
+function StreamReadLKFloat(const ACaret: ILKStreamCaret; const APosition: Int64): LKFloat; overload; inline;
+// Write Methods
+procedure StreamWriteLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat); overload; inline;
+procedure StreamWriteLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat; const APosition: Int64); overload; inline;
+
 implementation
 
 uses
-  LKSL.Streams.Main, LKSL.Streams.System;
+  LKSL.Streams.System;
 
 procedure StreamDeleteLKFloat(const AStream: TStream);
 begin
@@ -118,6 +132,50 @@ procedure StreamWriteLKFloat(const AStream: TStream; const AValue: LKFloat; cons
 begin
   AStream.Position := APosition;
   AStream.Write(AValue, SizeOf(LKFloat));
+end;
+
+procedure StreamDeleteLKFloat(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(LKFloat));
+end;
+
+procedure StreamDeleteLKFloat(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteLKFloat(ACaret);
+end;
+
+procedure StreamInsertLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat);
+begin
+  ACaret.Insert(AValue, SizeOf(LKFloat));
+end;
+
+procedure StreamInsertLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertLKFloat(ACaret, AValue);
+end;
+
+function StreamReadLKFloat(const ACaret: ILKStreamCaret): LKFloat;
+begin
+  ACaret.Read(Result, SizeOf(LKFloat));
+end;
+
+function StreamReadLKFloat(const ACaret: ILKStreamCaret; const APosition: Int64): LKFloat;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadLKFloat(ACaret);
+end;
+
+procedure StreamWriteLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat);
+begin
+  ACaret.Write(AValue, SizeOf(LKFloat));
+end;
+
+procedure StreamWriteLKFloat(const ACaret: ILKStreamCaret; const AValue: LKFloat; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteLKFloat(ACaret, AValue);
 end;
 
 end.
