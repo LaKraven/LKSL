@@ -55,6 +55,7 @@ uses
     Classes, SysUtils,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
+  LKSL.Streams.Main,
   LKSL.Events.Main;
 
   {$I LKSL_RTTI.inc}
@@ -104,10 +105,54 @@ procedure StreamWriteTLKEventState(const AStream: TStream; const AValue: TLKEven
 procedure StreamWriteTLKEventTarget(const AStream: TStream; const AValue: TLKEventTarget); overload;
 procedure StreamWriteTLKEventTarget(const AStream: TStream; const AValue: TLKEventTarget; const APosition: Int64); overload;
 
+procedure StreamDeleteTLKEventDispatchMethod(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventLifetimeControl(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventOrigin(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTLKEventOrigin(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventState(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTLKEventState(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+procedure StreamDeleteTLKEventTarget(const ACaret: ILKStreamCaret); overload;
+procedure StreamDeleteTLKEventTarget(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+// Insert Methods
+procedure StreamInsertTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod); overload;
+procedure StreamInsertTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
+procedure StreamInsertTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl); overload;
+procedure StreamInsertTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl; const APosition: Int64); overload;
+procedure StreamInsertTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin); overload;
+procedure StreamInsertTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin; const APosition: Int64); overload;
+procedure StreamInsertTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState); overload;
+procedure StreamInsertTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState; const APosition: Int64); overload;
+procedure StreamInsertTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget); overload;
+procedure StreamInsertTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget; const APosition: Int64); overload;
+// Read Methods
+function StreamReadTLKEventDispatchMethod(const ACaret: ILKStreamCaret): TLKEventDispatchMethod; overload;
+function StreamReadTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventDispatchMethod; overload;
+function StreamReadTLKEventLifetimeControl(const ACaret: ILKStreamCaret): TLKEventLifetimeControl; overload;
+function StreamReadTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventLifetimeControl; overload;
+function StreamReadTLKEventOrigin(const ACaret: ILKStreamCaret): TLKEventOrigin; overload;
+function StreamReadTLKEventOrigin(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventOrigin; overload;
+function StreamReadTLKEventState(const ACaret: ILKStreamCaret): TLKEventState; overload;
+function StreamReadTLKEventState(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventState; overload;
+function StreamReadTLKEventTarget(const ACaret: ILKStreamCaret): TLKEventTarget; overload;
+function StreamReadTLKEventTarget(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventTarget; overload;
+// Write Methods
+procedure StreamWriteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod); overload;
+procedure StreamWriteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod; const APosition: Int64); overload;
+procedure StreamWriteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl); overload;
+procedure StreamWriteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl; const APosition: Int64); overload;
+procedure StreamWriteTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin); overload;
+procedure StreamWriteTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin; const APosition: Int64); overload;
+procedure StreamWriteTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState); overload;
+procedure StreamWriteTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState; const APosition: Int64); overload;
+procedure StreamWriteTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget); overload;
+procedure StreamWriteTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget; const APosition: Int64); overload;
+
 implementation
 
 uses
-  LKSL.Streams.Main, LKSL.Streams.System;
+  LKSL.Streams.System;
 
   {$I LKSL_RTTI.inc}
 
@@ -377,6 +422,279 @@ const
 begin
   AStream.Position := APosition;
   AStream.Write(TARGETS[AValue], SizeOf(Byte));
+end;
+
+// Delete Methods
+
+procedure StreamDeleteTLKEventDispatchMethod(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTLKEventDispatchMethod(ACaret);
+end;
+
+procedure StreamDeleteTLKEventLifetimeControl(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTLKEventLifetimeControl(ACaret);
+end;
+
+procedure StreamDeleteTLKEventOrigin(const ACaret: ILKStreamCaret); overload;
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteTLKEventOrigin(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTLKEventOrigin(ACaret);
+end;
+
+procedure StreamDeleteTLKEventState(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteTLKEventState(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTLKEventState(ACaret);
+end;
+
+procedure StreamDeleteTLKEventTarget(const ACaret: ILKStreamCaret);
+begin
+  ACaret.Delete(SizeOf(Byte));
+end;
+
+procedure StreamDeleteTLKEventTarget(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamDeleteTLKEventTarget(ACaret);
+end;
+
+// Insert Methods
+
+procedure StreamInsertTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod);
+const
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Byte = (0, 1, 2);
+begin
+  ACaret.Insert(DISPATCH_METHODS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamInsertTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTLKEventDispatchMethod(ACaret, AValue);
+end;
+
+procedure StreamInsertTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl);
+const
+  LIFETIME_CONTROL: Array[TLKEventLifetimeControl] of Byte = (0, 1);
+begin
+  ACaret.Insert(LIFETIME_CONTROL[AValue], SizeOf(Byte));
+end;
+
+procedure StreamInsertTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTLKEventLifetimeControl(ACaret, AValue);
+end;
+
+procedure StreamInsertTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin);
+const
+  ORIGINS: Array[TLKEventOrigin] of Byte = (0, 1, 2, 3);
+begin
+  ACaret.Insert(ORIGINS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamInsertTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTLKEventOrigin(ACaret, AValue);
+end;
+
+procedure StreamInsertTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState);
+const
+  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4, 5);
+begin
+  ACaret.Insert(STATES[AValue], SizeOf(Byte));
+end;
+
+procedure StreamInsertTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTLKEventState(ACaret, AValue);
+end;
+
+procedure StreamInsertTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget);
+const
+  TARGETS: Array[TLKEventTarget] of Byte = (0, 1, 2, 3, 4);
+begin
+  ACaret.Insert(TARGETS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamInsertTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamInsertTLKEventTarget(ACaret, AValue);
+end;
+
+// Read Methods
+
+function StreamReadTLKEventDispatchMethod(const ACaret: ILKStreamCaret): TLKEventDispatchMethod;
+const
+  DISPATCH_METHODS: Array[0..2] of TLKEventDispatchMethod = (edmNotDispatched, edmQueue, edmStack);
+var
+  LDispatchMethod: Byte;
+begin
+  ACaret.Read(LDispatchMethod, SizeOf(Byte));
+  Result := DISPATCH_METHODS[LDispatchMethod];
+end;
+
+function StreamReadTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventDispatchMethod;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTLKEventDispatchMethod(ACaret);
+end;
+
+function StreamReadTLKEventLifetimeControl(const ACaret: ILKStreamCaret): TLKEventLifetimeControl;
+const
+  LIFETIME_CONTROL: Array[0..1] of TLKEventLifetimeControl = (elcAutomatic, elcManual);
+var
+  LLifetimeControl: Byte;
+begin
+  ACaret.Read(LLifetimeControl, SizeOf(Byte));
+  Result := LIFETIME_CONTROL[LLifetimeControl];
+end;
+
+function StreamReadTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventLifetimeControl;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTLKEventLifetimeControl(ACaret);
+end;
+
+function StreamReadTLKEventOrigin(const ACaret: ILKStreamCaret): TLKEventOrigin;
+const
+  ORIGINS: Array[0..3] of TLKEventOrigin = (eoInternal, eoReplay, eoRemote, eoUnknown);
+var
+  LOrigin: Byte;
+begin
+  ACaret.Read(LOrigin, SizeOf(Byte));
+  Result := ORIGINS[LOrigin];
+end;
+
+function StreamReadTLKEventOrigin(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventOrigin;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTLKEventOrigin(ACaret);
+end;
+
+function StreamReadTLKEventState(const ACaret: ILKStreamCaret): TLKEventState;
+const
+  STATES: Array[0..5] of TLKEventState = (esNotDispatched, esScheduled, esDispatched, esProcessing, esProcessed, esCancelled);
+var
+  LState: Byte;
+begin
+  ACaret.Read(LState, SizeOf(Byte));
+  Result := STATES[LState];
+end;
+
+function StreamReadTLKEventState(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventState;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTLKEventState(ACaret);
+end;
+
+function StreamReadTLKEventTarget(const ACaret: ILKStreamCaret): TLKEventTarget;
+const
+  TARGETS: Array[0..4] of TLKEventTarget = (edThreads, edPools, edRecorders, edRemotes, edUknown);
+var
+  LState: Byte;
+begin
+  ACaret.Read(LState, SizeOf(Byte));
+  Result := TARGETS[LState];
+end;
+
+function StreamReadTLKEventTarget(const ACaret: ILKStreamCaret; const APosition: Int64): TLKEventTarget;
+begin
+  ACaret.Position := APosition;
+  Result := StreamReadTLKEventTarget(ACaret);
+end;
+
+// Write Methods
+
+procedure StreamWriteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod);
+const
+  DISPATCH_METHODS: Array[TLKEventDispatchMethod] of Byte = (0, 1, 2);
+begin
+  ACaret.Write(DISPATCH_METHODS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamWriteTLKEventDispatchMethod(const ACaret: ILKStreamCaret; const AValue: TLKEventDispatchMethod; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTLKEventDispatchMethod(ACaret, AValue);
+end;
+
+procedure StreamWriteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl);
+const
+  LIFETIME_CONTROL: Array[TLKEventLifetimeControl] of Byte = (0, 1);
+begin
+  ACaret.Write(LIFETIME_CONTROL[AValue], SizeOf(Byte));
+end;
+
+procedure StreamWriteTLKEventLifetimeControl(const ACaret: ILKStreamCaret; const AValue: TLKEventLifetimeControl; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTLKEventLifetimeControl(ACaret, AValue);
+end;
+
+procedure StreamWriteTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin);
+const
+  ORIGINS: Array[TLKEventOrigin] of Byte = (0, 1, 2, 3);
+begin
+  ACaret.Write(ORIGINS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamWriteTLKEventOrigin(const ACaret: ILKStreamCaret; const AValue: TLKEventOrigin; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTLKEventOrigin(ACaret, AValue);
+end;
+
+procedure StreamWriteTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState);
+const
+  STATES: Array[TLKEventState] of Byte = (0, 1, 2, 3, 4, 5);
+begin
+  ACaret.Write(STATES[AValue], SizeOf(Byte));
+end;
+
+procedure StreamWriteTLKEventState(const ACaret: ILKStreamCaret; const AValue: TLKEventState; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTLKEventState(ACaret, AValue);
+end;
+
+procedure StreamWriteTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget);
+const
+  TARGETS: Array[TLKEventTarget] of Byte = (0, 1, 2, 3, 4);
+begin
+  ACaret.Write(TARGETS[AValue], SizeOf(Byte));
+end;
+
+procedure StreamWriteTLKEventTarget(const ACaret: ILKStreamCaret; const AValue: TLKEventTarget; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  StreamWriteTLKEventTarget(ACaret, AValue);
 end;
 
 end.
