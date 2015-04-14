@@ -117,19 +117,21 @@ type
     // "ReadFromStream" reads an instance of your Streamable Type from the given Stream.
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
-    procedure ReadFromStream(const AStream: TStream); virtual; abstract;
+    procedure ReadFromStream(const ACaret: ILKStreamCaret); virtual; abstract;
     // "InjectIntoStream" inserts an instance of your Streamable Type into the given Stream.
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
-    procedure InsertIntoStream(const AStream: TStream); virtual; abstract;
+    procedure InsertIntoStream(const ACaret: ILKStreamCaret); virtual; abstract;
     // "WriteToStream" writes an instance of your Streamable Type to the END of the given Stream.
     // NOTE: The object's thread-safe LOCK is engaged for this call! No need to call "Lock" in your implementation!
-    procedure WriteToStream(const AStream: TStream); virtual; abstract;
+    procedure WriteToStream(const ACaret: ILKStreamCaret); virtual; abstract;
   public
     // Creates a BLANK instance of your Streamable
     constructor Create; override;
     // Creates a POPULATED instance of your Streamable from a Stream
-    constructor CreateFromStream(const AStream: TStream); overload; virtual;
-    constructor CreateFromStream(const AStream: TStream; const APosition: Int64); overload;
+    constructor CreateFromStream(const ACaret: ILKStreamCaret); overload; virtual;
+    constructor CreateFromStream(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
+    constructor CreateFromStream(const AStream: ILKStream); overload;
+    constructor CreateFromStream(const AStream: ILKStream; const APosition: Int64); overload;
     // Creates a POPULATED instance of your Streamable from a File
     constructor CreateFromFile(const AFileName: String); virtual;
     // "GetBlockSize" returns the Block Size for a given Streamable from within a given Stream.
@@ -145,8 +147,8 @@ type
     // Streamable Type. You can use an "IF" statement on new additions or changes to ensure that those
     // changed valuesets are only considered if the serialization matches a given version.
     class function GetTypeVersion: Double; virtual;
-    class function CheckTypeInStream(const AStream: TStream): Boolean; overload;
-    class function CheckTypeInStream(const AStream: TStream; const APosition: Int64): Boolean; overload;
+    class function CheckTypeInStream(const ACaret: ILKStreamCaret): Boolean; overload;
+    class function CheckTypeInStream(const ACaret: ILKStreamCaret; const APosition: Int64): Boolean; overload;
     // "Register" will register this Streamable Type with the "Streamable Types Manager"
     // This means you can request the appropriate Streamable Type using its Type GUID String from a
     // Stream.
@@ -155,21 +157,21 @@ type
     class procedure Register;
     class procedure Unregister;
     // "DeleteFromStream" removes an instance of your Streamable Type from the given Stream.
-    class procedure DeleteFromStream(const AStream: TStream); overload;
-    class procedure DeleteFromStream(const AStream: TStream; const APosition: Int64); overload;
+    class procedure DeleteFromStream(const ACaret: ILKStreamCaret); overload;
+    class procedure DeleteFromStream(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
     // "LoadFromFile" sets the Member Data of your Streamable Instance from a saved File
     procedure LoadFromFile(const AFileName: String);
     // "LoadFromStream" sets the Member Data of your Streamable Instance from a Stream
     // NOTE: Don't forget to set the starting Position of the Streamable Instance within your Stream first!
-    procedure LoadFromStream(const AStream: TStream); overload;
-    procedure LoadFromStream(const AStream: TStream; const APosition: Int64); overload; inline;
+    procedure LoadFromStream(const ACaret: ILKStreamCaret); overload;
+    procedure LoadFromStream(const ACaret: ILKStreamCaret; const APosition: Int64); overload; inline;
     // "SaveToFile" saves the Member Data of your Streamable Instance to a File
     procedure SaveToFile(const AFileName: String);
     // "SaveToStream" WRITES the Member Data of your Streamable Instance to the END of the given Stream.
-    procedure SaveToStream(const AStream: TStream); overload;
+    procedure SaveToStream(const ACaret: ILKStreamCaret); overload;
     // "SaveToStream" WRITES the Member Data of your Streamable Instance over the data from the nominated
     // Position in the given Stream.
-    procedure SaveToStream(const AStream: TStream; const APosition: Int64); overload;
+    procedure SaveToStream(const ACaret: ILKStreamCaret; const APosition: Int64); overload;
 
     property TypeGUID: TGUID read GetTypeGUID;
     property Version: Double read FVersion;
@@ -187,9 +189,9 @@ type
     function GetName: String;
     procedure SetName(const AName: String);
   protected
-    procedure ReadFromStream(const AStream: TStream); override;
-    procedure InsertIntoStream(const AStream: TStream); override;
-    procedure WriteToStream(const AStream: TStream); override;
+    procedure ReadFromStream(const ACaret: ILKStreamCaret); override;
+    procedure InsertIntoStream(const ACaret: ILKStreamCaret); override;
+    procedure WriteToStream(const ACaret: ILKStreamCaret); override;
   public
     property Name: String read GetName write SetName;
   end;
@@ -223,15 +225,15 @@ type
     procedure Unregister(const AStreamableType: TLKStreamableType); overload;
     procedure Unregister(const AStreamableTypes: Array of TLKStreamableType); overload;
 
-    function CreateStreamableFromStream(const AStream: TStream): TLKStreamable; overload;
-    function CreateStreamableFromStream(const AStream: TStream; const APosition: Int64): TLKStreamable; overload;
-    function GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
-    function StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean; overload;
-    function StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType; const APosition: Int64): Boolean; overload;
+    function CreateStreamableFromStream(const ACaret: ILKStreamCaret): TLKStreamable; overload;
+    function CreateStreamableFromStream(const ACaret: ILKStreamCaret; const APosition: Int64): TLKStreamable; overload;
+    function GetStreamableTypeFromStream(const ACaret: ILKStreamCaret): TLKStreamableType;
+    function StreamableTypeMatch(const ACaret: ILKStreamCaret; const AStreamableType: TLKStreamableType): Boolean; overload;
+    function StreamableTypeMatch(const ACaret: ILKStreamCaret; const AStreamableType: TLKStreamableType; const APosition: Int64): Boolean; overload;
 
-    procedure DeleteArrayOfStreamables(const AStream: TStream);
-    procedure InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
-    procedure WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+    procedure DeleteArrayOfStreamables(const ACaret: ILKStreamCaret);
+    procedure InsertArrayOfStreamables(const ACaret: ILKStreamCaret; const AStreamables: TLKStreamableArray);
+    procedure WriteArrayOfStreamables(const ACaret: ILKStreamCaret; const AStreamables: TLKStreamableArray);
 
     property Count: Integer read GetCount;
 //    property StreamableTypeByIndex[const AIndex: Integer]: TLKStreamableType read GetStreamableTypeByIndex;
@@ -252,14 +254,14 @@ const
 
 { TLKStreamable }
 
-class function TLKStreamable.CheckTypeInStream(const AStream: TStream): Boolean;
+class function TLKStreamable.CheckTypeInStream(const ACaret: ILKStreamCaret): Boolean;
 begin
-  Result := Streamables.StreamableTypeMatch(AStream, Self);
+  Result := Streamables.StreamableTypeMatch(ACaret, Self);
 end;
 
-class function TLKStreamable.CheckTypeInStream(const AStream: TStream; const APosition: Int64): Boolean;
+class function TLKStreamable.CheckTypeInStream(const ACaret: ILKStreamCaret; const APosition: Int64): Boolean;
 begin
-  Result := Streamables.StreamableTypeMatch(AStream, Self, APosition);
+  Result := Streamables.StreamableTypeMatch(ACaret, Self, APosition);
 end;
 
 constructor TLKStreamable.Create;
@@ -268,10 +270,10 @@ begin
   FVersion := GetTypeVersion;
 end;
 
-constructor TLKStreamable.CreateFromStream(const AStream: TStream);
+constructor TLKStreamable.CreateFromStream(const ACaret: ILKStreamCaret);
 begin
   Create;
-  LoadFromStream(AStream);
+  LoadFromStream(ACaret);
 end;
 
 constructor TLKStreamable.CreateFromFile(const AFileName: String);
@@ -280,33 +282,43 @@ begin
   LoadFromFile(AFileName);
 end;
 
-constructor TLKStreamable.CreateFromStream(const AStream: TStream; const APosition: Int64);
+constructor TLKStreamable.CreateFromStream(const AStream: ILKStream);
 begin
-  AStream.Position := APosition;
-  CreateFromStream(AStream);
+  CreateFromStream(AStream.NewCaret);
 end;
 
-class procedure TLKStreamable.DeleteFromStream(const AStream: TStream; const APosition: Int64);
+constructor TLKStreamable.CreateFromStream(const AStream: ILKStream; const APosition: Int64);
 begin
-  AStream.Position := APosition;
-  DeleteFromStream(AStream);
+  CreateFromStream(AStream.NewCaret(APosition));
 end;
 
-class procedure TLKStreamable.DeleteFromStream(const AStream: TStream);
+constructor TLKStreamable.CreateFromStream(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  CreateFromStream(ACaret);
+end;
+
+class procedure TLKStreamable.DeleteFromStream(const ACaret: ILKStreamCaret; const APosition: Int64);
+begin
+  ACaret.Position := APosition;
+  DeleteFromStream(ACaret);
+end;
+
+class procedure TLKStreamable.DeleteFromStream(const ACaret: ILKStreamCaret);
 var
   LBlockStart, LBlockSize: Int64;
   LSignature: TGUID;
 //  LEngineVersion: Byte; // FOR FUTURE USE
 begin
-  LBlockStart := AStream.Position;
-  LSignature := StreamReadGUID(AStream); // Read the GUID
+  LBlockStart := ACaret.Position;
+  LSignature := StreamReadGUID(ACaret); // Read the GUID
   if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
   begin
-    {LEngineVersion := }StreamReadByte(AStream); // Need to advance the Stream past the Engine Version byte
-    LBlockSize := StreamReadInt64(AStream);
+    {LEngineVersion := }StreamReadByte(ACaret); // Need to advance the Stream past the Engine Version byte
+    LBlockSize := StreamReadInt64(ACaret);
 
-    AStream.Position := LBlockStart;
-    StreamClearSpace(AStream, LBlockSize);
+    ACaret.Position := LBlockStart;
+    ACaret.Delete(LBlockSize);
   end else
     raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
 end;
@@ -318,20 +330,16 @@ end;
 
 procedure TLKStreamable.LoadFromFile(const AFileName: String);
 var
-  LStream: TStream;
+  LStream: ILKStream;
 begin
-  LStream := TFileStream.Create(AFileName, fmOpenRead);
-  try
-    LoadFromStream(LStream);
-  finally
-    LStream.Free;
-  end;
+  LStream := TLKFileStream.Create(AFileName, fmOpenRead);
+  LoadFromStream(LStream.NewCaret);
 end;
 
-procedure TLKStreamable.LoadFromStream(const AStream: TStream; const APosition: Int64);
+procedure TLKStreamable.LoadFromStream(const ACaret: ILKStreamCaret; const APosition: Int64);
 begin
-  AStream.Position := APosition;
-  LoadFromStream(AStream);
+  ACaret.Position := APosition;
+  LoadFromStream(ACaret);
 end;
 
 class procedure TLKStreamable.OnRegistration;
@@ -348,20 +356,20 @@ begin
   // This is particularly true of "TLKEventStreamable" in LKSL.Events.Main.pas
 end;
 
-procedure TLKStreamable.LoadFromStream(const AStream: TStream);
+procedure TLKStreamable.LoadFromStream(const ACaret: ILKStreamCaret);
 var
   LSignature: TGUID;
 //  LEngineVersion: Byte; // FOR FUTURE USE
 begin
   Lock;
   try
-    LSignature := StreamReadGUID(AStream); // Read the GUID
+    LSignature := StreamReadGUID(ACaret); // Read the GUID
     if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
     begin
-      {LEngineVersion := }StreamReadByte(AStream); // Need to advance the Stream past the Engine Version byte
-      FBlockSize := StreamReadInt64(AStream); // Read the Block Size
-      FVersion := StreamReadDouble(AStream); // Read the Version
-      ReadFromStream(AStream); // Read this type's specific values
+      {LEngineVersion := }StreamReadByte(ACaret); // Need to advance the Stream past the Engine Version byte
+      FBlockSize := StreamReadInt64(ACaret); // Read the Block Size
+      FVersion := StreamReadDouble(ACaret); // Read the Version
+      ReadFromStream(ACaret); // Read this type's specific values
     end else
       raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
   finally
@@ -378,45 +386,41 @@ end;
 
 procedure TLKStreamable.SaveToFile(const AFileName: String);
 var
-  LStream: TStream;
+  LStream: ILKStream;
 begin
-  LStream := TFileStream.Create(AFileName, fmCreate);
-  try
-    SaveToStream(LStream);
-  finally
-    LStream.Free;
-  end;
+  LStream := TLKFileStream.Create(AFileName, fmCreate);
+  SaveToStream(LStream.NewCaret);
 end;
 
-procedure TLKStreamable.SaveToStream(const AStream: TStream; const APosition: Int64);
+procedure TLKStreamable.SaveToStream(const ACaret: ILKStreamCaret; const APosition: Int64);
 var
   LBlockSizePos: Int64;
   LBlockEnd: Int64;
 begin
-  if APosition = AStream.Size then
-    SaveToStream(AStream)
+  if APosition = ACaret.Stream.Size then
+    SaveToStream(ACaret)
   else
   begin
     Lock;
     try
-      AStream.Position := APosition; // Set the position
+      ACaret.Position := APosition; // Set the position
 
-      StreamInsertGUID(AStream, GetTypeGUID); // Insert the GUID
-      StreamInsertByte(AStream, STREAMABLES_ENGINE_VERSION); // Insert the Engine Version
+      StreamInsertGUID(ACaret, GetTypeGUID); // Insert the GUID
+      StreamInsertByte(ACaret, STREAMABLES_ENGINE_VERSION); // Insert the Engine Version
 
-      LBlockSizePos := AStream.Position; // Hold the current Position for the Block Size
+      LBlockSizePos := ACaret.Position; // Hold the current Position for the Block Size
 
-      StreamInsertInt64(AStream, 0); // Insert the default Block Size (0)
-      StreamInsertDouble(AStream, GetTypeVersion); // Insert the Type Version
+      StreamInsertInt64(ACaret, 0); // Insert the default Block Size (0)
+      StreamInsertDouble(ACaret, GetTypeVersion); // Insert the Type Version
 
-      InsertIntoStream(AStream); // Insert the descendant's custom data
+      InsertIntoStream(ACaret); // Insert the descendant's custom data
 
-      LBlockEnd := AStream.Position; // Hold the current Position for the End of the Block
-      FBlockSize := AStream.Position - APosition; // Calculate the Block Size
+      LBlockEnd := ACaret.Position; // Hold the current Position for the End of the Block
+      FBlockSize := ACaret.Position - APosition; // Calculate the Block Size
 
-      StreamWriteInt64(AStream, FBlockSize, LBlockSizePos); // Overwrite the Block Size data with the ACTUAL Block Size
+      StreamWriteInt64(ACaret, FBlockSize, LBlockSizePos); // Overwrite the Block Size data with the ACTUAL Block Size
 
-      AStream.Position := LBlockEnd; // Reset the caret to the end of the Block
+      ACaret.Position := LBlockEnd; // Reset the caret to the end of the Block
     finally
       Unlock;
     end;
@@ -428,7 +432,7 @@ begin
   Streamables.Unregister(Self);
 end;
 
-procedure TLKStreamable.SaveToStream(const AStream: TStream);
+procedure TLKStreamable.SaveToStream(const ACaret: ILKStreamCaret);
 var
   LBlockStart: Int64;
   LBlockSizePos: Int64;
@@ -436,24 +440,24 @@ var
 begin
   Lock;
   try
-    LBlockStart := AStream.Position;
+    LBlockStart := ACaret.Position;
 
-    StreamWriteGUID(AStream, GetTypeGUID); // Write the GUID
-    StreamWriteByte(AStream, STREAMABLES_ENGINE_VERSION); // Write the Engine Version
+    StreamWriteGUID(ACaret, GetTypeGUID); // Write the GUID
+    StreamWriteByte(ACaret, STREAMABLES_ENGINE_VERSION); // Write the Engine Version
 
-    LBlockSizePos := AStream.Position;
+    LBlockSizePos := ACaret.Position;
 
-    StreamWriteInt64(AStream, 0); // Write the default Block Size (0)
-    StreamWriteDouble(AStream, GetTypeVersion); // Write the Version
+    StreamWriteInt64(ACaret, 0); // Write the default Block Size (0)
+    StreamWriteDouble(ACaret, GetTypeVersion); // Write the Version
 
-    WriteToStream(AStream);
+    WriteToStream(ACaret);
 
-    LBlockEnd := AStream.Position;
-    FBlockSize := AStream.Position - LBlockStart;
+    LBlockEnd := ACaret.Position;
+    FBlockSize := ACaret.Position - LBlockStart;
 
-    StreamWriteInt64(AStream, FBlockSize, LBlockSizePos); // Update the Block Size
+    StreamWriteInt64(ACaret, FBlockSize, LBlockSizePos); // Update the Block Size
 
-    AStream.Position := LBlockEnd;
+    ACaret.Position := LBlockEnd;
   finally
     Unlock;
   end;
@@ -471,16 +475,16 @@ begin
   end;
 end;
 
-procedure TLKStreamableNamed.InsertIntoStream(const AStream: TStream);
+procedure TLKStreamableNamed.InsertIntoStream(const ACaret: ILKStreamCaret);
 begin
   inherited;
-  StreamInsertString(AStream, FName); // Insert Name
+  StreamInsertString(ACaret, FName); // Insert Name
 end;
 
-procedure TLKStreamableNamed.ReadFromStream(const AStream: TStream);
+procedure TLKStreamableNamed.ReadFromStream(const ACaret: ILKStreamCaret);
 begin
   inherited;
-  FName := StreamReadString(AStream);
+  FName := StreamReadString(ACaret);
 end;
 
 procedure TLKStreamableNamed.SetName(const AName: String);
@@ -493,10 +497,10 @@ begin
   end;
 end;
 
-procedure TLKStreamableNamed.WriteToStream(const AStream: TStream);
+procedure TLKStreamableNamed.WriteToStream(const ACaret: ILKStreamCaret);
 begin
   inherited;
-  StreamWriteString(AStream, FName);
+  StreamWriteString(ACaret, FName);
 end;
 
 { TLKStreamables }
@@ -517,33 +521,33 @@ begin
   FStreamableTypes := TLKStreamableTypesDictionary.Create;
 end;
 
-function TLKStreamables.CreateStreamableFromStream(const AStream: TStream): TLKStreamable;
+function TLKStreamables.CreateStreamableFromStream(const ACaret: ILKStreamCaret): TLKStreamable;
 begin
-  Result := CreateStreamableFromStream(AStream, AStream.Position);
+  Result := CreateStreamableFromStream(ACaret, ACaret.Position);
 end;
 
-function TLKStreamables.CreateStreamableFromStream(const AStream: TStream; const APosition: Int64): TLKStreamable;
+function TLKStreamables.CreateStreamableFromStream(const ACaret: ILKStreamCaret; const APosition: Int64): TLKStreamable;
 var
   LStreamableType: TLKStreamableType;
 begin
-  AStream.Position := APosition;
-  LStreamableType := GetStreamableTypeFromStream(AStream);
+  ACaret.Position := APosition;
+  LStreamableType := GetStreamableTypeFromStream(ACaret);
   if LStreamableType = nil then
     Result := nil
   else
-    Result := LStreamableType.CreateFromStream(AStream);
+    Result := LStreamableType.CreateFromStream(ACaret);
 end;
 
-procedure TLKStreamables.DeleteArrayOfStreamables(const AStream: TStream);
+procedure TLKStreamables.DeleteArrayOfStreamables(const ACaret: ILKStreamCaret);
 var
   I, LCount: Integer;
 begin
-  I := AStream.Position; // Store the initial Position locally
-  LCount := StreamReadInteger(AStream); // Read the Array Count from the Stream
-  AStream.Position := I; // Reposition the Stream back before the Array Count
-  StreamDeleteInteger(AStream); // Delete the Array Count from the Stream
+  I := ACaret.Position; // Store the initial Position locally
+  LCount := StreamReadInteger(ACaret); // Read the Array Count from the Stream
+  ACaret.Position := I; // Reposition the Stream back before the Array Count
+  StreamDeleteInteger(ACaret); // Delete the Array Count from the Stream
   for I := 0 to LCount - 1 do // Iterate the Array
-    GetStreamableTypeFromStream(AStream).DeleteFromStream(AStream); // Delete Array Item from the Stream
+    GetStreamableTypeFromStream(ACaret).DeleteFromStream(ACaret); // Delete Array Item from the Stream
 end;
 
 destructor TLKStreamables.Destroy;
@@ -580,24 +584,24 @@ begin
   end;
 end;
 }
-function TLKStreamables.GetStreamableTypeFromStream(const AStream: TStream): TLKStreamableType;
+function TLKStreamables.GetStreamableTypeFromStream(const ACaret: ILKStreamCaret): TLKStreamableType;
 var
   LPosition: Int64;
   LSignature: TGUID;
 begin
-  LPosition := AStream.Position;
-  LSignature := StreamReadGUID(AStream);
+  LPosition := ACaret.Position;
+  LSignature := StreamReadGUID(ACaret);
   Result := GetStreamableTypeByGUID(LSignature);
-  AStream.Position := LPosition;
+  ACaret.Position := LPosition;
 end;
 
-procedure TLKStreamables.InsertArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+procedure TLKStreamables.InsertArrayOfStreamables(const ACaret: ILKStreamCaret; const AStreamables: TLKStreamableArray);
 var
   I: Integer;
 begin
-  StreamInsertInteger(AStream, Length(AStreamables)); // Insert the Array Count into the Stream
+  StreamInsertInteger(ACaret, Length(AStreamables)); // Insert the Array Count into the Stream
   for I := Low(AStreamables) to High(AStreamables) do
-    AStreamables[I].InsertInToStream(AStream); // Insert the Item into the Stream
+    AStreamables[I].InsertInToStream(ACaret); // Insert the Item into the Stream
 end;
 
 procedure TLKStreamables.Register(const AStreamableTypes: array of TLKStreamableType);
@@ -608,17 +612,17 @@ begin
     Register(AStreamableTypes[I]);
 end;
 
-function TLKStreamables.StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType; const APosition: Int64): Boolean;
+function TLKStreamables.StreamableTypeMatch(const ACaret: ILKStreamCaret; const AStreamableType: TLKStreamableType; const APosition: Int64): Boolean;
 begin
-  AStream.Position := APosition;
-  Result := StreamableTypeMatch(AStream, AStreamableType);
+  ACaret.Position := APosition;
+  Result := StreamableTypeMatch(ACaret, AStreamableType);
 end;
 
-function TLKStreamables.StreamableTypeMatch(const AStream: TStream; const AStreamableType: TLKStreamableType): Boolean;
+function TLKStreamables.StreamableTypeMatch(const ACaret: ILKStreamCaret; const AStreamableType: TLKStreamableType): Boolean;
 var
   LStreamableType: TLKStreamableType;
 begin
-  LStreamableType := GetStreamableTypeFromStream(AStream);
+  LStreamableType := GetStreamableTypeFromStream(ACaret);
   Result := (((LStreamableType <> nil)) and (LStreamableType.InheritsFrom(AStreamableType)));
 end;
 
@@ -645,13 +649,13 @@ begin
     Unregister(AStreamableTypes[I]);
 end;
 
-procedure TLKStreamables.WriteArrayOfStreamables(const AStream: TStream; const AStreamables: TLKStreamableArray);
+procedure TLKStreamables.WriteArrayOfStreamables(const ACaret: ILKStreamCaret; const AStreamables: TLKStreamableArray);
 var
   I: Integer;
 begin
-  StreamWriteInteger(AStream, Length(AStreamables)); // Write the Array Count into the Stream
+  StreamWriteInteger(ACaret, Length(AStreamables)); // Write the Array Count into the Stream
   for I := Low(AStreamables) to High(AStreamables) do
-    AStreamables[I].SaveToStream(AStream); // Write the Item into the Stream
+    AStreamables[I].SaveToStream(ACaret); // Write the Item into the Stream
 end;
 
 procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);

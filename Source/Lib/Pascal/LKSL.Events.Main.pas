@@ -57,6 +57,7 @@ uses
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types, LKSL.Common.Performance,
   LKSL.Threads.Main,
+  LKSL.Streams.Main,
   LKSL.Generics.Collections,
   LKSL.Streamables.Main;
 
@@ -322,16 +323,16 @@ type
   protected
     function GetEvent: TLKEvent; virtual;
 
-    procedure ReadFromStream(const AStream: TStream); override; final;
-    procedure InsertIntoStream(const AStream: TStream); override; final;
-    procedure WriteToStream(const AStream: TStream); override; final;
+    procedure ReadFromStream(const ACaret: ILKStreamCaret); override; final;
+    procedure InsertIntoStream(const ACaret: ILKStreamCaret); override; final;
+    procedure WriteToStream(const ACaret: ILKStreamCaret); override; final;
 
     ///  <summary><c>You MUST overload this and provide instructions on how to populate your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance from a Stream.</c></summary>
-    procedure ReadEventFromStream(const AStream: TStream); virtual; abstract;
+    procedure ReadEventFromStream(const ACaret: ILKStreamCaret); virtual; abstract;
     ///  <summary><c>You MUST overload this and provide instructions on how to Insert your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance into a Stream.</c></summary>
-    procedure InsertEventIntoStream(const AStream: TStream); virtual; abstract;
+    procedure InsertEventIntoStream(const ACaret: ILKStreamCaret); virtual; abstract;
     ///  <summary><c>You MUST overload this and provide instructions on how to Write your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance into a Stream.</c></summary>
-    procedure WriteEventToStream(const AStream: TStream); virtual; abstract;
+    procedure WriteEventToStream(const ACaret: ILKStreamCaret); virtual; abstract;
 
     ///  <summary><c>If you aren't using Generics, you can define "property Event;" in the Public section.</c></summary>
     property Event: TLKEvent read GetEvent;
@@ -356,13 +357,13 @@ type
   protected
     function GetEvent: T; reintroduce;
     // Don't override the following methods anymore...
-    procedure ReadEventFromStream(const AStream: TStream); overload; override; final;
-    procedure InsertEventIntoStream(const AStream: TStream); overload; override; final;
-    procedure WriteEventToStream(const AStream: TStream); overload; override; final;
+    procedure ReadEventFromStream(const ACaret: ILKStreamCaret); overload; override; final;
+    procedure InsertEventIntoStream(const ACaret: ILKStreamCaret); overload; override; final;
+    procedure WriteEventToStream(const ACaret: ILKStreamCaret); overload; override; final;
     // ...  override these instead!
-    procedure ReadEventFromStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
-    procedure InsertEventIntoStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
-    procedure WriteEventToStream(const AEvent: T; const AStream: TStream); reintroduce; overload; virtual; abstract;
+    procedure ReadEventFromStream(const AEvent: T; const ACaret: ILKStreamCaret); reintroduce; overload; virtual; abstract;
+    procedure InsertEventIntoStream(const AEvent: T; const ACaret: ILKStreamCaret); reintroduce; overload; virtual; abstract;
+    procedure WriteEventToStream(const AEvent: T; const ACaret: ILKStreamCaret); reintroduce; overload; virtual; abstract;
   public
     class function GetEventType: TLKEventClass; override; final;
     property Event: T read GetEvent;
@@ -1025,7 +1026,7 @@ begin
   Result := LKSL_EVENTENGINE_VERSION;
 end;
 
-procedure TLKEventStreamable.InsertIntoStream(const AStream: TStream);
+procedure TLKEventStreamable.InsertIntoStream(const ACaret: ILKStreamCaret);
 var
   LCountPosition, LEndPosition: Int64;
   LTarget: TLKEventTarget;
@@ -1033,59 +1034,59 @@ var
 begin
   FEvent.Lock;
   try
-    StreamInsertLKFloat(AStream, FEvent.FCreatedTime);
-    StreamInsertLKFloat(AStream, FEvent.FDispatchAfter);
-    StreamInsertTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
+    StreamInsertLKFloat(ACaret, FEvent.FCreatedTime);
+    StreamInsertLKFloat(ACaret, FEvent.FDispatchAfter);
+    StreamInsertTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
     LTargetCount := 0;
-    LCountPosition := AStream.Position;
-    StreamInsertInteger(AStream, LTargetCount);
+    LCountPosition := ACaret.Position;
+    StreamInsertInteger(ACaret, LTargetCount);
     for LTarget in FEvent.FDispatchTargets do
     begin
       Inc(LTargetCount);
-      StreamInsertTLKEventTarget(AStream, LTarget);
+      StreamInsertTLKEventTarget(ACaret, LTarget);
     end;
-    LEndPosition := AStream.Position;
-    StreamWriteInteger(AStream, LTargetCount, LCountPosition);
-    AStream.Position := LEndPosition;
-    StreamInsertLKFloat(AStream, FEvent.FDispatchTime);
-    StreamInsertLKFloat(AStream, FEvent.FExpiresAfter);
-    StreamInsertTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
-    StreamInsertTLKEventOrigin(AStream, FEvent.FOrigin);
-    StreamInsertLKFloat(AStream, FEvent.FProcessedTime);
-    StreamInsertTLKEventState(AStream, FEvent.FState);
+    LEndPosition := ACaret.Position;
+    StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
+    ACaret.Position := LEndPosition;
+    StreamInsertLKFloat(ACaret, FEvent.FDispatchTime);
+    StreamInsertLKFloat(ACaret, FEvent.FExpiresAfter);
+    StreamInsertTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
+    StreamInsertTLKEventOrigin(ACaret, FEvent.FOrigin);
+    StreamInsertLKFloat(ACaret, FEvent.FProcessedTime);
+    StreamInsertTLKEventState(ACaret, FEvent.FState);
 
-    InsertEventIntoStream(AStream);
+    InsertEventIntoStream(ACaret);
   finally
     FEvent.Unlock;
   end;
 end;
 
-procedure TLKEventStreamable.ReadFromStream(const AStream: TStream);
+procedure TLKEventStreamable.ReadFromStream(const ACaret: ILKStreamCaret);
 var
   I, LCount: Integer;
 begin
   FEvent.Lock;
   try
-    FEvent.FCreatedTime := StreamReadLKFloat(AStream);
-    FEvent.FDispatchAfter := StreamReadLKFloat(AStream);
-    FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(AStream);
+    FEvent.FCreatedTime := StreamReadLKFloat(ACaret);
+    FEvent.FDispatchAfter := StreamReadLKFloat(ACaret);
+    FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(ACaret);
     FEvent.FDispatchTargets := [];
-    LCount := StreamReadInteger(AStream);
+    LCount := StreamReadInteger(ACaret);
     for I := 0 to LCount - 1 do
-      FEvent.FDispatchTargets := FEvent.FDispatchTargets + [StreamReadTLKEventTarget(AStream)];
-    FEvent.FDispatchTime := StreamReadLKFloat(AStream);
-    FEvent.FExpiresAfter := StreamReadLKFloat(AStream);
-    FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(AStream);
-    FEvent.FOrigin := StreamReadTLKEventOrigin(AStream);
-    FEvent.FProcessedTime := StreamReadLKFloat(AStream);
-    FEvent.FState := StreamReadTLKEventState(AStream);
-    ReadEventFromStream(AStream);
+      FEvent.FDispatchTargets := FEvent.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
+    FEvent.FDispatchTime := StreamReadLKFloat(ACaret);
+    FEvent.FExpiresAfter := StreamReadLKFloat(ACaret);
+    FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(ACaret);
+    FEvent.FOrigin := StreamReadTLKEventOrigin(ACaret);
+    FEvent.FProcessedTime := StreamReadLKFloat(ACaret);
+    FEvent.FState := StreamReadTLKEventState(ACaret);
+    ReadEventFromStream(ACaret);
   finally
     FEvent.Unlock;
   end;
 end;
 
-procedure TLKEventStreamable.WriteToStream(const AStream: TStream);
+procedure TLKEventStreamable.WriteToStream(const ACaret: ILKStreamCaret);
 var
   LCountPosition, LEndPosition: Int64;
   LTarget: TLKEventTarget;
@@ -1093,27 +1094,27 @@ var
 begin
   FEvent.Lock;
   try
-    StreamWriteLKFloat(AStream, FEvent.FCreatedTime);
-    StreamWriteLKFloat(AStream, FEvent.FDispatchAfter);
-    StreamWriteTLKEventDispatchMethod(AStream, FEvent.FDispatchMethod);
+    StreamWriteLKFloat(ACaret, FEvent.FCreatedTime);
+    StreamWriteLKFloat(ACaret, FEvent.FDispatchAfter);
+    StreamWriteTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
     LTargetCount := 0;
-    LCountPosition := AStream.Position;
-    StreamWriteInteger(AStream, LTargetCount);
+    LCountPosition := ACaret.Position;
+    StreamWriteInteger(ACaret, LTargetCount);
     for LTarget in FEvent.FDispatchTargets do
     begin
       Inc(LTargetCount);
-      StreamWriteTLKEventTarget(AStream, LTarget);
+      StreamWriteTLKEventTarget(ACaret, LTarget);
     end;
-    LEndPosition := AStream.Position;
-    StreamWriteInteger(AStream, LTargetCount, LCountPosition);
-    AStream.Position := LEndPosition;
-    StreamWriteLKFloat(AStream, FEvent.FDispatchTime);
-    StreamWriteLKFloat(AStream, FEvent.FExpiresAfter);
-    StreamWriteTLKEventLifetimeControl(AStream, FEvent.FLifetimeControl);
-    StreamWriteTLKEventOrigin(AStream, FEvent.FOrigin);
-    StreamWriteLKFloat(AStream, FEvent.FProcessedTime);
-    StreamWriteTLKEventState(AStream, FEvent.FState);
-    WriteEventToStream(AStream);
+    LEndPosition := ACaret.Position;
+    StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
+    ACaret.Position := LEndPosition;
+    StreamWriteLKFloat(ACaret, FEvent.FDispatchTime);
+    StreamWriteLKFloat(ACaret, FEvent.FExpiresAfter);
+    StreamWriteTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
+    StreamWriteTLKEventOrigin(ACaret, FEvent.FOrigin);
+    StreamWriteLKFloat(ACaret, FEvent.FProcessedTime);
+    StreamWriteTLKEventState(ACaret, FEvent.FState);
+    WriteEventToStream(ACaret);
   finally
     FEvent.Unlock;
   end;
@@ -1131,19 +1132,19 @@ begin
   Result := T;
 end;
 
-procedure TLKEventStreamable<T>.InsertEventIntoStream(const AStream: TStream);
+procedure TLKEventStreamable<T>.InsertEventIntoStream(const ACaret: ILKStreamCaret);
 begin
-  InsertEventIntoStream(GetEvent, AStream);
+  InsertEventIntoStream(GetEvent, ACaret);
 end;
 
-procedure TLKEventStreamable<T>.ReadEventFromStream(const AStream: TStream);
+procedure TLKEventStreamable<T>.ReadEventFromStream(const ACaret: ILKStreamCaret);
 begin
-  ReadEventFromStream(GetEvent, AStream);
+  ReadEventFromStream(GetEvent, ACaret);
 end;
 
-procedure TLKEventStreamable<T>.WriteEventToStream(const AStream: TStream);
+procedure TLKEventStreamable<T>.WriteEventToStream(const ACaret: ILKStreamCaret);
 begin
-  WriteEventToStream(GetEvent, AStream);
+  WriteEventToStream(GetEvent, ACaret);
 end;
 
 { TLKEventContainer }
