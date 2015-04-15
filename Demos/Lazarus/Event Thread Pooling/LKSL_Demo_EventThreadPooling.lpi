@@ -198,7 +198,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="13">
+    <Units Count="14">
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -209,7 +209,6 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="Demo.EventThreadPooling.MainForm"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
@@ -226,7 +225,6 @@
       <Unit5>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="LKSL.Common.Types"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
@@ -235,6 +233,7 @@
       <Unit7>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Streams.Types"/>
       </Unit7>
       <Unit8>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
@@ -256,6 +255,11 @@
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit12>
+      <Unit13>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Streams.Main"/>
+      </Unit13>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
