@@ -58,11 +58,11 @@ uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.SyncObjs, System.RTLConsts,
     {$IFDEF MSWINDOWS}WinApi.Windows,{$ENDIF MSWINDOWS}
-    {$IFDEF POSIX}Posix.Stdlib,{$ENDIF POSIX}
+    {$IFDEF POSIX}Posix.UniStd,{$ENDIF POSIX}
   {$ELSE}
     Classes, SysUtils, SyncObjs, RTLConsts,
     {$IFDEF MSWINDOWS}Windows,{$ENDIF MSWINDOWS}
-    {$IFDEF POSIX}Stdlib,{$ENDIF POSIX}
+    {$IFDEF POSIX}Posix,{$ENDIF POSIX}
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
   LKSL.Common.Types,
   LKSL.Generics.Collections;
@@ -999,17 +999,17 @@ end;
 
 procedure TLKHandleStream.SetSize(const ASize: Int64);
 var
-  LOldSize: Int64;
+  LPosition, LOldSize: Int64;
 begin
   Lock;
   try
     LOldSize := GetSize;
-    FileSeek(FHandle, ASize, Ord(soBeginning));
+    LPosition := FileSeek(FHandle, ASize, Ord(soBeginning));
     {$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
     {$IF Defined(MSWINDOWS)}
       Win32Check(SetEndOfFile(FHandle));
     {$ELSEIF Defined(POSIX)}
-    if ftruncate(FHandle, Position) = -1 then
+    if ftruncate(FHandle, LPosition) = -1 then
       raise EStreamError(sStreamSetSize);
     {$ELSE}
       {$FATAL 'No implementation for this platform! Please report this issue on https://github.com/LaKraven/LKSL'}
