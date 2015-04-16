@@ -122,7 +122,7 @@ type
 
   {
     TLKArray<T>
-      - Provides a Thread-Safe Lock (TCriticalSection)
+      - Provides a Thread-Safe Lock (TLKCriticalSection)
       - A very simple "Managed Array" for items of the nominated type.
       - Items are UNSORTED
       - The Array expands by 1 each time a new item is added
@@ -134,7 +134,7 @@ type
     TLKArrayType = Array of T;
   private
     FArray: TLKArrayType;
-    FLock: TCriticalSection;
+    FLock: TLKCriticalSection;
 
     // Getters
     function GetItem(const AIndex: Integer): T;
@@ -158,11 +158,11 @@ type
 
   {
     TLKDictionary<TKey, TValue>
-      - Provides a Thread-Safe Lock (TCriticalSection)
+      - Provides a Thread-Safe Lock (TLKCriticalSection)
   }
   TLKDictionary<TKey, TValue> = class({$IFDEF FPC}TFPGMap{$ELSE}TDictionary{$ENDIF FPC}<TKey, TValue>)
     private
-      FLock: TCriticalSection;
+      FLock: TLKCriticalSection;
     public
       {$IFDEF FPC}
         constructor Create; reintroduce;
@@ -199,7 +199,7 @@ type
     FCapacityMultiplier: Single;
     FCapacityThreshold: Integer;
     FCount: Integer;
-    FLock: TCriticalSection;
+    FLock: TLKCriticalSection;
 
     function Hash(const AKey: TKey): Integer;
   end;}
@@ -417,9 +417,9 @@ type
     FCountLeft: Integer;
     FCountRight: Integer;
     // Locks
-    FLockCenter: TCriticalSection;
-    FLockLeft: TCriticalSection;
-    FLockRight: TCriticalSection;
+    FLockCenter: TLKCriticalSection;
+    FLockLeft: TLKCriticalSection;
+    FLockRight: TLKCriticalSection;
     // Arrays (and Center)
     FArrayLeft: TArrayOfT;
     FArrayRight: TArrayOfT;
@@ -668,7 +668,7 @@ end;
 constructor TLKArray<T>.Create;
 begin
   inherited;
-  FLock := TCriticalSection.Create;
+  FLock := TLKCriticalSection.Create;
 end;
 
 procedure TLKArray<T>.Delete(const AIndex: Integer);
@@ -727,7 +727,7 @@ end;
 {$IFDEF FPC}
   constructor TLKDictionary<TKey, TValue>.Create;
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create;
   end;
 
@@ -747,31 +747,31 @@ end;
 {$ELSE}
   constructor TLKDictionary<TKey, TValue>.Create(const AComparer: IEqualityComparer<TKey>);
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create(AComparer);
   end;
 
   constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer);
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create(ACapacity);
   end;
 
   constructor TLKDictionary<TKey, TValue>.Create(ACapacity: Integer; const AComparer: IEqualityComparer<TKey>);
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create(ACapacity, AComparer);
   end;
 
   constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>; const AComparer: IEqualityComparer<TKey>);
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create(Collection, AComparer);
   end;
 
   constructor TLKDictionary<TKey, TValue>.Create(const Collection: TEnumerable<TPair<TKey, TValue>>);
   begin
-    FLock := TCriticalSection.Create;
+    FLock := TLKCriticalSection.Create;
     inherited Create(Collection);
   end;
 {$ENDIF FPC}
@@ -1647,9 +1647,9 @@ end;
     FCenterAssigned := False;
     FCountLeft := 0;
     FCountRight := 0;
-    FLockLeft := TCriticalSection.Create;
-    FLockRight := TCriticalSection.Create;
-    FLockCenter := TCriticalSection.Create;
+    FLockLeft := TLKCriticalSection.Create;
+    FLockRight := TLKCriticalSection.Create;
+    FLockCenter := TLKCriticalSection.Create;
     // We default the Capacity of the Left and Right Arrays to 10 each.
     // This equates to 21 default Capacity (including Center)
     SetLength(FArrayLeft, LKSL_LIST_CAPACITY_DEFAULT);
