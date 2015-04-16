@@ -94,6 +94,7 @@ type
   ILKInterface = interface;
   { Class Forward Declarations }
   TLKCriticalSection = class;
+  TLKReadWriteLock = class;
   TLKPersistent = class;
   TLKObject = class;
   TLKInterfacedPersistent = class;
@@ -102,7 +103,8 @@ type
   { Exception Types }
   ELKException = class(Exception);
 
-  ///
+  ///  <summary><c>Absolute Base Interface for all LKSL-Defined Interfaces.</c></summary>
+  ///  <remarks><c>Provides access to the Lock and Unlock methods.</c></remarks>
   ILKInterface = interface
   ['{CAC7A376-703A-4D55-BFBE-423CCAF8F43A}']
     procedure Lock;
@@ -114,6 +116,32 @@ type
   TLKCriticalSection = class(TCriticalSection)
   private
     {$HINTS OFF}FDummy : array [0..95] of Byte;{$HINTS ON}
+  end;
+
+  ///  <summary><c>Provies Two-State Locking</c></summary>
+  ///  <remarks>
+  ///    <c>Three States are:</c>
+  ///    <para><c>Read - Holds back Write requests until relinquished.</c></para>
+  ///    <para><c>Write - Holds back Read and other Write requests until relinquished.</c></para>
+  ///  </remarks>
+  TLKReadWriteLock = class(TPersistent)
+  private
+    FCountLock: TLKCriticalSection;
+    FDestroying: Boolean;
+    FReadOpen: TEvent;
+    FReads: Integer;
+    FWriteLock: TLKCriticalSection;
+    FWriteOpen: TEvent;
+    FWrites: Integer;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+    function AcquireRead(const ATimeout: Cardinal = INFINITE): Boolean;
+    function AcquireWrite(const ATimeout: Cardinal = INFINITE): Boolean;
+    procedure ReleaseRead;
+    procedure ReleaseWrite;
+    function TryAcquireRead: Boolean;
+    function TryAcquireWrite: Boolean;
   end;
 
   {
@@ -198,6 +226,105 @@ type
   {$ENDIF LKSL_FLOAT_SINGLE}
 
 implementation
+
+{ TLKReadWriteLock }
+
+function TLKReadWriteLock.AcquireRead(const ATimeout: Cardinal): Boolean;
+begin
+  Result := False;
+  if FDestroying then
+    Exit;
+  if FWriteOpen.WaitFor(ATimeout) = wrSignaled then
+  begin
+    FCountLock.Enter;
+    try
+      Inc(FReads);
+      if FReads = 1 then
+        FReadOpen.ResetEvent;
+      Result := True;
+    finally
+      FCountLock.Leave;
+    end;
+  end;
+end;
+
+function TLKReadWriteLock.AcquireWrite(const ATimeout: Cardinal): Boolean;
+begin
+  Result := False;
+  if FDestroying then
+    Exit;
+  if FReadOpen.WaitFor(ATimeout) <> wrSignaled then
+  begin
+    FCountLock.Enter;
+    try
+      Inc(FWrites);
+      if FWrites = 1 then
+        FWriteOpen.ResetEvent;
+      Result := True;
+      FWriteLock.Enter;
+    finally
+      FCountLock.Leave;
+    end;
+  end;
+end;
+
+constructor TLKReadWriteLock.Create;
+begin
+  inherited;
+  FDestroying := False;
+  FCountLock := TLKCriticalSection.Create;
+  FReadOpen := TEvent.Create(nil, True, True, '');
+  FReads := 0;
+  FWriteLock := TLKCriticalSection.Create;
+  FWriteOpen := TEvent.Create(nil, True, True, '');
+  FWrites := 0;
+end;
+
+destructor TLKReadWriteLock.Destroy;
+begin
+  FDestroying := True;
+  FReadOpen.SetEvent; // Prevent wait halting
+  FWriteOpen.SetEvent; // Prevent wait halting
+  FCountLock.Free;
+  FWriteLock.Free;
+  FReadOpen.Free;
+  FWriteOpen.Free;
+  inherited;
+end;
+
+procedure TLKReadWriteLock.ReleaseRead;
+begin
+  FCountLock.Enter;
+  try
+    Dec(FReads);
+    if FReads = 0 then
+      FReadOpen.SetEvent;
+  finally
+    FCountLock.Leave;
+  end;
+end;
+
+procedure TLKReadWriteLock.ReleaseWrite;
+begin
+  FCountLock.Enter;
+  try
+    Dec(FWrites);
+    if FWrites = 0 then
+      FWriteOpen.SetEvent;
+  finally
+    FCountLock.Leave;
+  end;
+end;
+
+function TLKReadWriteLock.TryAcquireRead: Boolean;
+begin
+  Result := AcquireRead(1);
+end;
+
+function TLKReadWriteLock.TryAcquireWrite: Boolean;
+begin
+  Result := AcquireWrite(1);
+end;
 
 { TLKPersistent }
 
