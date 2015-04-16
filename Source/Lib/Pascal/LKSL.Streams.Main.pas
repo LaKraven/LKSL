@@ -356,7 +356,8 @@ type
     function GetSize: Int64; override;
     procedure SetSize(const ASize: Int64); override;
   public
-    constructor Create(const AHandle: THandle); reintroduce;
+    constructor Create(const AHandle: THandle); reintroduce; overload;
+    constructor Create(const AStream: THandleStream); reintroduce; overload;
 
     procedure AcquireRead; override;
     procedure AcquireWrite; override;
@@ -381,12 +382,14 @@ type
   ///  <remarks><c>File Streams are Exclusive Access (read AND write) using a Transactional Lock</c></remarks>
   TLKFileStream = class(TLKHandleStream, ILKFileStream)
   private
+    FAdoptedHandle: Boolean;
     FFileName: String;
   protected
     function GetCaretType: TLKStreamCaretClass; override;
   public
     constructor Create(const AFileName: String; const AMode: Word); reintroduce; overload;
     constructor Create(const AFileName: String; const AMode: Word; const ARights: Cardinal); reintroduce; overload;
+    constructor Create(const AStream: TFileStream); reintroduce; overload;
     destructor Destroy; override;
   end;
 
@@ -465,7 +468,8 @@ type
     function GetSize: Int64; override;
     procedure SetSize(const ASize: Int64); override;
   public
-    constructor Create; override;
+    constructor Create; overload; override;
+    constructor Create(const AStream: TCustomMemoryStream); reintroduce; overload;
     destructor Destroy; override;
 
     ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
@@ -861,6 +865,11 @@ begin
   Lock;
 end;
 
+constructor TLKHandleStream.Create(const AStream: THandleStream);
+begin
+  Create(AStream.Handle);
+end;
+
 constructor TLKHandleStream.Create(const AHandle: THandle);
 begin
   FHandle := AHandle;
@@ -999,12 +1008,12 @@ end;
 
 procedure TLKHandleStream.SetSize(const ASize: Int64);
 var
-  LPosition, LOldSize: Int64;
+  {$IFDEF POSIX}LPosition,{$ENDIF POSIX} LOldSize: Int64;
 begin
   Lock;
   try
     LOldSize := GetSize;
-    LPosition := FileSeek(FHandle, ASize, Ord(soBeginning));
+    {$IFDEF POSIX}LPosition := {$ENDIF POSIX}FileSeek(FHandle, ASize, Ord(soBeginning));
     {$WARNINGS OFF} // We're handling platform-specifics here... we don't NEED platform warnings!
     {$IF Defined(MSWINDOWS)}
       Win32Check(SetEndOfFile(FHandle));
@@ -1033,6 +1042,7 @@ constructor TLKFileStream.Create(const AFileName: String; const AMode: Word; con
 var
   LShareMode: Word;
 begin
+  FAdoptedHandle := False;
   if (AMode and fmCreate = fmCreate) then
   begin
     LShareMode := AMode and $FF;
@@ -1051,9 +1061,15 @@ begin
   FFileName := AFileName;
 end;
 
+constructor TLKFileStream.Create(const AStream: TFileStream);
+begin
+  inherited Create(AStream.Handle);
+  FAdoptedHandle := True;
+end;
+
 destructor TLKFileStream.Destroy;
 begin
-  if FHandle <> INVALID_HANDLE_VALUE then
+  if (FHandle <> INVALID_HANDLE_VALUE) and (not FAdoptedHandle) then
     FileClose(FHandle);
   inherited;
 end;
@@ -1288,6 +1304,12 @@ procedure TLKMemoryStream.Clear;
 begin
   SetCapacity(0);
   FSize := 0;
+end;
+
+constructor TLKMemoryStream.Create(const AStream: TCustomMemoryStream);
+begin
+  Create;
+  FMemory := AStream.Memory;
 end;
 
 constructor TLKMemoryStream.Create;
