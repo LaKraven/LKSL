@@ -196,6 +196,36 @@ type
     property Name: String read GetName write SetName;
   end;
 
+  ///  <summary><c>Specialized Streamable Type List</c></summary>
+  ///  <remarks>
+  ///    <para><c>Provides methods to Load and Save to/from Files and Streams (respectively)</c></para>
+  ///  </remarks>
+  TLKStreamableList = class(TLKObjectList<TLKStreamable>)
+  private type
+    TLKStreamListHeader = class(TLKStreamable)
+    private
+      FCount: Integer;
+      function GetCount: Integer;
+      procedure SetCount(const ACount: Integer);
+    protected
+      procedure ReadFromStream(const ACaret: ILKStreamCaret); override;
+      procedure InsertIntoStream(const ACaret: ILKStreamCaret); override;
+      procedure WriteToStream(const ACaret: ILKStreamCaret); override;
+    public
+      class function GetTypeGUID: TGUID; override;
+
+      property Count: Integer read GetCount write SetCount;
+    end;
+  public
+    procedure LoadFromFile(const AFileName: String); inline;
+    procedure LoadFromStream(const AStream: ILKStream); overload; inline;
+    procedure LoadFromStream(const ACaret: ILKStreamCaret); overload;
+
+    procedure SaveToFile(const AFileName: String); inline;
+    procedure SaveToStream(const AStream: ILKStream); overload; inline;
+    procedure SaveToStream(const ACaret: ILKStreamCaret); overload;
+  end;
+
   {
     TLKStreamables
       - The "Streamable Types Manager"
@@ -478,6 +508,116 @@ begin
   end;
 end;
 
+{ TLKStreamableList.TLKStreamListHeader }
+
+function TLKStreamableList.TLKStreamListHeader.GetCount: Integer;
+begin
+  Lock;
+  try
+    Result := FCount;
+  finally
+    Unlock;
+  end;
+end;
+
+class function TLKStreamableList.TLKStreamListHeader.GetTypeGUID: TGUID;
+const
+  TYPE_GUID: TGUID = '{CBA750C3-8914-4D38-87F1-0BA460D52C85}';
+begin
+  Result := TYPE_GUID;
+end;
+
+procedure TLKStreamableList.TLKStreamListHeader.InsertIntoStream(const ACaret: ILKStreamCaret);
+begin
+  StreamInsertInteger(ACaret, FCount);
+end;
+
+procedure TLKStreamableList.TLKStreamListHeader.ReadFromStream(const ACaret: ILKStreamCaret);
+begin
+  FCount := StreamReadInteger(ACaret);
+end;
+
+procedure TLKStreamableList.TLKStreamListHeader.SetCount(const ACount: Integer);
+begin
+  Lock;
+  try
+    FCount := ACount;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TLKStreamableList.TLKStreamListHeader.WriteToStream(const ACaret: ILKStreamCaret);
+begin
+  StreamWriteInteger(ACaret, FCount);
+end;
+
+{ TLKStreamableList }
+
+procedure TLKStreamableList.LoadFromFile(const AFileName: String);
+var
+  LStream: ILKStream;
+begin
+  LStream := TLKFileStream.Create(AFileName, fmOpenRead);
+  LoadFromStream(LStream);
+end;
+
+procedure TLKStreamableList.LoadFromStream(const AStream: ILKStream);
+var
+  LCaret: ILKStreamCaret;
+begin
+  LCaret := AStream.NewCaret;
+  LoadFromStream(LCaret);
+end;
+
+procedure TLKStreamableList.LoadFromStream(const ACaret: ILKStreamCaret);
+var
+  LHeader: TLKStreamListHeader;
+  I: Integer;
+begin
+  ACaret.Stream.AcquireRead;
+  try
+    LHeader := TLKStreamListHeader(Streamables.CreateStreamableFromStream(ACaret));
+    for I := 0 to LHeader.Count - 1 do
+      Add(Streamables.CreateStreamableFromStream(ACaret));
+  finally
+    ACaret.Stream.ReleaseRead;
+  end;
+end;
+
+procedure TLKStreamableList.SaveToFile(const AFileName: String);
+var
+  LStream: ILKStream;
+begin
+  LStream := TLKFileStream.Create(AFileName, fmCreate);
+  SaveToStream(LStream);
+end;
+
+procedure TLKStreamableList.SaveToStream(const AStream: ILKStream);
+var
+  LCaret: ILKStreamCaret;
+begin
+  LCaret := AStream.NewCaret;
+  SaveToStream(LCaret);
+end;
+
+procedure TLKStreamableList.SaveToStream(const ACaret: ILKStreamCaret);
+var
+  LHeader: TLKStreamListHeader;
+  I: Integer;
+begin
+  ACaret.Stream.AcquireWrite;
+  try
+    LHeader := TLKStreamListHeader.Create;
+    LHeader.Count := Count;
+    LHeader.WriteToStream(ACaret);
+    for I := 0 to Count - 1 do
+      Items[I].WriteToStream(ACaret);
+  finally
+    ACaret.Stream.ReleaseWrite;
+  end;
+end;
+
 { TLKStreamableNamed }
 
 function TLKStreamableNamed.GetName: String;
@@ -690,6 +830,7 @@ end;
 
 initialization
   Streamables := TLKStreamables.Create;
+  TLKStreamableList.TLKStreamListHeader.Register;
 finalization
   Streamables.Free;
 
