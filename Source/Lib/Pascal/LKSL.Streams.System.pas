@@ -2198,7 +2198,7 @@ var
   I: Int64;
   LByte: Byte;
 begin
-  ACaret.Lock;
+  ACaret.AcquireWriteLock;
   try
     StreamInsertInt64(ACaret, AValue.Size); // We need to know the size of the stream...
     I := 0;
@@ -2209,7 +2209,7 @@ begin
       Inc(I);
     until I > AValue.Size;
   finally
-    ACaret.Unlock;
+    ACaret.ReleaseWriteLock;
   end;
 end;
 
@@ -2805,7 +2805,7 @@ var
   I: Int64;
   LByte: Byte;
 begin
-  ACaret.Lock;
+  ACaret.AcquireWriteLock;
   try
     StreamWriteInt64(ACaret, AValue.Size); // We need to know the size of the stream...
     I := 0;
@@ -2816,7 +2816,7 @@ begin
       Inc(I);
     until I > AValue.Size;
   finally
-    ACaret.Unlock;
+    ACaret.ReleaseWriteLock;
   end;
 end;
 

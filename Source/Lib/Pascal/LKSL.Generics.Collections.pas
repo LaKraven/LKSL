@@ -86,8 +86,10 @@ type
     TLKSortedListBase<T> = class;
     TLKSortedList<T> = class;
     TLKSortedObjectList<T: class> = class;
-    TLKCenteredList<T> = class;
-    TLKCenteredObjectList<T: class> = class;
+    {$IFDEF LKSL_INCLUDE_CENTEREDLIST}
+      TLKCenteredList<T> = class;
+      TLKCenteredObjectList<T: class> = class;
+    {$ENDIF LKSL_INCLUDE_CENTEREDLIST}
     TLKTreeNode<T> = class;
     TLKTreeObjectNode<T: class> = class;
   {$ENDIF FPC}
@@ -398,7 +400,7 @@ type
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
-{$IFNDEF FPC}
+{$IFDEF LKSL_INCLUDE_CENTEREDLIST}
   {
     TLKCenteredList
       - A special Generic List object which allows the use of both positive and NEGATIVE indices!
@@ -545,7 +547,8 @@ type
 
     property OwnsObjects: Boolean read FOwnsObjects write FOwnsObjects;
   end;
-
+{$ENDIF LKSL_INCLUDE_CENTEREDLIST}
+{$IFNDEF FPC}
   {
     TLKTreeNode<T>
       - A special Generic Tree Object with thread-safe Locks
@@ -630,6 +633,8 @@ type
   TLKTreeObjectNode<T: class> = class(TLKTreeNode<T>)
   private
     FOwnsObject: Boolean;
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
   public
     constructor Create(const AParent: TLKTreeNode<T>; const AValue: T); reintroduce; overload;
     constructor Create(const AParent: TLKTreeNode<T>); reintroduce; overload;
@@ -637,7 +642,7 @@ type
     constructor Create; reintroduce; overload;
     destructor Destroy; override;
 
-    property OwnsObject: Boolean read FOwnsObject write FOwnsObject;
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 {$ENDIF FPC}
 
@@ -810,12 +815,7 @@ end;
 
 procedure TLKListBase<T>.CheckCapacity;
 begin
-  Lock;
-  try
-    CheckCapacity(FCount);
-  finally
-    Unlock;
-  end;
+  CheckCapacity(Count);
 end;
 
 procedure TLKListBase<T>.Add(const AItems: TArrayOfT);
@@ -828,7 +828,7 @@ end;
 
 procedure TLKListBase<T>.CheckCapacity(const ATotalRequiredCapacity: Integer);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if ((Length(FArray) - ATotalRequiredCapacity) < FCapacityThreshold) then
     begin
@@ -838,7 +838,7 @@ begin
         SetLength(FArray, ATotalRequiredCapacity + FCapacityThreshold); // Expand to ensure everything fits
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -857,11 +857,11 @@ end;
 
 procedure TLKListBase<T>.CompactActual;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     SetLength(FArray, FCount + FCapacityThreshold + Round(FCapacityMultiplier));
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -869,7 +869,7 @@ function TLKListBase<T>.Contains(const AItems: TArrayOfT): Boolean;
 var
   I: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := True; // Optimistic
     for I := Low(AItems) to High(AItems) do
@@ -879,7 +879,7 @@ begin
         Break; // No point looking further if one of the items isn't present
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -921,7 +921,7 @@ end;
 
 procedure TLKListBase<T>.DeleteActual(const AIndex: Integer; const AFinalizeMode: TLKListFinalizeMode; const ASmartCompactMode: TLKListSmartCompactMode);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if ValidateIndexInRange(AIndex) then
     begin
@@ -935,7 +935,7 @@ begin
         SmartCompact;
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -943,12 +943,12 @@ procedure TLKListBase<T>.DeleteRange(const AIndex, ACount: Integer);
 var
   I: Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     for I := AIndex + ACount downto AIndex do
       Delete(I);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -965,41 +965,41 @@ end;
 
 function TLKListBase<T>.GetCapacity: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
-    Result := Length(FArray);
+  Result := Length(FArray);
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKListBase<T>.GetCapacityMultiplier: Single;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FCapacityMultiplier;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKListBase<T>.GetCapacityThreshold: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FCapacityThreshold;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKListBase<T>.GetCount: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FCount;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1010,14 +1010,14 @@ end;
 
 function TLKListBase<T>.GetItemByIndex(const AIndex: Integer): T;
 begin
-  Lock;
+  AcquireReadLock;
   try
     if (AIndex > -1) and (AIndex <= FCount) then
       Result := FArray[AIndex]
     else
       raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Range.', [AIndex]);
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1026,7 +1026,7 @@ var
   I: Integer;
 begin
   Result := -1; // Pessimistic
-  Lock;
+  AcquireReadLock;
   try
     for I := 0 to FCount - 1 do
       if {$IFDEF FPC}CompareByte(FArray[I], AItem, SizeOf(AItem)) > 0{$ELSE}FComparer.Compare(FArray[I], AItem) = 0{$ENDIF FPC} then
@@ -1035,7 +1035,7 @@ begin
         Break; // No point going further if we've already found it
       end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1049,14 +1049,14 @@ end;
 
 function TLKListBase<T>.AddActual(const AItem: T): Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     CheckCapacity(FCount + 1);
     Result := FCount;
     FArray[Result] := AItem;
     Inc(FCount);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1072,14 +1072,14 @@ procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound
 var
   I: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     case AIterateDirection of
       ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
       ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1087,7 +1087,7 @@ procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound
 var
   I: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     if ValidateRangeInArray(AFrom, ATo) then
     begin
@@ -1102,7 +1102,7 @@ begin
       end;
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1110,14 +1110,14 @@ procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObjec
 var
   I: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     case AIterateDirection of
       ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
       ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1125,7 +1125,7 @@ procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObjec
 var
   I: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     if ValidateRangeInArray(AFrom, ATo) then
     begin
@@ -1140,7 +1140,7 @@ begin
       end;
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1149,7 +1149,7 @@ end;
   var
     I: Integer;
   begin
-    Lock;
+    AcquireReadLock;
     try
       if ValidateRangeInArray(AFrom, ATo) then
       begin
@@ -1164,7 +1164,7 @@ end;
         end;
       end;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
@@ -1172,22 +1172,26 @@ end;
   var
     I: Integer;
   begin
-    Lock;
+    AcquireReadLock;
     try
       case AIterateDirection of
         ldLeft: for I := FCount - 1 downto 0 do AIterateCallback(I, FArray[I]); // Reverse-order
         ldRight: for I := 0 to FCount - 1 do AIterateCallback(I, FArray[I]); // Forward-order
       end;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
 procedure TLKListBase<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
 begin
-
-  System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
+  AcquireWriteLock;
+  try
+    System.Move(FArray[AFromIndex], FArray[AToIndex], ACount * SizeOf(T));
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 
@@ -1198,6 +1202,7 @@ var
 begin
   if (Length(FArray) = 0) or ((AHigh - ALow) <= 0) then
     Exit;
+
   repeat
     I := ALow;
     J := AHigh;
@@ -1263,11 +1268,11 @@ begin
   else if AMultiplier > LKSL_LIST_MULTIPLIER_MAXIMUM then
     raise ELKGenericCollectionsLimitException.CreateFmt('Maximum Capacity Multiplier is %n', [LKSL_LIST_MULTIPLIER_MAXIMUM]);
   // If we got this far, we're ready to change our Multiplier
-  Lock;
+  AcquireWriteLock;
   try
     FCapacityMultiplier := AMultiplier;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1277,34 +1282,44 @@ begin
   if AThreshold < LKSL_LIST_THRESHOLD_MINIMUM then
     raise ELKGenericCollectionsLimitException.CreateFmt('Minimum Capacity Threshold is %d', [LKSL_LIST_THRESHOLD_MINIMUM]);
   // If we got this far, we're ready to change our Threshold
-  Lock;
+  AcquireWriteLock;
   try
     FCapacityThreshold := AThreshold;
     CheckCapacity; // Adjust the Array Capacity if necessary
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKListBase<T>.SmartCompact;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if Length(FArray) > Round(FCount * FCapacityMultiplier) + FCapacityThreshold then
       CompactActual;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKListBase<T>.Sort(const ASortHandler: TLKSortHandlerT; const ASortOrder: TLKListSortOrder = soAscending);
 begin
-  QuickSort(ASortHandler, 0, FCount - 1, ASortOrder);
+  AcquireWriteLock;
+  try
+    QuickSort(ASortHandler, 0, FCount - 1, ASortOrder);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 function TLKListBase<T>.ValidateIndexInRange(const AIndex: Integer): Boolean;
 begin
-  Result := (AIndex < FCount);
+  AcquireReadLock;
+  try
+    Result := (AIndex < FCount);
+  finally
+    ReleaseReadLock;
+  end;
   if (not Result) then
     raise ELKGenericCollectionsRangeException.CreateFmt('Index Out of Bounds: %d', [AIndex]);
 end;
@@ -1312,14 +1327,14 @@ end;
 function TLKListBase<T>.ValidateRangeInArray(const AFrom, ATo: Integer): Boolean;
 begin
   Result := False;
-  Lock;
+  AcquireReadLock;
   try
     if (AFrom < 0) or (AFrom >= FCount) then
       raise ELKGenericCollectionsRangeException.CreateFmt('"From" Index Out of Range: %d', [AFrom]);
     if (ATo < 0) or (ATo >= FCount) then
       raise ELKGenericCollectionsRangeException.CreateFmt('"To" Index Out of Range: %d', [AFrom]);
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
   Result := True;
 end;
@@ -1328,12 +1343,12 @@ end;
 
 procedure TLKList<T>.Insert(const AItem: T; const AIndex: Integer);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if ValidateIndexInRange(AIndex) then
       InsertActual(AItem, AIndex);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1343,7 +1358,7 @@ procedure TLKObjectList<T>.Clear(const ACompact: Boolean);
 var
   I: Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if FOwnsObjects then
     begin
@@ -1352,7 +1367,7 @@ begin
     end;
     inherited;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1372,7 +1387,7 @@ end;
 
 procedure TLKObjectList<T>.Delete(const AIndex: Integer);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if FOwnsObjects then
       {$IFDEF FPC}
@@ -1382,7 +1397,7 @@ begin
       {$ENDIF FPC}
     inherited;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1394,21 +1409,21 @@ end;
 
 function TLKObjectList<T>.GetOwnsObjects: Boolean;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FOwnsObjects;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 procedure TLKObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FOwnsObjects := AOwnsObjects;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1419,34 +1434,39 @@ var
   LIndex, LLow, LHigh: Integer;
 begin
   Result := 0;
-  LLow := 0;
-  LHigh := FCount - 1;
-  if LHigh = - 1 then
-    Exit;
-  if LLow < LHigh then
-  begin
-    while (LHigh - LLow > 1) do
+  AcquireReadLock;
+  try
+    LLow := 0;
+    LHigh := FCount - 1;
+    if LHigh = - 1 then
+      Exit;
+    if LLow < LHigh then
     begin
-      LIndex := (LHigh + LLow) div 2;
-      if ALessThanOrEqualB(AItem, FArray[LIndex]) then
-        LHigh := LIndex
-      else
-        LLow := LIndex;
+      while (LHigh - LLow > 1) do
+      begin
+        LIndex := (LHigh + LLow) div 2;
+        if ALessThanOrEqualB(AItem, FArray[LIndex]) then
+          LHigh := LIndex
+        else
+          LLow := LIndex;
+      end;
     end;
+    if ALessThanB(FArray[LHigh], AItem) then
+      Result := LHigh + 1
+    else if ALessThanB(FArray[LLow], AItem) then
+      Result := LLow + 1
+    else
+      Result := LLow;
+  finally
+    ReleaseReadLock;
   end;
-  if ALessThanB(FArray[LHigh], AItem) then
-    Result := LHigh + 1
-  else if ALessThanB(FArray[LLow], AItem) then
-    Result := LLow + 1
-  else
-    Result := LLow;
 end;
 
 { TLKSortedList<T> }
 
 function TLKSortedList<T>.AddActual(const AItem: T): Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     CheckCapacity(FCount + 1);
     Result := GetSortedPosition(AItem);
@@ -1455,7 +1475,7 @@ begin
     else
       InsertActual(AItem, Result);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1465,7 +1485,7 @@ procedure TLKSortedObjectList<T>.Clear(const ACompact: Boolean);
 var
   I: Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if FOwnsObjects then
     begin
@@ -1478,7 +1498,7 @@ begin
     end;
     inherited;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1498,7 +1518,7 @@ end;
 
 procedure TLKSortedObjectList<T>.Delete(const AIndex: Integer);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if FOwnsObjects then
       {$IFDEF FPC}
@@ -1508,7 +1528,7 @@ begin
       {$ENDIF FPC}
     inherited;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1520,24 +1540,25 @@ end;
 
 function TLKSortedObjectList<T>.GetOwnsObjects: Boolean;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FOwnsObjects;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 procedure TLKSortedObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FOwnsObjects := AOwnsObjects;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
-{$IFNDEF FPC}
+
+{$IFDEF LKSL_INCLUDE_CENTEREDLIST}
   { TLKCenteredList<T> }
 
   function TLKCenteredList<T>.Add(const AItem: T; const ADirection: TLKListDirection): Integer;
@@ -2294,7 +2315,8 @@ end;
       FArrayRight[AIndex].DisposeOf;
     inherited;
   end;
-
+{$ENDIF LKSL_INCLUDE_CENTEREDLIST}
+{$IFNDEF FPC}
   { TLKTreeNode<T> }
 
   constructor TLKTreeNode<T>.Create(const AParent: TLKTreeNode<T>; const AValue: T);
@@ -2338,34 +2360,34 @@ end;
 
   function TLKTreeNode<T>.GetRootNode: TLKTreeNode<T>;
   begin
-    Lock;
+    AcquireReadLock;
     try
       if IsRoot then
         Result := Self
       else
         Result := Parent.RootNode;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
   function TLKTreeNode<T>.GetChildCount: Integer;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Result := FChildren.Count;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
   function TLKTreeNode<T>.GetChildren(const AIndex: Integer): TLKTreeNode<T>;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Result := FChildren[AIndex];
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
@@ -2374,43 +2396,36 @@ end;
     if Parent = nil then
       Result := -1
     else
-    begin
-      Lock;
-      try
-        Result := Parent.IndexOf(Self);
-      finally
-        Unlock;
-      end;
-    end;
+      Result := Parent.IndexOf(Self);
   end;
 
   function TLKTreeNode<T>.GetIsRoot: Boolean;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Result := Parent = nil;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
   function TLKTreeNode<T>.GetIsBranch: Boolean;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Result := (not GetIsRoot) and (not GetIsLeaf);
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
   function TLKTreeNode<T>.GetIsLeaf: Boolean;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Result := FChildren.Count = 0;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
@@ -2418,7 +2433,7 @@ end;
   var
     Ancestor: TLKTreeNode<T>;
   begin
-    Lock;
+    AcquireReadLock;
     try
       Ancestor := Parent;
       Result := 0;
@@ -2429,7 +2444,7 @@ end;
         Ancestor := Ancestor.Parent;
       end;
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 
@@ -2453,11 +2468,11 @@ end;
 
   procedure TLKTreeNode<T>.SetValue(const AValue: T);
   begin
-    Lock;
+    AcquireWriteLock;
     try
       FValue := AValue;
     finally
-      Unlock;
+      ReleaseWriteLock;
     end;
   end;
 
@@ -2495,7 +2510,7 @@ end;
     if (Parent = nil) and (ANewParent = nil) then
       Exit;
 
-    Lock;
+    AcquireWriteLock;
     try
       if Parent = ANewParent then
       begin
@@ -2520,7 +2535,7 @@ end;
         DoAncestorChanged;
       end;
     finally
-      Unlock;
+      ReleaseWriteLock;
     end;
   end;
 
@@ -2531,66 +2546,41 @@ end;
 
   function TLKTreeNode<T>.IndexOf(const AChild: TLKTreeNode<T>): Integer;
   begin
-    Lock;
-    try
-      Result := FChildren.IndexOf(AChild);
-    finally
-      Unlock;
-    end;
+    Result := FChildren.IndexOf(AChild);
   end;
 
   procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
   var
-    Index: Integer;
+    LIndex: Integer;
   begin
-    Lock;
-    try
-      AAction(Self);
-      for Index := 0 to ChildCount-1 do
-        Children[Index].PreOrderWalk(AAction);
-    finally
-      Unlock;
-    end;
+    AAction(Self);
+    for LIndex := 0 to ChildCount-1 do
+      FChildren[LIndex].PreOrderWalk(AAction);
   end;
 
   procedure TLKTreeNode<T>.PreOrderWalk(const AAction: TLKValueCallback<T>);
   begin
-    Lock;
-    try
-      PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
-                   begin
-                     AAction(Node.Value);
-                   end);
-    finally
-      Unlock;
-    end;
+    PreOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                 begin
+                   AAction(Node.Value);
+                 end);
   end;
 
   procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<TLKTreeNode<T>>);
   var
     LIndex: Integer;
   begin
-    Lock;
-    try
-      for LIndex := 0 to ChildCount-1 do
-        Children[LIndex].PostOrderWalk(AAction);
-      AAction(Self);
-    finally
-      Unlock;
-    end;
+    for LIndex := 0 to ChildCount-1 do
+      FChildren[LIndex].PostOrderWalk(AAction);
+    AAction(Self);
   end;
 
   procedure TLKTreeNode<T>.PostOrderWalk(const AAction: TLKValueCallback<T>);
   begin
-    Lock;
-    try
-      PostOrderWalk(procedure(const Node: TLKTreeNode<T>)
-                    begin
-                      AAction(Node.Value);
-                    end);
-    finally
-      Unlock;
-    end;
+    PostOrderWalk(procedure(const Node: TLKTreeNode<T>)
+                  begin
+                    AAction(Node.Value);
+                  end);
   end;
 
   { TLKTreeObjectNode<T> }
@@ -2625,6 +2615,27 @@ end;
       FValue.DisposeOf;
     inherited;
   end;
+
+  function TLKTreeObjectNode<T>.GetOwnsObjects: Boolean;
+  begin
+    AcquireReadLock;
+    try
+      Result := FOwnsObject;
+    finally
+      ReleaseReadLock;
+    end;
+  end;
+
+  procedure TLKTreeObjectNode<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+  begin
+    AcquireWriteLock;
+    try
+      FOwnsObject := AOwnsObjects;
+    finally
+      ReleaseWriteLock;
+    end;
+  end;
+
 {$ENDIF FPC}
 
 end.

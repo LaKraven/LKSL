@@ -118,31 +118,31 @@ end;
 
 function TLKPerformanceCounter.GetAverageOver: Cardinal;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FAverageOver;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKPerformanceCounter.GetAverageRate: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FAverageRate;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKPerformanceCounter.GetInstantRate: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FInstantRate;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -151,7 +151,7 @@ var
   I: Integer;
   LTotal: LKFloat;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if AValue > 0 then // Can't divide by 0
     begin
@@ -171,27 +171,32 @@ begin
         FAverageRate := 1 / (LTotal / FSampleCount);
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKPerformanceCounter.Reset;
 begin
-  SetLength(FSamples, FAverageOver);
-  FSampleCount := 0;
-  FSampleIndex := 0;
-  FInstantRate := 0;
-  FAverageRate := 0;
+  AcquireWriteLock;
+  try
+    SetLength(FSamples, FAverageOver);
+    FSampleCount := 0;
+    FSampleIndex := 0;
+    FInstantRate := 0;
+    FAverageRate := 0;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKPerformanceCounter.SetAverageOver(const AAverageOver: Cardinal);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FAverageOver := AAverageOver;
     Reset;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 

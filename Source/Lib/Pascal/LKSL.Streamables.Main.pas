@@ -368,12 +368,12 @@ end;
 
 procedure TLKStreamable.LoadFromStream(const ACaret: ILKStreamCaret; const APosition: Int64);
 begin
-  ACaret.Stream.AcquireRead;
+  ACaret.Stream.AcquireReadLock;
   try
     ACaret.Position := APosition;
     LoadFromStream(ACaret);
   finally
-    ACaret.Stream.ReleaseRead;
+    ACaret.Stream.ReleaseReadLock;
   end;
 end;
 
@@ -396,9 +396,9 @@ var
   LSignature: TGUID;
 //  LEngineVersion: Byte; // FOR FUTURE USE
 begin
-  Lock;
+  AcquireWriteLock;
   try
-    ACaret.Stream.AcquireRead;
+    ACaret.Stream.AcquireReadLock;
     try
       LSignature := StreamReadGUID(ACaret); // Read the GUID
       if IsEqualGUID(LSignature, GetTypeGUID) then // Check if the Signature matches the expected GUID
@@ -410,10 +410,10 @@ begin
       end else
         raise ELKStreamableSignatureMismatch.CreateFmt('Stream Signature Mismatch! Expected "%s", got "%s', [GUIDToString(GetTypeGUID), GUIDToString(LSignature)]);
     finally
-      ACaret.Stream.ReleaseRead;
+      ACaret.Stream.ReleaseReadLock;
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -441,7 +441,7 @@ begin
     SaveToStream(ACaret)
   else
   begin
-    Lock;
+    AcquireReadLock;
     try
       ACaret.Position := APosition; // Set the position
 
@@ -462,7 +462,7 @@ begin
 
       ACaret.Position := LBlockEnd; // Reset the caret to the end of the Block
     finally
-      Unlock;
+      ReleaseReadLock;
     end;
   end;
 end;
@@ -478,9 +478,9 @@ var
   LBlockSizePos: Int64;
   LBlockEnd: Int64;
 begin
-  Lock;
+  AcquireReadLock;
   try
-    ACaret.Stream.AcquireWrite;
+    ACaret.Stream.AcquireWriteLock;
     try
       LBlockStart := ACaret.Position;
 
@@ -501,10 +501,10 @@ begin
 
       ACaret.Position := LBlockEnd;
     finally
-      ACaret.Stream.ReleaseWrite;
+      ACaret.Stream.ReleaseWriteLock;
     end;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -512,11 +512,11 @@ end;
 
 function TLKStreamableList.TLKStreamListHeader.GetCount: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FCount;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -539,11 +539,11 @@ end;
 
 procedure TLKStreamableList.TLKStreamListHeader.SetCount(const ACount: Integer);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FCount := ACount;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -575,13 +575,13 @@ var
   LHeader: TLKStreamListHeader;
   I: Integer;
 begin
-  ACaret.Stream.AcquireRead;
+  ACaret.Stream.AcquireReadLock;
   try
     LHeader := TLKStreamListHeader(Streamables.CreateStreamableFromStream(ACaret));
     for I := 0 to LHeader.Count - 1 do
       Add(Streamables.CreateStreamableFromStream(ACaret));
   finally
-    ACaret.Stream.ReleaseRead;
+    ACaret.Stream.ReleaseReadLock;
   end;
 end;
 
@@ -606,7 +606,7 @@ var
   LHeader: TLKStreamListHeader;
   I: Integer;
 begin
-  ACaret.Stream.AcquireWrite;
+  ACaret.Stream.AcquireWriteLock;
   try
     LHeader := TLKStreamListHeader.Create;
     LHeader.Count := Count;
@@ -614,7 +614,7 @@ begin
     for I := 0 to Count - 1 do
       Items[I].WriteToStream(ACaret);
   finally
-    ACaret.Stream.ReleaseWrite;
+    ACaret.Stream.ReleaseWriteLock;
   end;
 end;
 
@@ -622,11 +622,11 @@ end;
 
 function TLKStreamableNamed.GetName: String;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FName;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -644,11 +644,11 @@ end;
 
 procedure TLKStreamableNamed.SetName(const AName: String);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FName := AName;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -662,11 +662,12 @@ end;
 
 procedure TLKStreamables.Clear;
 begin
-  Lock;
+  //TODO -oSJS -cTLKStreamables: Remove Locking once TLKDictionary is rewritten
+  AcquireWriteLock;
   try
     FStreamableTypes.Clear;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -714,11 +715,11 @@ end;
 
 function TLKStreamables.GetCount: Integer;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FStreamableTypes.Count;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -783,7 +784,7 @@ end;
 
 procedure TLKStreamables.Register(const AStreamableType: TLKStreamableType);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if not (FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID)) then
     begin
@@ -792,7 +793,7 @@ begin
     end else
       raise ELKStreamableTypeAlreadyRegistered.CreateFmt('A Streamable Type with the GUID "%s" is already registered', [GUIDToString(AStreamableType.GetTypeGUID)]);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -815,7 +816,7 @@ end;
 
 procedure TLKStreamables.Unregister(const AStreamableType: TLKStreamableType);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     if FStreamableTypes.ContainsKey(AStreamableType.GetTypeGUID) then
     begin
@@ -824,7 +825,7 @@ begin
     end else
       raise ELKStreamableTypeNotRegistered.CreateFmt('A Streamable Type with the GUID "%s" has not yet been registered, therefore cannot be unregistered!', [GUIDToString(AStreamableType.GetTypeGUID)]);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 

@@ -107,9 +107,12 @@ type
   ///  <remarks><c>Provides access to the Lock and Unlock methods.</c></remarks>
   ILKInterface = interface
   ['{CAC7A376-703A-4D55-BFBE-423CCAF8F43A}']
-    procedure Lock;
-    function LockIfAvailable: Boolean;
-    procedure Unlock;
+    procedure AcquireReadLock;
+    procedure AcquireWriteLock;
+    procedure ReleaseReadLock;
+    procedure ReleaseWriteLock;
+    function TryAcquireReadLock: Boolean;
+    function TryAcquireWriteLock: Boolean;
   end;
 
   ///  <summary><c>Avoids CPU caching (which causes problems)</c></summary>
@@ -136,8 +139,8 @@ type
   public
     constructor Create; virtual;
     destructor Destroy; override;
-    function AcquireRead(const ATimeout: Cardinal = INFINITE): Boolean;
-    function AcquireWrite(const ATimeout: Cardinal = INFINITE): Boolean;
+    procedure AcquireRead;
+    procedure AcquireWrite;
     procedure ReleaseRead;
     procedure ReleaseWrite;
     function TryAcquireRead: Boolean;
@@ -151,14 +154,17 @@ type
   TLKPersistent = class(TPersistent)
   private
     FInstanceGUID: TGUID;
-    FLock: TLKCriticalSection;
+    FLock: TLKReadWriteLock;
   public
     constructor Create; virtual;
     destructor Destroy; override;
 
-    function LockIfAvailable: Boolean; inline;
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure AcquireReadLock; inline;
+    procedure AcquireWriteLock; inline;
+    procedure ReleaseReadLock; inline;
+    procedure ReleaseWriteLock; inline;
+    function TryAcquireReadLock: Boolean; inline;
+    function TryAcquireWriteLock: Boolean; inline;
 
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
@@ -170,14 +176,17 @@ type
   TLKObject = class(TObject)
   private
     FInstanceGUID: TGUID;
-    FLock: TLKCriticalSection;
+    FLock: TLKReadWriteLock;
   public
     constructor Create; virtual;
     destructor Destroy; override;
 
-    function LockIfAvailable: Boolean; inline;
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure AcquireReadLock; inline;
+    procedure AcquireWriteLock; inline;
+    procedure ReleaseReadLock; inline;
+    procedure ReleaseWriteLock; inline;
+    function TryAcquireReadLock: Boolean; inline;
+    function TryAcquireWriteLock: Boolean; inline;
 
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
@@ -185,14 +194,17 @@ type
   TLKInterfacedPersistent = class(TInterfacedPersistent, ILKInterface)
   private
     FInstanceGUID: TGUID;
-    FLock: TLKCriticalSection;
+    FLock: TLKReadWriteLock;
   public
     constructor Create; virtual;
     destructor Destroy; override;
 
-    function LockIfAvailable: Boolean; inline;
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure AcquireReadLock; inline;
+    procedure AcquireWriteLock; inline;
+    procedure ReleaseReadLock; inline;
+    procedure ReleaseWriteLock; inline;
+    function TryAcquireReadLock: Boolean; inline;
+    function TryAcquireWriteLock: Boolean; inline;
 
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
@@ -200,14 +212,17 @@ type
   TLKInterfacedObject = class(TInterfacedObject, ILKInterface)
   private
     FInstanceGUID: TGUID;
-    FLock: TLKCriticalSection;
+    FLock: TLKReadWriteLock;
   public
     constructor Create; virtual;
     destructor Destroy; override;
 
-    function LockIfAvailable: Boolean; inline;
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure AcquireReadLock; inline;
+    procedure AcquireWriteLock; inline;
+    procedure ReleaseReadLock; inline;
+    procedure ReleaseWriteLock; inline;
+    function TryAcquireReadLock: Boolean; inline;
+    function TryAcquireWriteLock: Boolean; inline;
 
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
@@ -229,43 +244,57 @@ implementation
 
 { TLKReadWriteLock }
 
-function TLKReadWriteLock.AcquireRead(const ATimeout: Cardinal): Boolean;
+procedure TLKReadWriteLock.AcquireRead;
 begin
-  Result := False;
+  FWriteLock.Enter;
+{
   if FDestroying then
     Exit;
-  if FWriteOpen.WaitFor(ATimeout) = wrSignaled then
+  if FWriteLock.TryEnter then
   begin
-    FCountLock.Enter;
     try
-      Inc(FReads);
-      if FReads = 1 then
-        FReadOpen.ResetEvent;
-      Result := True;
+      FCountLock.Enter;
+      try
+        Inc(FReads);
+        if FReads = 1 then
+          FReadOpen.ResetEvent;
+      finally
+        FCountLock.Leave;
+      end;
     finally
-      FCountLock.Leave;
+      FWriteLock.Leave;
     end;
   end;
+  FWriteOpen.WaitFor(INFINITE);
+
+  FCountLock.Enter;
+  try
+    Inc(FReads);
+    if FReads = 1 then
+      FReadOpen.ResetEvent;
+  finally
+    FCountLock.Leave;
+  end;
+}
 end;
 
-function TLKReadWriteLock.AcquireWrite(const ATimeout: Cardinal): Boolean;
+procedure TLKReadWriteLock.AcquireWrite;
 begin
-  Result := False;
+  FWriteLock.Enter;
+{
   if FDestroying then
     Exit;
-  if FReadOpen.WaitFor(ATimeout) <> wrSignaled then
-  begin
-    FCountLock.Enter;
-    try
-      Inc(FWrites);
-      if FWrites = 1 then
-        FWriteOpen.ResetEvent;
-      Result := True;
-      FWriteLock.Enter;
-    finally
-      FCountLock.Leave;
-    end;
+  FReadOpen.WaitFor(INFINITE);
+  FCountLock.Enter; // AcquireWrite method is now Thread-Exclusive
+  try
+    Inc(FWrites); // Technically, there can only ever be one Write operation taking place
+    if FWrites = 1 then
+      FWriteOpen.ResetEvent; // Read Access is now Locked
+    FWriteLock.Enter; // Write Access is now Thread-Exclusive
+  finally
+    FCountLock.Leave; // AcquireWrite method is now open to other Threads
   end;
+}
 end;
 
 constructor TLKReadWriteLock.Create;
@@ -294,36 +323,41 @@ end;
 
 procedure TLKReadWriteLock.ReleaseRead;
 begin
-  FCountLock.Enter;
+  FWriteLock.Leave;
+{  FCountLock.Enter;
   try
     Dec(FReads);
     if FReads = 0 then
       FReadOpen.SetEvent;
   finally
     FCountLock.Leave;
-  end;
+  end;    }
 end;
 
 procedure TLKReadWriteLock.ReleaseWrite;
 begin
-  FCountLock.Enter;
+  FWriteLock.Leave;
+{  FCountLock.Enter;
   try
     Dec(FWrites);
     if FWrites = 0 then
       FWriteOpen.SetEvent;
+    FWriteLock.Leave;
   finally
     FCountLock.Leave;
-  end;
+  end;    }
 end;
 
 function TLKReadWriteLock.TryAcquireRead: Boolean;
 begin
-  Result := AcquireRead(1);
+//  Result := AcquireRead(0);
+  Result := FWriteLock.TryEnter;
 end;
 
 function TLKReadWriteLock.TryAcquireWrite: Boolean;
 begin
-  Result := AcquireWrite(1);
+//  Result := AcquireWrite(0);
+  Result := FWriteLock.TryEnter;
 end;
 
 { TLKPersistent }
@@ -331,7 +365,7 @@ end;
 constructor TLKPersistent.Create;
 begin
   inherited Create;
-  FLock := TLKCriticalSection.Create;
+  FLock := TLKReadWriteLock.Create;
   CreateGUID(FInstanceGUID);
 end;
 
@@ -341,19 +375,34 @@ begin
   inherited;
 end;
 
-procedure TLKPersistent.Lock;
+procedure TLKPersistent.AcquireReadLock;
 begin
-  FLock.Acquire;
+  FLock.AcquireRead;
 end;
 
-function TLKPersistent.LockIfAvailable: Boolean;
+procedure TLKPersistent.AcquireWriteLock;
 begin
-  Result := FLock.TryEnter;
+  FLock.AcquireWrite;
 end;
 
-procedure TLKPersistent.Unlock;
+procedure TLKPersistent.ReleaseReadLock;
 begin
-  FLock.Release;
+  FLock.ReleaseRead;
+end;
+
+procedure TLKPersistent.ReleaseWriteLock;
+begin
+  FLock.ReleaseWrite;
+end;
+
+function TLKPersistent.TryAcquireReadLock: Boolean;
+begin
+  Result := FLock.TryAcquireRead;
+end;
+
+function TLKPersistent.TryAcquireWriteLock: Boolean;
+begin
+  Result := FLock.TryAcquireWrite;
 end;
 
 { TLKObject }
@@ -361,7 +410,7 @@ end;
 constructor TLKObject.Create;
 begin
   inherited Create;
-  FLock := TLKCriticalSection.Create;
+  FLock := TLKReadWriteLock.Create;
   CreateGUID(FInstanceGUID);
 end;
 
@@ -371,19 +420,34 @@ begin
   inherited;
 end;
 
-procedure TLKObject.Lock;
+procedure TLKObject.AcquireReadLock;
 begin
-  FLock.Acquire;
+  FLock.AcquireRead
 end;
 
-function TLKObject.LockIfAvailable: Boolean;
+procedure TLKObject.AcquireWriteLock;
 begin
-  Result := FLock.TryEnter;
+  FLock.AcquireWrite;
 end;
 
-procedure TLKObject.Unlock;
+procedure TLKObject.ReleaseReadLock;
 begin
-  FLock.Release;
+  FLock.ReleaseRead;
+end;
+
+procedure TLKObject.ReleaseWriteLock;
+begin
+  FLock.ReleaseWrite;
+end;
+
+function TLKObject.TryAcquireReadLock: Boolean;
+begin
+  Result := FLock.TryAcquireRead;
+end;
+
+function TLKObject.TryAcquireWriteLock: Boolean;
+begin
+  Result := FLock.TryAcquireWrite;
 end;
 
 { TLKInterfacedPersistent }
@@ -391,7 +455,7 @@ end;
 constructor TLKInterfacedPersistent.Create;
 begin
   inherited Create;
-  FLock := TLKCriticalSection.Create;
+  FLock := TLKReadWriteLock.Create;
   CreateGUID(FInstanceGUID);
 end;
 
@@ -401,19 +465,34 @@ begin
   inherited;
 end;
 
-procedure TLKInterfacedPersistent.Lock;
+procedure TLKInterfacedPersistent.AcquireReadLock;
 begin
-  FLock.Acquire;
+  FLock.AcquireRead;
 end;
 
-function TLKInterfacedPersistent.LockIfAvailable: Boolean;
+procedure TLKInterfacedPersistent.AcquireWriteLock;
 begin
-  Result := FLock.TryEnter;
+  FLock.AcquireWrite;
 end;
 
-procedure TLKInterfacedPersistent.Unlock;
+procedure TLKInterfacedPersistent.ReleaseReadLock;
 begin
-  FLock.Release;
+  FLock.ReleaseRead;
+end;
+
+procedure TLKInterfacedPersistent.ReleaseWriteLock;
+begin
+  FLock.ReleaseWrite;
+end;
+
+function TLKInterfacedPersistent.TryAcquireReadLock: Boolean;
+begin
+  Result := FLock.TryAcquireRead;
+end;
+
+function TLKInterfacedPersistent.TryAcquireWriteLock: Boolean;
+begin
+  Result := FLock.TryAcquireWrite;
 end;
 
 { TLKInterfacedObject }
@@ -421,7 +500,7 @@ end;
 constructor TLKInterfacedObject.Create;
 begin
   inherited Create;
-  FLock := TLKCriticalSection.Create;
+  FLock := TLKReadWriteLock.Create;
   CreateGUID(FInstanceGUID);
 end;
 
@@ -431,19 +510,34 @@ begin
   inherited;
 end;
 
-procedure TLKInterfacedObject.Lock;
+procedure TLKInterfacedObject.AcquireReadLock;
 begin
-  FLock.Acquire;
+  FLock.AcquireRead;
 end;
 
-function TLKInterfacedObject.LockIfAvailable: Boolean;
+procedure TLKInterfacedObject.AcquireWriteLock;
 begin
-  Result := FLock.TryEnter;
+  FLock.AcquireWrite;
 end;
 
-procedure TLKInterfacedObject.Unlock;
+procedure TLKInterfacedObject.ReleaseReadLock;
 begin
-  FLock.Release;
+  FLock.ReleaseRead;
+end;
+
+procedure TLKInterfacedObject.ReleaseWriteLock;
+begin
+  FLock.ReleaseWrite;
+end;
+
+function TLKInterfacedObject.TryAcquireReadLock: Boolean;
+begin
+  Result := FLock.TryAcquireRead;
+end;
+
+function TLKInterfacedObject.TryAcquireWriteLock: Boolean;
+begin
+  Result := FLock.TryAcquireWrite;
 end;
 
 end.

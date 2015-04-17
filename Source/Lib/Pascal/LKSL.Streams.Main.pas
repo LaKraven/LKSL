@@ -153,13 +153,13 @@ type
     procedure SetSize(const ASize: Int64);
 
     ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
-    procedure AcquireRead;
+    procedure AcquireReadLock;
     ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
-    procedure AcquireWrite;
+    procedure AcquireWriteLock;
     ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
-    procedure ReleaseRead;
+    procedure ReleaseReadLock;
     ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
-    procedure ReleaseWrite;
+    procedure ReleaseWriteLock;
 
     procedure LoadFromFile(const AFileName: String);
     procedure LoadFromStream(const AStream: ILKStream); overload;
@@ -289,11 +289,6 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure AcquireRead; virtual; abstract;
-    procedure AcquireWrite; virtual; abstract;
-    procedure ReleaseRead; virtual; abstract;
-    procedure ReleaseWrite; virtual; abstract;
-
     procedure LoadFromFile(const AFileName: String); virtual; abstract;
     procedure LoadFromStream(const AStream: ILKStream); overload; virtual; abstract;
     procedure LoadFromStream(const AStream: TStream); overload; virtual; abstract;
@@ -358,11 +353,6 @@ type
   public
     constructor Create(const AHandle: THandle); reintroduce; overload;
     constructor Create(const AStream: THandleStream); reintroduce; overload;
-
-    procedure AcquireRead; override;
-    procedure AcquireWrite; override;
-    procedure ReleaseRead; override;
-    procedure ReleaseWrite; override;
 
     procedure LoadFromFile(const AFileName: String); override;
     procedure LoadFromStream(const AStream: ILKStream); overload; override;
@@ -445,16 +435,6 @@ type
     FDestroying: Boolean;
     FMemory: Pointer;
     FSize: Int64;
-    //  <summary><c>Event is Set when all Read Operations are complete.</c></summary>
-    FReadOpen: TEvent;
-    ///  <summary><c>Keeps track of the number of Read Operations in progress (atomic)</c></summary>
-    FReads: Integer;
-    ///  <summary><c>Write operations MUST be Exclusive not only of Readers, but also of others attempting to Write</c></summary>
-    FWriteLock: TLKCriticalSection;
-    ///  <summary><c>Event is Set when all Write Operations are complete.</c></summary>
-    FWriteOpen: TEvent;
-    ///  <summary><c>Keeps track of the number of Write Operations in progress (atomic)</c></summary>
-    FWrites: Integer;
     function Realloc(var ACapacity: Int64): Pointer;
     procedure SetCapacity(ACapacity: Int64);
     procedure SetPointer(const APointer: Pointer; const ASize: Int64);
@@ -471,15 +451,6 @@ type
     constructor Create; overload; override;
     constructor Create(const AStream: TCustomMemoryStream); reintroduce; overload;
     destructor Destroy; override;
-
-    ///  <summary><c>Waits for all Writes to be completed, then increments the Read Count (locking Write access)</c></summary>
-    procedure AcquireRead; override;
-    ///  <summary><c>Waits for all Reads to be completed, then increments the Write Count (locking Read access)</c></summary>
-    procedure AcquireWrite; override;
-    ///  <summary><c>Decrements the Read Count (unlocking Write access if that count hits 0)</c></summary>
-    procedure ReleaseRead; override;
-    ///  <summary><c>Decrements the Write Count (unlocking Read access if that count hits 0)</c></summary>
-    procedure ReleaseWrite; override;
 
     procedure LoadFromFile(const AFileName: String); override;
     procedure LoadFromStream(const AStream: ILKStream); overload; override;
@@ -575,7 +546,12 @@ end;
 
 function TLKStreamCaret.GetInvalid: Boolean;
 begin
-  Result := FInvalid;
+  AcquireReadLock;
+  try
+    Result := FInvalid;
+  finally
+    ReleaseReadLock;
+  end;
 end;
 
 function TLKStreamCaret.GetPosition: Int64;
@@ -611,7 +587,12 @@ end;
 
 procedure TLKStreamCaret.SetPosition(const APosition: Int64);
 begin
-  FPosition := Seek(APosition, soBeginning);
+  AcquireWriteLock;
+  try
+    FPosition := Seek(APosition, soBeginning);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 function TLKStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
@@ -643,20 +624,20 @@ procedure TLKStream.InvalidateCarets(const AFromPosition, ACount: Int64);
 var
   I: Integer;
 begin
-  FCarets.Lock;
+  FCarets.AcquireReadLock;
   try
     for I := 0 to FCarets.Count - 1 do
     begin
-      FCarets[I].Lock;
+      FCarets[I].AcquireWriteLock;
       try
-        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
+        if (FCarets[I].FPosition >= AFromPosition) and (FCarets[I].FPosition < AFromPosition + ACount) then
           FCarets[I].FInvalid := True;
       finally
-        FCarets[I].Unlock;
+        FCarets[I].ReleaseWriteLock;
       end;
     end;
   finally
-    FCarets.Unlock;
+    FCarets.ReleaseReadLock;
   end;
 end;
 
@@ -668,12 +649,12 @@ end;
 
 procedure TLKStream.RegisterCaret(const ACaret: TLKStreamCaret);
 begin
-  FCarets.Lock;
+  FCarets.AcquireWriteLock;
   try
     if (not FCarets.Contains(ACaret)) then
       FCarets.Add(ACaret);
   finally
-    FCarets.Unlock;
+    FCarets.ReleaseWriteLock;
   end;
 end;
 
@@ -681,20 +662,20 @@ procedure TLKStream.ShiftCaretsLeft(const AFromPosition, ACount: Int64);
 var
   I: Integer;
 begin
-  FCarets.Lock;
+  FCarets.AcquireWriteLock;
   try
     for I := 0 to FCarets.Count - 1 do
     begin
-      FCarets[I].Lock;
+      FCarets[I].AcquireWriteLock;
       try
-        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
-          FCarets[I].Position := FCarets[I].Position - ACount;
+        if (FCarets[I].FPosition >= AFromPosition) and (FCarets[I].FPosition < AFromPosition + ACount) then
+          FCarets[I].FPosition := FCarets[I].FPosition - ACount;
       finally
-        FCarets[I].Unlock;
+        FCarets[I].ReleaseWriteLock;
       end;
     end;
   finally
-    FCarets.Unlock;
+    FCarets.ReleaseWriteLock;
   end;
 end;
 
@@ -702,20 +683,20 @@ procedure TLKStream.ShiftCaretsRight(const AFromPosition, ACount: Int64);
 var
   I: Integer;
 begin
-  FCarets.Lock;
+  FCarets.AcquireWriteLock;
   try
     for I := 0 to FCarets.Count - 1 do
     begin
-      FCarets[I].Lock;
+      FCarets[I].AcquireWriteLock;
       try
-        if (FCarets[I].Position >= AFromPosition) and (FCarets[I].Position < AFromPosition + ACount) then
-          FCarets[I].Position := FCarets[I].Position + ACount;
+        if (FCarets[I].FPosition >= AFromPosition) and (FCarets[I].FPosition < AFromPosition + ACount) then
+          FCarets[I].FPosition := FCarets[I].FPosition + ACount;
       finally
-        FCarets[I].Unlock;
+        FCarets[I].ReleaseWriteLock;
       end;
     end;
   finally
-    FCarets.Unlock;
+    FCarets.ReleaseWriteLock;
   end;
 end;
 
@@ -723,13 +704,13 @@ procedure TLKStream.UnregisterCaret(const ACaret: TLKStreamCaret);
 var
   LIndex: Integer;
 begin
-  FCarets.Lock;
+  FCarets.AcquireWriteLock;
   try
     LIndex := FCarets.IndexOf(ACaret);
     if LIndex > -1 then
       FCarets.Delete(LIndex);
   finally
-    FCarets.Unlock;
+    FCarets.ReleaseWriteLock;
   end;
 end;
 
@@ -746,7 +727,7 @@ var
   LValue: TBytes;
 begin
   inherited;
-  FStream.Lock;
+  FStream.AcquireWriteLock;
   try
     LStartPosition := Position;
     LSize := FStream.Size;
@@ -766,7 +747,7 @@ begin
     // Set this Caret's position back to where it began
     Position := LStartPosition;
   finally
-    FStream.Unlock;
+    FStream.ReleaseWriteLock;
   end;
   Result := ALength;
 end;
@@ -779,7 +760,7 @@ begin
   inherited;
   Result := 0;
   LStartPosition := FPosition;
-  FStream.Lock;
+  FStream.AcquireWriteLock;
   try
     // Expand the Stream
     LNewSize := FStream.Size + ALength;
@@ -801,14 +782,14 @@ begin
     FStream.ShiftCaretsRight(LStartPosition, ALength);
     Position := LStartPosition + ALength;
   finally
-    FStream.Unlock;
+    FStream.ReleaseWriteLock;
   end;
 end;
 
 function TLKHandleStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
   inherited;
-  FStream.Lock;
+  FStream.AcquireWriteLock;
   try
     Seek(FPosition, soBeginning);
     Result := FileRead(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
@@ -817,18 +798,18 @@ begin
     else
       Inc(FPosition, ALength);
   finally
-    FStream.Unlock;
+    FStream.ReleaseWriteLock;
   end;
 end;
 
 function TLKHandleStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
   inherited;
-  FStream.Lock;
+  FStream.AcquireWriteLock;
   try
     Result := FileSeek(TLKHandleStream(GetStream).FHandle, AOffset, Ord(AOrigin));
   finally
-    FStream.Unlock;
+    FStream.ReleaseWriteLock;
   end;
 end;
 
@@ -837,9 +818,9 @@ var
   LStartPosition: Int64;
 begin
   inherited;
-  LStartPosition := FPosition;
-  FStream.Lock;
+  FStream.AcquireWriteLock;
   try
+    LStartPosition := FPosition;
     Seek(FPosition, soBeginning);
     Result := FileWrite(TLKHandleStream(GetStream).FHandle, ABuffer, ALength);
     if Result = -1 then
@@ -849,21 +830,11 @@ begin
       FStream.InvalidateCarets(LStartPosition, ALength);
     end;
   finally
-    FStream.Unlock;
+    FStream.ReleaseWriteLock;
   end;
 end;
 
 { TLKHandleStream }
-
-procedure TLKHandleStream.AcquireRead;
-begin
-  Lock;
-end;
-
-procedure TLKHandleStream.AcquireWrite;
-begin
-  Lock;
-end;
 
 constructor TLKHandleStream.Create(const AStream: THandleStream);
 begin
@@ -885,13 +856,13 @@ function TLKHandleStream.GetSize: Int64;
 var
   LPos: Int64;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     LPos := FileSeek(FHandle, 0, Ord(soCurrent));
     Result := FileSeek(FHandle, 0, Ord(soEnd));
     FileSeek(FHandle, LPos, Ord(soBeginning));
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -900,7 +871,7 @@ var
   LStream: ILKFileStream;
 begin
   LStream := TLKFileStream.Create(AFileName, fmOpenRead);
-  LoadFromSTream(LStream);
+  LoadFromStream(LStream);
 end;
 
 procedure TLKHandleStream.LoadFromStream(const AStream: ILKStream);
@@ -909,7 +880,7 @@ var
   I: Int64;
   LValue: Byte;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     Size := AStream.Size;
     LReadCaret := AStream.NewCaret;
@@ -921,7 +892,7 @@ begin
       Inc(I);
     until I > AStream.Size;;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -931,7 +902,7 @@ var
   I: Int64;
   LValue: Byte;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     AStream.Position := 0;
     Size := AStream.Size;
@@ -942,18 +913,8 @@ begin
       LWriteCaret.Write(LValue, 1);
     until I > AStream.Size;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
-end;
-
-procedure TLKHandleStream.ReleaseRead;
-begin
-  Unlock;
-end;
-
-procedure TLKHandleStream.ReleaseWrite;
-begin
-  Unlock;
 end;
 
 procedure TLKHandleStream.SaveToFile(const AFileName: String);
@@ -970,7 +931,7 @@ var
   I: Int64;
   LValue: Byte;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     AStream.Size := 0;
     LReadCaret := NewCaret;
@@ -982,7 +943,7 @@ begin
       Inc(I);
     until I > Size;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -992,7 +953,7 @@ var
   I: Int64;
   LValue: Byte;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     AStream.Size := 0;
     I := 0;
@@ -1002,7 +963,7 @@ begin
       Inc(I);
     until I > Size;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1010,7 +971,7 @@ procedure TLKHandleStream.SetSize(const ASize: Int64);
 var
   {$IFDEF POSIX}LPosition,{$ENDIF POSIX} LOldSize: Int64;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     LOldSize := GetSize;
     {$IFDEF POSIX}LPosition := {$ENDIF POSIX}FileSeek(FHandle, ASize, Ord(soBeginning));
@@ -1027,7 +988,7 @@ begin
     if ASize < LOldSize then
       InvalidateCarets(LOldSize, ASize - LOldSize);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1084,22 +1045,12 @@ end;
 function TLKMemoryStreamCaret.Delete(const ALength: Int64): Int64;
 begin
   inherited;
-  Lock;
-  try
-    TLKMemoryStream(GetStream).AcquireWrite;
-    try
-      Result := DeleteActual(ALength);
-    finally
-      TLKMemoryStream(GetStream).ReleaseWrite;
-    end;
-  finally
-    Unlock;
-  end;
+  Result := DeleteActual(ALength);
 end;
 
 function TLKMemoryStreamCaret.DeleteActual(const ALength: Int64): Int64;
 begin
-  Lock;
+  AcquireReadLock;
   try
     // Shift elements after Position + Length back to Position
     if FPosition + ALength < TLKMemoryStream(GetStream).FSize then
@@ -1116,23 +1067,18 @@ begin
     FStream.ShiftCaretsLeft(FPosition + ALength, ALength - (FPosition + ALength));
     Result := ALength;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Insert(const ABuffer; const ALength: Int64): Int64;
 begin
   inherited;
-  Lock;
+  GetStream.AcquireWriteLock;
   try
-    TLKMemoryStream(GetStream).AcquireWrite;
-    try
-      Result := InsertActual(ABuffer, ALength);
-    finally
-      TLKMemoryStream(GetStream).ReleaseWrite;
-    end;
+    Result := InsertActual(ABuffer, ALength);
   finally
-    Unlock;
+    GetStream.ReleaseWriteLock;
   end;
 end;
 
@@ -1140,7 +1086,7 @@ function TLKMemoryStreamCaret.InsertActual(const ABuffer; const ALength: Int64):
 var
   LStartPosition: Int64;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := 0;
     LStartPosition := FPosition;
@@ -1157,29 +1103,24 @@ begin
     FStream.ShiftCaretsRight(LStartPosition, (FStream.Size - ALength) - LStartPosition);
     Result := ALength;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Read(var ABuffer; const ALength: Int64): Int64;
 begin
   inherited;
-  Lock;
+  GetStream.AcquireReadLock;
   try
-    TLKMemoryStream(GetStream).AcquireRead;
-    try
-      Result := ReadActual(ABuffer, ALength);
-    finally
-      TLKMemoryStream(GetStream).ReleaseRead;
-    end;
+    Result := ReadActual(ABuffer, ALength);
   finally
-    Unlock;
+    GetStream.ReleaseReadLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.ReadActual(var ABuffer; const ALength: Int64): Int64;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     Result := 0;
     if (FPosition < 0) or (ALength < 0) then
@@ -1193,30 +1134,24 @@ begin
       Inc(FPosition, Result);
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Seek(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
   inherited;
-  Lock;
+  GetStream.AcquireReadLock;
   try
-    TLKMemoryStream(GetStream).AcquireRead;
-    try
-      Result := SeekActual(AOffset, AOrigin);
-    finally
-      TLKMemoryStream(GetStream).ReleaseRead;
-    end;
-    FPosition := Result;
+    Result := SeekActual(AOffset, AOrigin);
   finally
-    Unlock;
+    GetStream.ReleaseReadLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.SeekActual(const AOffset: Int64; const AOrigin: TSeekOrigin): Int64;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     case AOrigin of
       soBeginning: Result := AOffset;
@@ -1225,24 +1160,20 @@ begin
     else
       Result := FPosition;
     end;
+    FPosition := Result;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 function TLKMemoryStreamCaret.Write(const ABuffer; const ALength: Int64): Int64;
 begin
   inherited;
-  Lock;
+  GetStream.AcquireWriteLock;
   try
-    TLKMemoryStream(GetStream).AcquireWrite;
-    try
-      Result := WriteActual(ABuffer, ALength);
-    finally
-      TLKMemoryStream(GetStream).ReleaseWrite;
-    end;
+    Result := WriteActual(ABuffer, ALength);
   finally
-    Unlock;
+    GetStream.ReleaseWriteLock;
   end;
 end;
 
@@ -1250,9 +1181,9 @@ function TLKMemoryStreamCaret.WriteActual(const ABuffer; const ALength: Int64): 
 var
   LPos: Int64;
 begin
-  Lock;
+  Result := 0;
+  AcquireWriteLock;
   try
-    Result := 0;
     LPos := FPosition + ALength;
 
     if (FPosition < 0) or (ALength < 0) or (LPos <= 0) then
@@ -1268,37 +1199,11 @@ begin
     FPosition := LPos;
     Result := ALength;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 { TLKMemoryStream }
-
-procedure TLKMemoryStream.AcquireRead;
-begin
-  FWriteOpen.WaitFor(INFINITE);
-  Lock;
-  try
-    Inc(FReads);
-  finally
-    Unlock;
-  end;
-  if FReads = 1 then
-    FReadOpen.ResetEvent;
-end;
-
-procedure TLKMemoryStream.AcquireWrite;
-begin
-  FReadOpen.WaitFor(INFINITE);
-  Lock;
-  try
-    Inc(FWrites);
-  finally
-    Unlock;
-  end;
-  if FWrites = 1 then
-    FWriteOpen.ResetEvent;
-end;
 
 procedure TLKMemoryStream.Clear;
 begin
@@ -1314,12 +1219,7 @@ end;
 
 constructor TLKMemoryStream.Create;
 begin
-  FWriteLock := TLKCriticalSection.Create;
   FDestroying := False;
-  FReadOpen := TEvent.Create(nil, True, True, '');
-  FReads := 0;
-  FWriteOpen := TEvent.Create(nil, True, True, '');
-  FWrites := 0;
   inherited;
   Clear;
 end;
@@ -1328,11 +1228,6 @@ destructor TLKMemoryStream.Destroy;
 begin
   Clear;
   FDestroying := True; // Mark this Stream as "in destruction"
-  FReadOpen.SetEvent; // Prevent wait halting
-  FWriteOpen.SetEvent; // Prevent wait halting
-  FReadOpen.Free;
-  FWriteOpen.Free;
-  FWriteLock.Free;
   inherited;
 end;
 
@@ -1343,11 +1238,11 @@ end;
 
 function TLKMemoryStream.GetSize: Int64;
 begin
-  AcquireRead;
+  AcquireReadLock;
   try
     Result := GetSizeActual;
   finally
-    ReleaseRead;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1368,25 +1263,25 @@ procedure TLKMemoryStream.LoadFromStream(const AStream: ILKStream);
 var
   LReadCaret: ILKStreamCaret;
 begin
-  AcquireWrite;
+  AcquireWriteLock;
   try
     Size := AStream.Size;
     LReadCaret := AStream.NewCaret;
     LReadCaret.Read(FMemory^, AStream.Size);
   finally
-    ReleaseWrite;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKMemoryStream.LoadFromStream(const AStream: TStream);
 begin
-  AcquireWrite;
+  AcquireWriteLock;
   try
     AStream.Position := 0;
     Size := AStream.Size;
     AStream.Read(FMemory^, AStream.Size);
   finally
-    ReleaseWrite;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1394,48 +1289,30 @@ function TLKMemoryStream.Realloc(var ACapacity: Int64): Pointer;
 const
   MemoryDelta = $2000;
 begin
-  if (ACapacity > 0) and (ACapacity <> FSize) then
-    ACapacity := (ACapacity + (MemoryDelta - 1)) and not (MemoryDelta - 1);
-  Result := FMemory;
-  if ACapacity <> FCapacity then
-  begin
-    if ACapacity = 0 then
+  Result := nil;
+  AcquireWriteLock;
+  try
+    if (ACapacity > 0) and (ACapacity <> FSize) then
+      ACapacity := (ACapacity + (MemoryDelta - 1)) and not (MemoryDelta - 1);
+    Result := FMemory;
+    if ACapacity <> FCapacity then
     begin
-      FreeMem(FMemory);
-      Result := nil;
-    end else
-    begin
-      if FCapacity = 0 then
-        GetMem(Result, ACapacity)
-      else
-        ReallocMem(Result, ACapacity);
-      if Result = nil then raise EStreamError.CreateRes(@SMemoryStreamError);
+      if ACapacity = 0 then
+      begin
+        FreeMem(FMemory);
+        Result := nil;
+      end else
+      begin
+        if FCapacity = 0 then
+          GetMem(Result, ACapacity)
+        else
+          ReallocMem(Result, ACapacity);
+        if Result = nil then raise EStreamError.CreateRes(@SMemoryStreamError);
+      end;
     end;
-  end;
-end;
-
-procedure TLKMemoryStream.ReleaseRead;
-begin
-  Lock;
-  try
-    Dec(FReads);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
-  if FReads = 0 then
-    FReadOpen.SetEvent;
-end;
-
-procedure TLKMemoryStream.ReleaseWrite;
-begin
-  Lock;
-  try
-    Dec(FWrites);
-  finally
-    Unlock;
-  end;
-  if FWrites = 0 then
-    FWriteOpen.SetEvent;
 end;
 
 procedure TLKMemoryStream.SaveToFile(const AFileName: String);
@@ -1448,12 +1325,12 @@ end;
 
 procedure TLKMemoryStream.SaveToStream(const AStream: TStream);
 begin
-  AcquireRead;
+  AcquireReadLock;
   try
     if FSize > 0 then
       AStream.WriteBuffer(FMemory^, FSize);
   finally
-    ReleaseRead;
+    ReleaseReadLock;
   end;
 end;
 
@@ -1461,7 +1338,7 @@ procedure TLKMemoryStream.SaveToStream(const AStream: ILKStream);
 var
   LCaret: ILKStreamCaret;
 begin
-  AcquireRead;
+  AcquireReadLock;
   try
     if FSize > 0 then
     begin
@@ -1469,29 +1346,39 @@ begin
       LCaret.Write(FMemory^, FSize);
     end;
   finally
-    ReleaseRead;
+    ReleaseReadLock;
   end;
 end;
 
 procedure TLKMemoryStream.SetCapacity(ACapacity: Int64);
 begin
-  SetPointer(Realloc(ACapacity), FSize);
-  FCapacity := ACapacity;
+  AcquireWriteLock;
+  try
+    SetPointer(Realloc(ACapacity), FSize);
+    FCapacity := ACapacity;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKMemoryStream.SetPointer(const APointer: Pointer; const ASize: Int64);
 begin
-  FMemory := APointer;
-  FSize := ASize;
+  AcquireWriteLock;
+  try
+    FMemory := APointer;
+    FSize := ASize;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKMemoryStream.SetSize(const ASize: Int64);
 begin
-  AcquireWrite;
+  AcquireWriteLock;
   try
     SetSizeActual(ASize);
   finally
-    ReleaseWrite;
+    ReleaseWriteLock;
   end;
 end;
 

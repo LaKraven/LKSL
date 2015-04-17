@@ -662,14 +662,14 @@ var
 
 procedure TLKEvent.Cancel(const ACancelConditions: TLKEventCancelCondition);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     case ACancelConditions of
       eccIfNotProcessing: if FState <> esProcessing then FState := esCancelled;
       eccRegardless: FState := esCancelled;
     end;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -710,31 +710,31 @@ end;
 
 function TLKEvent.GetDispatchTime: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FDispatchTime;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEvent.GetDispatchAfter: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FDispatchAfter;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEvent.GetDispatchTargets: TLKEventTargets;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FDispatchTargets;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -745,44 +745,44 @@ end;
 
 function TLKEvent.GetExpiresAfter: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FExpiresAfter;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEvent.GetHasExpired: Boolean;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := (
                 (FExpiresAfter > 0) and
                 (GetReferenceTime - FDispatchTime >= FExpiresAfter)
               );
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEvent.GetProcessedTime: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FProcessedTime;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEvent.GetState: TLKEventState;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FState;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -793,7 +793,7 @@ end;
 
 procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  if FDispatchMethod = edmNotDispatched then
+  if DispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
     FLifetimeControl := ALifetimeControl;
@@ -822,37 +822,37 @@ end;
 
 procedure TLKEvent.SetDispatchAfter(const ADispatchAfter: LKFloat);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FDispatchAfter := ADispatchAfter;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKEvent.SetDispatchTargets(const ADispatchTargets: TLKEventTargets);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FDispatchTargets := ADispatchTargets;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKEvent.SetExpiresAfter(const AExpiresAfter: LKFloat);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FExpiresAfter := AExpiresAfter;
   finally
-    Unlock;
-  end;
+    ReleaseWriteLock;
+  end
 end;
 
 procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
 begin
-  if FDispatchMethod = edmNotDispatched then
+  if DispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
     FLifetimeControl := ALifetimeControl;
@@ -911,21 +911,21 @@ end;
 
 function TLKEventListener.GetExpireAfter: LKFloat;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FExpireAfter;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
 function TLKEventListener.GetTypeRestriction: TLKEventTypeRestriction;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FTypeRestriction;
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
 end;
 
@@ -936,21 +936,21 @@ end;
 
 procedure TLKEventListener.SetExpireAfter(const AExpireAfter: LKFloat);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FExpireAfter := AExpireAfter;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
 procedure TLKEventListener.SetTypeRestriction(const ATypeRestriction: TLKEventTypeRestriction);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FTypeRestriction := ATypeRestriction;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
 end;
 
@@ -1032,32 +1032,37 @@ var
   LTarget: TLKEventTarget;
   LTargetCount: Integer;
 begin
-  FEvent.Lock;
+  FEvent.AcquireReadLock;
   try
-    StreamInsertLKFloat(ACaret, FEvent.FCreatedTime);
-    StreamInsertLKFloat(ACaret, FEvent.FDispatchAfter);
-    StreamInsertTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
-    LTargetCount := 0;
-    LCountPosition := ACaret.Position;
-    StreamInsertInteger(ACaret, LTargetCount);
-    for LTarget in FEvent.FDispatchTargets do
-    begin
-      Inc(LTargetCount);
-      StreamInsertTLKEventTarget(ACaret, LTarget);
-    end;
-    LEndPosition := ACaret.Position;
-    StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
-    ACaret.Position := LEndPosition;
-    StreamInsertLKFloat(ACaret, FEvent.FDispatchTime);
-    StreamInsertLKFloat(ACaret, FEvent.FExpiresAfter);
-    StreamInsertTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
-    StreamInsertTLKEventOrigin(ACaret, FEvent.FOrigin);
-    StreamInsertLKFloat(ACaret, FEvent.FProcessedTime);
-    StreamInsertTLKEventState(ACaret, FEvent.FState);
+    ACaret.AcquireWriteLock;
+    try
+      StreamInsertLKFloat(ACaret, FEvent.FCreatedTime);
+      StreamInsertLKFloat(ACaret, FEvent.FDispatchAfter);
+      StreamInsertTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
+      LTargetCount := 0;
+      LCountPosition := ACaret.Position;
+      StreamInsertInteger(ACaret, LTargetCount);
+      for LTarget in FEvent.FDispatchTargets do
+      begin
+        Inc(LTargetCount);
+        StreamInsertTLKEventTarget(ACaret, LTarget);
+      end;
+      LEndPosition := ACaret.Position;
+      StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
+      ACaret.Position := LEndPosition;
+      StreamInsertLKFloat(ACaret, FEvent.FDispatchTime);
+      StreamInsertLKFloat(ACaret, FEvent.FExpiresAfter);
+      StreamInsertTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
+      StreamInsertTLKEventOrigin(ACaret, FEvent.FOrigin);
+      StreamInsertLKFloat(ACaret, FEvent.FProcessedTime);
+      StreamInsertTLKEventState(ACaret, FEvent.FState);
 
-    InsertEventIntoStream(ACaret);
+      InsertEventIntoStream(ACaret);
+    finally
+      ACaret.ReleaseWriteLock;
+    end;
   finally
-    FEvent.Unlock;
+    FEvent.ReleaseReadLock;
   end;
 end;
 
@@ -1065,24 +1070,29 @@ procedure TLKEventStreamable.ReadFromStream(const ACaret: ILKStreamCaret);
 var
   I, LCount: Integer;
 begin
-  FEvent.Lock;
+  FEvent.AcquireWriteLock;
   try
-    FEvent.FCreatedTime := StreamReadLKFloat(ACaret);
-    FEvent.FDispatchAfter := StreamReadLKFloat(ACaret);
-    FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(ACaret);
-    FEvent.FDispatchTargets := [];
-    LCount := StreamReadInteger(ACaret);
-    for I := 0 to LCount - 1 do
-      FEvent.FDispatchTargets := FEvent.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
-    FEvent.FDispatchTime := StreamReadLKFloat(ACaret);
-    FEvent.FExpiresAfter := StreamReadLKFloat(ACaret);
-    FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(ACaret);
-    FEvent.FOrigin := StreamReadTLKEventOrigin(ACaret);
-    FEvent.FProcessedTime := StreamReadLKFloat(ACaret);
-    FEvent.FState := StreamReadTLKEventState(ACaret);
-    ReadEventFromStream(ACaret);
+    ACaret.AcquireReadLock;
+    try
+      FEvent.FCreatedTime := StreamReadLKFloat(ACaret);
+      FEvent.FDispatchAfter := StreamReadLKFloat(ACaret);
+      FEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(ACaret);
+      FEvent.FDispatchTargets := [];
+      LCount := StreamReadInteger(ACaret);
+      for I := 0 to LCount - 1 do
+        FEvent.FDispatchTargets := FEvent.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
+      FEvent.FDispatchTime := StreamReadLKFloat(ACaret);
+      FEvent.FExpiresAfter := StreamReadLKFloat(ACaret);
+      FEvent.FLifetimeControl := StreamReadTLKEventLifetimeControl(ACaret);
+      FEvent.FOrigin := StreamReadTLKEventOrigin(ACaret);
+      FEvent.FProcessedTime := StreamReadLKFloat(ACaret);
+      FEvent.FState := StreamReadTLKEventState(ACaret);
+      ReadEventFromStream(ACaret);
+    finally
+      ACaret.ReleaseReadLock;
+    end;
   finally
-    FEvent.Unlock;
+    FEvent.ReleaseWriteLock;
   end;
 end;
 
@@ -1092,31 +1102,36 @@ var
   LTarget: TLKEventTarget;
   LTargetCount: Integer;
 begin
-  FEvent.Lock;
+  FEvent.AcquireReadLock;
   try
-    StreamWriteLKFloat(ACaret, FEvent.FCreatedTime);
-    StreamWriteLKFloat(ACaret, FEvent.FDispatchAfter);
-    StreamWriteTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
-    LTargetCount := 0;
-    LCountPosition := ACaret.Position;
-    StreamWriteInteger(ACaret, LTargetCount);
-    for LTarget in FEvent.FDispatchTargets do
-    begin
-      Inc(LTargetCount);
-      StreamWriteTLKEventTarget(ACaret, LTarget);
+    ACaret.AcquireWriteLock;
+    try
+      StreamWriteLKFloat(ACaret, FEvent.FCreatedTime);
+      StreamWriteLKFloat(ACaret, FEvent.FDispatchAfter);
+      StreamWriteTLKEventDispatchMethod(ACaret, FEvent.FDispatchMethod);
+      LTargetCount := 0;
+      LCountPosition := ACaret.Position;
+      StreamWriteInteger(ACaret, LTargetCount);
+      for LTarget in FEvent.FDispatchTargets do
+      begin
+        Inc(LTargetCount);
+        StreamWriteTLKEventTarget(ACaret, LTarget);
+      end;
+      LEndPosition := ACaret.Position;
+      StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
+      ACaret.Position := LEndPosition;
+      StreamWriteLKFloat(ACaret, FEvent.FDispatchTime);
+      StreamWriteLKFloat(ACaret, FEvent.FExpiresAfter);
+      StreamWriteTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
+      StreamWriteTLKEventOrigin(ACaret, FEvent.FOrigin);
+      StreamWriteLKFloat(ACaret, FEvent.FProcessedTime);
+      StreamWriteTLKEventState(ACaret, FEvent.FState);
+      WriteEventToStream(ACaret);
+    finally
+      ACaret.ReleaseWriteLock;
     end;
-    LEndPosition := ACaret.Position;
-    StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
-    ACaret.Position := LEndPosition;
-    StreamWriteLKFloat(ACaret, FEvent.FDispatchTime);
-    StreamWriteLKFloat(ACaret, FEvent.FExpiresAfter);
-    StreamWriteTLKEventLifetimeControl(ACaret, FEvent.FLifetimeControl);
-    StreamWriteTLKEventOrigin(ACaret, FEvent.FOrigin);
-    StreamWriteLKFloat(ACaret, FEvent.FProcessedTime);
-    StreamWriteTLKEventState(ACaret, FEvent.FState);
-    WriteEventToStream(ACaret);
   finally
-    FEvent.Unlock;
+    FEvent.ReleaseReadLock;
   end;
 end;
 
@@ -1474,20 +1489,20 @@ procedure TLKEventThread.ProcessEnqueuedListeners;
 var
   I, LIndex: Integer;
 begin
-  FListeners.Lock;
+  FListeners.AcquireWriteLock;
   try
     // Process Pending
-    FListenersPending.Lock;
+    FListenersPending.AcquireWriteLock;
     try
       for I := 0 to FListenersPending.Count - 1 do
         if (not FListeners.Contains(FListenersPending[I])) then
           FListeners.Add(FListenersPending[I]);
       FListenersPending.Clear(False);
     finally
-      FListenersPending.Unlock;
+      FListenersPending.ReleaseWriteLock;
     end;
     // Process Leaving
-    FListenersLeaving.Lock;
+    FListenersLeaving.AcquireWriteLock;
     try
       for I := 0 to FListenersLeaving.Count - 1 do
       begin
@@ -1497,10 +1512,10 @@ begin
       end;
       FListenersLeaving.Clear(False);
     finally
-      FListenersLeaving.Unlock;
+      FListenersLeaving.ReleaseWriteLock;
     end;
   finally
-    FListeners.Unlock;
+    FListeners.ReleaseWriteLock;
   end;
 end;
 
@@ -1508,7 +1523,7 @@ procedure TLKEventThread.ProcessEvent(const AEvent: TLKEvent; const ADelta, ASta
 var
   I: Integer;
 begin
-  FListeners.Lock;
+  FListeners.AcquireWriteLock;
   try
     for I := 0 to FListeners.Count - 1 do
       if (AEvent.State <> esCancelled) and (not AEvent.HasExpired) then // We don't want to bother actioning the Event if it has been Cancelled or has Expired
@@ -1518,7 +1533,7 @@ begin
            (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
           FListeners[I].DoEvent(AEvent);
   finally
-    FListeners.Unlock;
+    FListeners.ReleaseWriteLock;
   end;
 end;
 
@@ -1532,22 +1547,22 @@ end;
 
 procedure TLKEventThread.RegisterListener(const AEventListener: TLKEventListener);
 begin
-  if FListeners.LockIfAvailable then
+  if FListeners.TryAcquireWriteLock then
   begin
     try
       if (not FListeners.Contains(AEventListener)) then
         FListeners.Add(AEventListener);
     finally
-      FListeners.Unlock;
+      FListeners.ReleaseWriteLock;
     end;
   end else
   begin
-    FListenersPending.Lock;
+    FListenersPending.AcquireWriteLock;
     try
       if (not FListenersPending.Contains(AEventListener)) then
         FListenersPending.Add(AEventListener);
     finally
-      FListenersPending.Unlock;
+      FListenersPending.ReleaseWriteLock;
     end;
   end;
 end;
@@ -1564,23 +1579,23 @@ procedure TLKEventThread.UnregisterListener(const AEventListener: TLKEventListen
 var
   LIndex: Integer;
 begin
-  if FListeners.LockIfAvailable then
+  if FListeners.TryAcquireWriteLock then
   begin
     try
       LIndex := FListeners.IndexOf(AEventListener);
       if LIndex > -1 then
         FListeners.Delete(LIndex);
     finally
-      FListeners.Unlock;
+      FListeners.ReleaseWriteLock;
     end;
   end else
   begin
-    FListenersLeaving.Lock;
+    FListenersLeaving.AcquireWriteLock;
     try
       if (not FListenersLeaving.Contains(AEventListener)) then
         FListenersLeaving.Add(AEventListener);
     finally
-      FListenersLeaving.Unlock;
+      FListenersLeaving.ReleaseWriteLock;
     end;
   end;
 end;
@@ -1591,12 +1606,12 @@ procedure TLKEventPool.AddEventThread(const AEventThread: TLKEventThread);
 begin
   if not (AEventThread is GetEventThreadType) then
     raise ELKEventPoolThreadTypeMismatch.CreateFmt('Event Pool wants Event Threads of Type "%s", but attempted to register Event Thread of Type "%s"', [GetEventThreadType.ClassName, AEventThread.ClassName]);
-  FEventThreads.Lock;
+  FEventThreads.AcquireWriteLock;
   try
     if (not FEventThreads.Contains(AEventThread)) then
       FEventThreads.Add(AEventThread);
   finally
-    FEventThreads.Unlock;
+    FEventThreads.ReleaseWriteLock;
   end;
 end;
 
@@ -1640,13 +1655,13 @@ begin
   try
     FThreadCount := 0;
     FThreadCountTarget := 0;
-    FEventThreads.Lock;
+    FEventThreads.AcquireWriteLock;
     try
       LCount := FEventThreads.Count;
       for I := LCount - 1 downto 0 do
         FEventThreads[I].Free;
     finally
-      FEventThreads.Unlock;
+      FEventThreads.ReleaseWriteLock;
     end;
   finally
     Unlock;
@@ -1673,7 +1688,7 @@ begin
   AEvent.Ref;
   try
     repeat
-      FEventThreads.Lock;
+      FEventThreads.AcquireReadLock;
       try
         for I := 0 to FEventThreads.Count - 1 do
         begin
@@ -1705,7 +1720,7 @@ begin
           end;
         end;
       finally
-        FEventThreads.Unlock;
+        FEventThreads.ReleaseReadLock;
       end;
     until LBestThreadIndex > -1;
   finally
@@ -1733,13 +1748,13 @@ procedure TLKEventPool.RemoveEventThread(const AEventThread: TLKEventThread);
 var
   LIndex: Integer;
 begin
-  FEventThreads.Lock;
+  FEventThreads.AcquireWriteLock;
   try
     LIndex := FEventThreads.IndexOf(AEventThread);
     if LIndex > -1 then
       FEventThreads.Delete(LIndex);
   finally
-    FEventThreads.Unlock;
+    FEventThreads.ReleaseWriteLock;
   end;
 end;
 
@@ -1847,12 +1862,12 @@ begin
         edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... Dispatch to the queue...
         edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
       end;
-      FEvents.Lock;
+      FEvents.AcquireWriteLock;
       try
         FEvents[0].Unref; // ... then remove the container...
         FEvents.Delete(0); // ... and delete the entry from the Schedule
       finally
-        FEvents.Unlock;
+        FEvents.ReleaseWriteLock;
       end;
     end else
       if (FEvents[0].FDispatchAt - GetReferenceTime >= LThrottleInterval / 1000) then
@@ -1902,13 +1917,13 @@ begin
         QueueInThreads(AEvent);
       if TLKEventTarget.edPools in AEvent.DispatchTargets then
         QueueInPools(AEvent);
-      FPreProcessors.Lock;
+      FPreProcessors.AcquireReadLock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
           if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].QueueEvent(AEvent)
       finally
-        FPreProcessors.Unlock;
+        FPreProcessors.ReleaseReadLock;
       end;
     end;
   finally
@@ -1922,12 +1937,12 @@ var
 begin
   AEvent.Ref;
   try
-    FPools.Lock;
+    FPools.AcquireWriteLock;
     try
       for I := 0 to FPools.Count - 1 do
         FPools[I].QueueEvent(AEvent);
     finally
-      FPools.Unlock;
+      FPools.ReleaseWriteLock;
     end;
   finally
     AEvent.Unref;
@@ -1940,13 +1955,13 @@ var
 begin
   AEvent.Ref;
   try
-    FEventThreads.Lock;
+    FEventThreads.AcquireWriteLock;
     try
       for I := 0 to FEventThreads.Count - 1 do
         if FEventThreads[I].GetEventRelevant(AEvent) then
           FEventThreads[I].QueueEvent(AEvent);
     finally
-      FEventThreads.Unlock;
+      FEventThreads.ReleaseWriteLock;
     end;
   finally
     AEvent.Unref;
@@ -1955,45 +1970,45 @@ end;
 
 procedure TLKEventEngine.RegisterEventThread(const AEventThread: TLKEventThread);
 begin
-  FEventThreads.Lock;
+  FEventThreads.AcquireWriteLock;
   try
     if (not FEventThreads.Contains(AEventThread)) then
       FEventThreads.Add(AEventThread);
   finally
-    FEventThreads.Unlock;
+    FEventThreads.ReleaseWriteLock;
   end;
 end;
 
 procedure TLKEventEngine.RegisterPool(const AEventPool: TLKEventPool);
 begin
-  if FPools.LockIfAvailable then
+  if FPools.TryAcquireWriteLock then
   begin
     try
       if (not FPools.Contains(AEventPool)) then
         FPools.Add(AEventPool);
     finally
-      FPools.Unlock;
+      FPools.ReleaseWriteLock;
     end;
   end else
   begin
-    FPoolsPending.Lock;
+    FPoolsPending.AcquireWriteLock;
     try
       if (not FPoolsPending.Contains(AEventPool)) then
         FPoolsPending.Add(AEventPool);
     finally
-      FPoolsPending.Unlock;
+      FPoolsPending.ReleaseWriteLock;
     end;
   end;
 end;
 
 procedure TLKEventEngine.RegisterPreProcessor(const APreProcessor: TLKEventPreProcessor);
 begin
-  FPreProcessors.Lock;
+  FPreProcessors.AcquireWriteLock;
   try
     if (not FPreProcessors.Contains(APreProcessor)) then
       FPreProcessors.Add(APreProcessor);
   finally
-    FPreProcessors.Unlock;
+    FPreProcessors.ReleaseWriteLock;
   end;
 end;
 
@@ -2014,13 +2029,13 @@ begin
         StackInThreads(AEvent);
       if TLKEventTarget.edPools in AEvent.DispatchTargets then
         StackInPools(AEvent);
-      FPreProcessors.Lock;
+      FPreProcessors.AcquireReadLock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
           if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].StackEvent(AEvent)
       finally
-        FPreProcessors.Unlock;
+        FPreProcessors.ReleaseReadLock;
       end;
     end;
   finally
@@ -2034,12 +2049,12 @@ var
 begin
   AEvent.Ref;
   try
-    FPools.Lock;
+    FPools.AcquireWriteLock;
     try
       for I := 0 to FPools.Count - 1 do
         FPools[I].StackEvent(AEvent);
     finally
-      FPools.Unlock;
+      FPools.ReleaseWriteLock;
     end;
   finally
     AEvent.Unref;
@@ -2052,13 +2067,13 @@ var
 begin
   AEvent.Ref;
   try
-    FEventThreads.Lock;
+    FEventThreads.AcquireWriteLock;
     try
       for I := 0 to FEventThreads.Count - 1 do
         if FEventThreads[I].GetEventRelevant(AEvent) then
           FEventThreads[I].StackEvent(AEvent);
     finally
-      FEventThreads.Unlock;
+      FEventThreads.ReleaseWriteLock;
     end;
   finally
     AEvent.Unref;
@@ -2069,13 +2084,13 @@ procedure TLKEventEngine.UnregisterEventThread(const AEventThread: TLKEventThrea
 var
   LIndex: Integer;
 begin
-  FEventThreads.Lock;
+  FEventThreads.AcquireWriteLock;
   try
     LIndex := FEventThreads.IndexOf(AEventThread);
     if LIndex > -1 then
       FEventThreads.Delete(LIndex);
   finally
-    FEventThreads.Unlock;
+    FEventThreads.ReleaseWriteLock;
   end;
 end;
 
@@ -2083,23 +2098,23 @@ procedure TLKEventEngine.UnregisterPool(const AEventPool: TLKEventPool);
 var
   LIndex: Integer;
 begin
-  if FPools.LockIfAvailable then
+  if FPools.TryAcquireWriteLock then
   begin
     try
       LIndex := FPools.IndexOf(AEventPool);
       if LIndex > -1 then
         FPools.Delete(LIndex);
     finally
-      FPools.Unlock;
+      FPools.ReleaseWriteLock;
     end;
   end else
   begin
-    FPoolsLeaving.Lock;
+    FPoolsLeaving.AcquireWriteLock;
     try
       if (not FPoolsLeaving.Contains(AEventPool)) then
         FPoolsLeaving.Add(AEventPool);
     finally
-      FPoolsLeaving.Unlock;
+      FPoolsLeaving.ReleaseWriteLock;
     end;
   end;
 end;
@@ -2108,13 +2123,13 @@ procedure TLKEventEngine.UnregisterPreProcessor(const APreProcessor: TLKEventPre
 var
   LIndex: Integer;
 begin
-  FPreProcessors.Lock;
+  FPreProcessors.AcquireWriteLock;
   try
     LIndex := FPreProcessors.IndexOf(APreProcessor);
     if LIndex > -1 then
       FPreProcessors.Delete(LIndex);
   finally
-    FPreProcessors.Unlock;
+    FPreProcessors.ReleaseWriteLock;
   end;
 end;
 
