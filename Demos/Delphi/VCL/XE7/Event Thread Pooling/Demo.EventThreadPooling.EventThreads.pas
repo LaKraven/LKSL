@@ -43,7 +43,8 @@ begin
   LDelta := GetReferenceTime - AEvent.DispatchTime;
   FPerformanceHistory.Add(LDelta);
 
-  SYNCHRONIZE(procedure begin
+  SYNCHRONIZE(procedure
+              begin
                 Form1.memLog.Lines.Add(Format('Average Over %d Runs = %s Seconds [This run = %s Seconds]', [FPerformanceHistory.Count, FormatFloat('#######################.#######################', GetAveragePerformance), FormatFloat('#######################.#######################', LDelta)]));
                 Form1.memLog.Lines.Add(Format('Thread Event Rate Average = %s Events Per Second', [FormatFloat('#######################.####', EventRateAverage)]));
               end);

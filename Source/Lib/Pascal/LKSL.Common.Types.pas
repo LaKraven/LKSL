@@ -149,10 +149,10 @@ type
       function GetThreadMatch: Boolean;
       procedure SetActiveThread;
       procedure SetLockState(const ALockState: TLKReadWriteLockState);
+      protected
+        function AcquireReadActual: Boolean;
+        function AcquireWriteActual: Boolean;
     {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
-  protected
-    function AcquireReadActual: Boolean;
-    function AcquireWriteActual: Boolean;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -163,7 +163,9 @@ type
     function TryAcquireRead: Boolean;
     function TryAcquireWrite: Boolean;
 
-    property LockState: TLKReadWriteLockState read GetLockState;
+    {$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+      property LockState: TLKReadWriteLockState read GetLockState;
+    {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
   end;
 
   {
