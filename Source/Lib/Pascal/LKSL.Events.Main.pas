@@ -2029,13 +2029,13 @@ begin
         StackInThreads(AEvent);
       if TLKEventTarget.edPools in AEvent.DispatchTargets then
         StackInPools(AEvent);
-      FPreProcessors.AcquireReadLock;
+      FPreProcessors.AcquireWriteLock;
       try
         for I := 0 to FPreProcessors.Count - 1 do
           if (FPreProcessors[I].GetTargetFlag in AEvent.DispatchTargets) then
             FPreProcessors[I].StackEvent(AEvent)
       finally
-        FPreProcessors.ReleaseReadLock;
+        FPreProcessors.ReleaseWriteLock;
       end;
     end;
   finally

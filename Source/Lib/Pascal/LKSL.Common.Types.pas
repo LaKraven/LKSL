@@ -89,6 +89,8 @@ uses
 
   {$I LKSL_RTTI.inc}
 
+  {$DEFINE LKSL_LOCK_ALLEXCLUSIVE} // TEMPORARY
+
 type
   { Interface Forward Declarations }
   ILKInterface = interface;
@@ -127,15 +129,30 @@ type
   ///    <para><c>Read - Holds back Write requests until relinquished.</c></para>
   ///    <para><c>Write - Holds back Read and other Write requests until relinquished.</c></para>
   ///  </remarks>
+
+  { TLKReadWriteLock }
+
+  TLKReadWriteLockState = (lsWaiting, lsReading, lsWriting);
+
   TLKReadWriteLock = class(TPersistent)
   private
-    FCountLock: TLKCriticalSection;
-    FDestroying: Boolean;
-    FReadOpen: TEvent;
-    FReads: Integer;
-    FWriteLock: TLKCriticalSection;
-    FWriteOpen: TEvent;
-    FWrites: Integer;
+    {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+      FWriteLock: TLKCriticalSection;
+    {$ELSE}
+      FActiveThread: Cardinal; // ID of the current Thread holding the Write Lock
+      FCountReads: {$IFDEF DELPHI}Int64{$ELSE}LongWord{$ENDIF DELPHI}; // Number of Read Operations in Progress
+      FCountWrites: {$IFDEF DELPHI}Int64{$ELSE}LongWord{$ENDIF DELPHI}; // Number of Write Operations in Progress
+      FLockState: Cardinal; // 0 = Waiting, 1 = Reading, 2 = Writing
+      FWaitRead,
+      FWaitWrite: TEvent;
+      function GetLockState: TLKReadWriteLockState;
+      function GetThreadMatch: Boolean;
+      procedure SetActiveThread;
+      procedure SetLockState(const ALockState: TLKReadWriteLockState);
+    {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
+  protected
+    function AcquireReadActual: Boolean;
+    function AcquireWriteActual: Boolean;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -145,6 +162,8 @@ type
     procedure ReleaseWrite;
     function TryAcquireRead: Boolean;
     function TryAcquireWrite: Boolean;
+
+    property LockState: TLKReadWriteLockState read GetLockState;
   end;
 
   {
@@ -245,119 +264,196 @@ implementation
 { TLKReadWriteLock }
 
 procedure TLKReadWriteLock.AcquireRead;
+var
+  LAcquired: Boolean;
 begin
-  FWriteLock.Enter;
-{
-  if FDestroying then
-    Exit;
-  if FWriteLock.TryEnter then
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    FWriteLock.Enter;
+  {$ELSE}
+    repeat
+      LAcquired := AcquireReadActual;
+    until LAcquired;
+
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
+end;
+
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  function TLKReadWriteLock.AcquireReadActual: Boolean;
   begin
-    try
-      FCountLock.Enter;
-      try
-        Inc(FReads);
-        if FReads = 1 then
-          FReadOpen.ResetEvent;
-      finally
-        FCountLock.Leave;
-      end;
-    finally
-      FWriteLock.Leave;
+    Result := False;
+    case GetLockState of
+      lsWaiting, lsReading: begin
+                              FWaitRead.ResetEvent;
+                              SetLockState(lsReading);
+                              {$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedIncrement{$ENDIF DELPHI}(FCountReads);
+                              Result := True;
+                            end;
+      lsWriting: begin
+                   Result := GetThreadMatch;
+                   if (not Result) then
+                     FWaitWrite.WaitFor(500)
+                   else
+                     {$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedIncrement{$ENDIF DELPHI}(FCountReads);
+                 end;
     end;
   end;
-  FWriteOpen.WaitFor(INFINITE);
-
-  FCountLock.Enter;
-  try
-    Inc(FReads);
-    if FReads = 1 then
-      FReadOpen.ResetEvent;
-  finally
-    FCountLock.Leave;
-  end;
-}
-end;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 
 procedure TLKReadWriteLock.AcquireWrite;
+var
+  LAcquired: Boolean;
 begin
-  FWriteLock.Enter;
-{
-  if FDestroying then
-    Exit;
-  FReadOpen.WaitFor(INFINITE);
-  FCountLock.Enter; // AcquireWrite method is now Thread-Exclusive
-  try
-    Inc(FWrites); // Technically, there can only ever be one Write operation taking place
-    if FWrites = 1 then
-      FWriteOpen.ResetEvent; // Read Access is now Locked
-    FWriteLock.Enter; // Write Access is now Thread-Exclusive
-  finally
-    FCountLock.Leave; // AcquireWrite method is now open to other Threads
-  end;
-}
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    FWriteLock.Enter;
+  {$ELSE}
+    repeat
+      LAcquired := AcquireWriteActual;
+    until LAcquired;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
+
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  function TLKReadWriteLock.AcquireWriteActual: Boolean;
+  begin
+    Result := False;
+    case GetLockState of
+      lsWaiting: begin
+                   FWaitWrite.ResetEvent;
+                   SetActiveThread;
+                   SetLockState(lsWriting);
+                   {$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedIncrement{$ENDIF DELPHI}(FCountWrites);
+                   Result := True;
+                 end;
+      lsReading: FWaitRead.WaitFor(500);
+      lsWriting: begin
+                   Result := GetThreadMatch;
+                   if Result then
+                     {$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedIncrement{$ENDIF DELPHI}(FCountWrites);
+                 end;
+    end;
+  end;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 
 constructor TLKReadWriteLock.Create;
 begin
   inherited;
-  FDestroying := False;
-  FCountLock := TLKCriticalSection.Create;
-  FReadOpen := TEvent.Create(nil, True, True, '');
-  FReads := 0;
-  FWriteLock := TLKCriticalSection.Create;
-  FWriteOpen := TEvent.Create(nil, True, True, '');
-  FWrites := 0;
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    FWriteLock := TLKCriticalSection.Create;
+  {$ELSE}
+    FWaitRead := TEvent.Create(nil, True, True, '');
+    FWaitWrite := TEvent.Create(nil, True, True, '');
+    FActiveThread := 0; // Since there's no Thread yet
+    FCountReads := 0;
+    FCountWrites := 0;
+    FLockState := 0; // Waiting by default
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
 
 destructor TLKReadWriteLock.Destroy;
 begin
-  FDestroying := True;
-  FReadOpen.SetEvent; // Prevent wait halting
-  FWriteOpen.SetEvent; // Prevent wait halting
-  FCountLock.Free;
-  FWriteLock.Free;
-  FReadOpen.Free;
-  FWriteOpen.Free;
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    FWriteLock.Free;
+  {$ELSE}
+    FWaitRead.SetEvent;
+    FWaitWrite.SetEvent;
+    FWaitRead.Free;
+    FWaitWrite.Free;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
   inherited;
 end;
 
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  function TLKReadWriteLock.GetLockState: TLKReadWriteLockState;
+  const
+    LOCK_STATES: Array[0..2] of TLKReadWriteLockState = (lsWaiting, lsReading, lsWriting);
+  begin
+    Result := LOCK_STATES[{$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedExchangeAdd{$ENDIF DELPHI}(FLockState, 0)];
+  end;
+
+  function TLKReadWriteLock.GetThreadMatch: Boolean;
+  begin
+    Result := {$IFDEF DELPHI}AtomicIncrement{$ELSE}InterlockedExchangeAdd{$ENDIF DELPHI}(FActiveThread, 0) = TThread.CurrentThread.ThreadID;
+  end;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
+
 procedure TLKReadWriteLock.ReleaseRead;
 begin
-  FWriteLock.Leave;
-{  FCountLock.Enter;
-  try
-    Dec(FReads);
-    if FReads = 0 then
-      FReadOpen.SetEvent;
-  finally
-    FCountLock.Leave;
-  end;    }
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    FWriteLock.Leave;
+  {$ELSE}
+    case GetLockState of
+      lsWaiting: raise Exception.Create('Lock State not Read, cannot Release Read on a Waiting Lock!');
+      lsReading: begin
+                   if {$IFDEF DELPHI}AtomicDecrement{$ELSE}InterlockedDecrement{$ENDIF DELPHI}(FCountReads) = 0 then
+                   begin
+                     SetLockState(lsWaiting);
+                     FWaitRead.SetEvent;
+                   end;
+                 end;
+      lsWriting: begin
+                   if (not GetThreadMatch) then
+                     raise Exception.Create('Lock State not Read, cannot Release Read on a Write Lock!');
+                 end;
+    end;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
 
 procedure TLKReadWriteLock.ReleaseWrite;
 begin
-  FWriteLock.Leave;
-{  FCountLock.Enter;
-  try
-    Dec(FWrites);
-    if FWrites = 0 then
-      FWriteOpen.SetEvent;
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
     FWriteLock.Leave;
-  finally
-    FCountLock.Leave;
-  end;    }
+  {$ELSE}
+    case GetLockState of
+      lsWaiting: raise Exception.Create('Lock State not Write, cannot Release Write on a Waiting Lock!');
+      lsReading: begin
+                   if (not GetThreadMatch) then;
+                     raise Exception.Create('Lock State not Write, cannot Release Write on a Read Lock!');
+                 end;
+      lsWriting: begin
+                   if GetThreadMatch then
+                   begin
+                     if {$IFDEF DELPHI}AtomicDecrement{$ELSE}InterlockedDecrement{$ENDIF DELPHI}(FCountWrites) = 0 then
+                     begin
+                       SetLockState(lsWaiting);
+                       {$IFDEF DELPHI}AtomicExchange{$ELSE}InterlockedExchange{$ENDIF DELPHI}(FActiveThread, 0);
+                       FWaitWrite.SetEvent;
+                     end;
+                   end;
+                 end;
+    end;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
+
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  procedure TLKReadWriteLock.SetActiveThread;
+  begin
+    {$IFDEF DELPHI}AtomicExchange{$ELSE}InterlockedExchange{$ENDIF DELPHI}(FActiveThread, TThread.CurrentThread.ThreadID);
+  end;
+
+  procedure TLKReadWriteLock.SetLockState(const ALockState: TLKReadWriteLockState);
+  const
+    LOCK_STATES: Array[TLKReadWriteLockState] of Integer = (0, 1, 2);
+  begin
+    {$IFDEF DELPHI}AtomicExchange{$ELSE}InterlockedExchange{$ENDIF DELPHI}(FLockState, LOCK_STATES[ALockState]);
+  end;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 
 function TLKReadWriteLock.TryAcquireRead: Boolean;
 begin
-//  Result := AcquireRead(0);
-  Result := FWriteLock.TryEnter;
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    Result := FWriteLock.TryEnter;
+  {$ELSE}
+    Result := AcquireReadActual;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
 
 function TLKReadWriteLock.TryAcquireWrite: Boolean;
 begin
-//  Result := AcquireWrite(0);
-  Result := FWriteLock.TryEnter;
+  {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
+    Result := FWriteLock.TryEnter;
+  {$ELSE}
+    Result := AcquireWriteActual;
+  {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 end;
 
 { TLKPersistent }
