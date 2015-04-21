@@ -107,6 +107,7 @@
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Helpers.pas"/>
+        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -135,12 +136,6 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="1">
-                <DeployFile LocalName="..\..\..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="..\..\..\..\..\Bin\Win32\Debug\LKSL_Demo_EventThreadPooling.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_Demo_EventThreadPooling.exe</RemoteName>
@@ -523,13 +518,13 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
             </Deployment>
             <Platforms>
                 <Platform value="Win32">True</Platform>

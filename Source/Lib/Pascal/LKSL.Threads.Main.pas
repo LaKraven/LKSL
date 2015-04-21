@@ -61,7 +61,7 @@ uses
   {$ELSE}
     Classes, SysUtils, Math, SyncObjs, {$IFDEF FPC}LKSL.Common.Stopwatch, {$ELSE}Diagnostics,{$ENDIF FPC}
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  LKSL.Common.Types, LKSL.Common.Performance;
+  LKSL.Common.Types, LKSL.Common.SyncObjs, LKSL.Common.Performance;
 
   {$I LKSL_RTTI.inc}
 
@@ -179,7 +179,7 @@ type
     ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Main|TLKThread.Unlock"/><c> also.</c></para>
     ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Main|TLKThread.LockIfAvailable"/><c> also.</c></para>
     ///  </remarks>
-    procedure Lock; inline;
+    procedure Lock; //inline;
     ///  <summary><c>Acquires the Thread's internal Critical Section ONLY IF IT IS AVAILABLE.</c></summary>
     ///  <remarks>
     ///    <para><c>Returns </c>True<c> if the Lock has been successfully Acquired, </c>False<c> if it has NOT been Acquired.</c></para>
@@ -187,14 +187,14 @@ type
     ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Main|TLKThread.Lock"/><c> also.</c></para>
     ///    <para><c>See </c><see DisplayName="Unlock" cref="LKSL.Threads.Main|TLKThread.Unlock"/><c> also.</c></para>
     ///  </remarks>
-    function LockIfAvailable: Boolean; inline;
+    function LockIfAvailable: Boolean; //inline;
     ///  <summary><c>Releases the Thread's internal Critical Section.</c></summary>
     ///  <remarks>
     ///    <para><c>Call this if you need to Get/Set MULTIPLE Properties in a "Consistent State".</c></para>
     ///    <para><c>See </c><see DisplayName="Lock" cref="LKSL.Threads.Main|TLKThread.Lock"/><c> also.</c></para>
     ///    <para><c>See </c><see DisplayName="LockIfAvailable" cref="LKSL.Threads.Main|TLKThread.LockIfAvailable"/><c> also.</c></para>
     ///  </remarks>
-    procedure Unlock; inline;
+    procedure Unlock; //inline;
 
     ///  <summary><c>Places the Thread in an Inactive state, waiting for the signal to </c><see DisplayName="Wake" cref="LKSL.Threads.Main|TLKThread.Wake"/><c> the Thread.</c></summary>
     procedure Rest;

@@ -66,7 +66,7 @@ uses
   {$ELSE}
     fgl,
   {$ENDIF FPC}
-  LKSL.Common.Types,
+  LKSL.Common.Types, LKSL.Common.SyncObjs,
   LKSL.Generics.Defaults;
 
   {$I LKSL_RTTI.inc}
