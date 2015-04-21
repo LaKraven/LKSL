@@ -124,7 +124,6 @@ type
 
   {
     TLKArray<T>
-      - Provides a Thread-Safe Lock (TLKCriticalSection)
       - A very simple "Managed Array" for items of the nominated type.
       - Items are UNSORTED
       - The Array expands by 1 each time a new item is added
@@ -136,7 +135,6 @@ type
     TLKArrayType = Array of T;
   private
     FArray: TLKArrayType;
-    FLock: TLKCriticalSection;
 
     // Getters
     function GetItem(const AIndex: Integer): T;
@@ -144,12 +142,6 @@ type
     // Setters
     procedure SetItem(const AIndex: Integer; const AItem: T);
   public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    procedure Lock; inline;
-    procedure Unlock; inline;
-
     function Add(const AItem: T): Integer;
     procedure Clear; inline;
     procedure Delete(const AIndex: Integer); virtual;
@@ -660,9 +652,14 @@ implementation
 
 function TLKArray<T>.Add(const AItem: T): Integer;
 begin
-  Result := Length(FArray);
-  SetLength(FArray, Result + 1);
-  FArray[Result] := AItem;
+  AcquireWriteLock;
+  try
+    Result := Length(FArray);
+    SetLength(FArray, Result + 1);
+    FArray[Result] := AItem;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKArray<T>.Clear;
@@ -670,61 +667,39 @@ begin
   SetLength(FArray, 0);
 end;
 
-constructor TLKArray<T>.Create;
-begin
-  inherited;
-  FLock := TLKCriticalSection.Create;
-end;
-
 procedure TLKArray<T>.Delete(const AIndex: Integer);
 var
   I: Integer;
 begin
-  Lock;
+  AcquireWriteLock;
   try
     for I := AIndex to Length(FArray) - 2 do
       FArray[I] := FArray[I + 1];
 
     SetLength(FArray, Length(FArray) - 1);
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
-end;
-
-destructor TLKArray<T>.Destroy;
-begin
-  FLock.Free;
-  inherited;
 end;
 
 function TLKArray<T>.GetItem(const AIndex: Integer): T;
 begin
-  Lock;
+  AcquireReadLock;
   try
     Result := FArray[AIndex];
   finally
-    Unlock;
+    ReleaseReadLock;
   end;
-end;
-
-procedure TLKArray<T>.Lock;
-begin
-  FLock.Acquire;
 end;
 
 procedure TLKArray<T>.SetItem(const AIndex: Integer; const AItem: T);
 begin
-  Lock;
+  AcquireWriteLock;
   try
     FArray[AIndex] := AItem;
   finally
-    Unlock;
+    ReleaseWriteLock;
   end;
-end;
-
-procedure TLKArray<T>.Unlock;
-begin
-  FLock.Release;
 end;
 
 { TLKDictionary<TKey, TValue> }
