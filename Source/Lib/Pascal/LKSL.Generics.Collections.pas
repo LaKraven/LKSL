@@ -72,10 +72,21 @@ uses
   {$I LKSL_RTTI.inc}
 
 type
-  { Forward Declaration }
   {$IFDEF FPC}
     TArray<T> = Array of T;
   {$ELSE}
+    { Interface Forward Declarations }
+    ILKSortHandler<T> = interface;
+    ILKArray<T> = interface;
+    ILKListBase<T> = interface;
+    ILKList<T> = interface;
+    ILKObjectList<T: class> = interface;
+    ILKSortedListBase<T> = interface;
+    ILKSortedList<T> = interface;
+    ILKSortedObjectList<T: class> = interface;
+    ILKTreeNode<T> = interface;
+    ILKTreeObjectNode<T: class> = interface;
+    { Class Forward Declaration }
     TLKSortHandler<T> = class;
     TLKArray<T> = class;
     TLKDictionary<TKey, TValue> = class;
@@ -107,12 +118,130 @@ type
     ELKGenericCollectionsKeyAlreadyExists = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyNotFound = class(ELKGenericCollectionsException);
 
+  ILKSortHandler<T> = interface
+  ['{2E102784-D058-44D6-9104-915FE4BCE3FD}']
+    function AEqualToB(const A, B: T): Boolean;
+    function AGreaterThanB(const A, B: T): Boolean;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean;
+    function ALessThanB(const A, B: T): Boolean;
+    function ALessThanOrEqualB(const A, B: T): Boolean;
+  end;
+
+  ILKArray<T> = interface
+  ['{04C10AB7-8438-4EAF-BB11-F19F8590F3D8}']
+    function GetItem(const AIndex: Integer): T;
+    procedure SetItem(const AIndex: Integer; const AItem: T);
+
+    function Add(const AItem: T): Integer;
+    procedure Clear;
+    procedure Delete(const AIndex: Integer);
+
+    property Items[const AIndex: Integer]: T read GetItem write SetItem;
+  end;
+
+  // TODO -oSJS -cILKListBase<T>: Resolve commented out methods and make TLKListBase inherit from interface ILKListBase
+  ILKListBase<T> = interface
+  ['{FC258E80-7236-4F7D-A113-D2FB1856122E}']
+    function GetCapacity: Integer;
+    function GetCapacityMultiplier: Single;
+    function GetCapacityThreshold: Integer;
+    // Getters - Other
+    function GetCount: Integer;
+    function GetIsEmpty: Boolean;
+    function GetItemByIndex(const AIndex: Integer): T;
+
+    // Setters - Capacity
+    procedure SetCapacityMultiplier(const AMultiplier: Single);
+    procedure SetCapacityThreshold(const AThreshold: Integer);
+
+    function Add(const AItem: T): Integer; overload;
+    procedure Add(const AItems: Array of T); overload;
+
+    procedure Clear(const ACompact: Boolean = True);
+    procedure Compact;
+
+    ///  <summary><c>Delete a specific Item at the given Index.</c></summary>
+    procedure Delete(const AIndex: Integer); overload;
+    ///  <summary><c>Alias of </c>DeleteRange</summary>
+    procedure Delete(const AFirstIndex, ACount: Integer); overload;
+    ///  <summary><c>Delete a Range of Items from the given Index.</c></summary>
+    procedure DeleteRange(const AIndex, ACount: Integer);
+
+    function Remove(const AItem: T): Integer; overload;
+    procedure Remove(const AItems: Array of T); overload;
+
+    {$IFDEF SUPPORTS_REFERENCETOMETHOD}
+//      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
+//      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
+//    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection = ldRight); overload;
+//    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer); overload;
+//    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection = ldRight); overload;
+//    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer); overload;
+
+    function Contains(const AItem: T): Boolean; overload;
+    function Contains(const AItems: Array of T): Boolean; overload;
+    function IndexOf(const AItem: T): Integer;
+
+    procedure Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+
+    ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
+    ///  <remarks><c>Read-Only</c></remarks>
+    property Capacity: Integer read GetCapacity;
+    ///  <summary><c>By what Factor to increase the Size of the List when the Capacity Threshold is reached.</c></summary>
+    property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
+    ///  <summary><c>The Minimum number of Vacant Slots in the List before the List is Expanded.</c></summary>
+    property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
+    ///  <summary><c>The number of Items presently occupying the List.</c></summary>
+    ///  <remarks><c>Read-Only</c></remarks>
+    property Count: Integer read GetCount;
+    ///  <summary><c>Returns </c>True<c> if the List contains no Items.</c></summary>
+    property IsEmpty: Boolean read GetIsEmpty;
+    ///  <summary><c>Retrieves the Item at the given Index</c></summary>
+    property Items[const AIndex: Integer]: T read GetItemByIndex; default;
+  end;
+
+  ILKList<T> = interface(ILKListBase<T>)
+  ['{D25C4FC1-1E33-43FA-942D-E4CC6A92CB3D}']
+
+  end;
+
+  ILKObjectList<T: class> = interface(ILKList<T>)
+  ['{59B2887B-6857-4A20-BF4C-5613C62BF957}']
+
+  end;
+
+  ILKSortedListBase<T> = interface
+  ['{E1C7F61C-6CBF-4595-A35E-F66AA3DAC6DE}']
+
+  end;
+
+  ILKSortedList<T> = interface(ILKSortedListBase<T>)
+  ['{7653B5EA-EABC-43A6-A12D-59493985D802}']
+
+  end;
+
+  ILKSortedObjectList<T: class> = interface(ILKSortedList<T>)
+  ['{A2D03B64-B84A-4F8A-831F-925093F2940C}']
+
+  end;
+
+  ILKTreeNode<T> = interface
+  ['{5FAFB0C6-172D-4DB3-A044-4B593C08194B}']
+
+  end;
+
+  ILKTreeObjectNode<T: class> = interface(ILKTreeNode<T>)
+  ['{D24E33FD-1959-48A8-8FB0-79E9CABA786D}']
+
+  end;
+
   {
     TLKSortHandler<T>
       - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
       - Allows you to provide Dynamic Sorting Behaviour at Runtime!
   }
-  TLKSortHandler<T> = class abstract(TLKPersistent)
+  TLKSortHandler<T> = class abstract(TLKInterfacedObject, ILKSortHandler<T>)
   public
     // Parity Checks
     function AEqualToB(const A, B: T): Boolean; virtual; abstract;
@@ -130,7 +259,7 @@ type
       - The Array collapses by 1 each time an item is removed
       - If referencing the "ArrayRaw" property, don't forget to call "Lock" and "Unlock" manually!
   }
-  TLKArray<T> = class(TLKPersistent)
+  TLKArray<T> = class(TLKInterfacedObject, ILKArray<T>)
   type
     TLKArrayType = Array of T;
   private
