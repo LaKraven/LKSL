@@ -183,7 +183,7 @@ type
     function Contains(const AItems: Array of T): Boolean; overload;
     function IndexOf(const AItem: T): Integer;
 
-    procedure Sort(const ASortHandler: TLKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure Sort(const ASortHandler: ILKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
 
     ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
     ///  <remarks><c>Read-Only</c></remarks>
