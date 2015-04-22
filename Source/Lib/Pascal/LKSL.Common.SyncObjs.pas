@@ -49,7 +49,7 @@ interface
   }
 {$ENDREGION}
 
-{$DEFINE LKSL_LOCK_ALLEXCLUSIVE} // TEMPORARY
+{$DEFINE LKSL_LOCK_ALLEXCLUSIVE} // TODO -oSJS -cTLKReadWriteLock: Fix the deadlock issue when elevating a Read to a Write, then remove LKSL_LOCK_ALLEXCLUSIVE define
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
