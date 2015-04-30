@@ -312,6 +312,7 @@
         <ShowHintsForUnusedUnitsInMainSrc Value="True"/>
         <ShowHintsForSenderNotUsed Value="True"/>
       </Verbosity>
+      <CustomOptions Value="-dLKSL_INCLUDE_CENTEREDLIST"/>
     </Other>
   </CompilerOptions>
   <Debugging>
