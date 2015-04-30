@@ -67,6 +67,7 @@ uses
   {$ELSE}
     Classes, SysUtils, SyncObjs,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
+  {$IFNDEF FPC}Generics.Defaults,{$ENDIF FPC}
   LKSL.Generics.Collections,
   LKSL.Common.Types,
   LKSL.Streams.Main, LKSL.Streams.System;
@@ -100,8 +101,19 @@ type
   { Array Types }
   TLKStreamableArray = TArray<TLKStreamable>;
 
-  { Hashmap Types }
-  TLKStreamableTypesDictionary = TLKDictionary<TGUID, TLKStreamableType>;
+  { Generics Collections }
+  {$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+    TLKStreamableTypesSortedList = class(TLKSortedList<TLKStreamableType>)
+    protected
+      function AEqualToB(const A, B: TLKStreamableType): Boolean; override;
+      function AGreaterThanB(const A, B: TLKStreamableType): Boolean; override;
+      function AGreaterThanOrEqualB(const A, B: TLKStreamableType): Boolean; override;
+      function ALessThanB(const A, B: TLKStreamableType): Boolean; override;
+      function ALessThanOrEqualB(const A, B: TLKStreamableType): Boolean; override;
+    end;
+  {$ELSE}
+    TLKStreamableTypesDictionary = class(TLKDictionary<TGUID, TLKStreamableType>);
+  {$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 
   {
     TLKStreamable
@@ -240,7 +252,11 @@ type
   }
   TLKStreamables =  class(TLKPersistent)
   private
-    FStreamableTypes: TLKStreamableTypesDictionary;
+    {$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+      FStreamableTypes: TLKStreamableTypesSortedList;
+    {$ELSE}
+      FStreamableTypes: TLKStreamableTypesDictionary;
+    {$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 
     procedure Clear;
     function GetCount: Integer;
@@ -281,6 +297,59 @@ const
   // Used internally to ensure that older files work with the newer engine
   // This is only any good for Streamable Files produced after 2nd December 2014
   STREAMABLES_ENGINE_VERSION: Byte = 2;
+
+{$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+  { TLKStreamableTypesSortedList }
+
+  function TLKStreamableTypesSortedList.AEqualToB(const A, B: TLKStreamableType): Boolean;
+  begin
+    Result := A.GetTypeGUID = B.GetTypeGUID;
+  end;
+
+  function TLKStreamableTypesSortedList.AGreaterThanB(const A, B: TLKStreamableType): Boolean;
+  begin
+    {$IFNDEF FPC}
+      //BinaryCompare(@A, @B, SizeOf(TGUID));
+      //Result := TComparer<TGUID>.Compare(A, B)
+      Result := GUIDToString(A.GetTypeGUID) > GUIDToString(B.GetTypeGUID);
+    {$ELSE}
+      Result := A.GetTypeGUID > B.GetTypeGUID;
+    {$ENDIF FPC}
+  end;
+
+  function TLKStreamableTypesSortedList.AGreaterThanOrEqualB(const A, B: TLKStreamableType): Boolean;
+  begin
+    {$IFNDEF FPC}
+      //BinaryCompare(@A, @B, SizeOf(TGUID));
+      //Result := TComparer<TGUID>.Compare(A, B)
+      Result := GUIDToString(A.GetTypeGUID) >= GUIDToString(B.GetTypeGUID);
+    {$ELSE}
+      Result := A.GetTypeGUID >= B.GetTypeGUID;
+    {$ENDIF FPC}
+  end;
+
+  function TLKStreamableTypesSortedList.ALessThanB(const A, B: TLKStreamableType): Boolean;
+  begin
+    {$IFNDEF FPC}
+      //BinaryCompare(@A, @B, SizeOf(TGUID));
+      //Result := TComparer<TGUID>.Compare(A, B)
+      Result := GUIDToString(A.GetTypeGUID) < GUIDToString(B.GetTypeGUID);
+    {$ELSE}
+      Result := A.GetTypeGUID < B.GetTypeGUID;
+    {$ENDIF FPC}
+  end;
+
+  function TLKStreamableTypesSortedList.ALessThanOrEqualB(const A, B: TLKStreamableType): Boolean;
+  begin
+    {$IFNDEF FPC}
+      //BinaryCompare(@A, @B, SizeOf(TGUID));
+      //Result := TComparer<TGUID>.Compare(A, B)
+      Result := GUIDToString(A.GetTypeGUID) <= GUIDToString(B.GetTypeGUID);
+    {$ELSE}
+      Result := A.GetTypeGUID <= B.GetTypeGUID;
+    {$ENDIF FPC}
+  end;
+{$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 
 { TLKStreamable }
 
@@ -662,19 +731,27 @@ end;
 
 procedure TLKStreamables.Clear;
 begin
+  {$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+
+  {$ELSE}
   //TODO -oSJS -cTLKStreamables: Remove Locking once TLKDictionary is rewritten
-  AcquireWriteLock;
-  try
-    FStreamableTypes.Clear;
-  finally
-    ReleaseWriteLock;
-  end;
+    AcquireWriteLock;
+    try
+      FStreamableTypes.Clear;
+    finally
+      ReleaseWriteLock;
+    end;
+  {$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 end;
 
 constructor TLKStreamables.Create;
 begin
   inherited;
-  FStreamableTypes := TLKStreamableTypesDictionary.Create;
+  {$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+    FStreamableTypes := TLKStreamableTypesSortedList.Create;
+  {$ELSE}
+    FStreamableTypes := TLKStreamableTypesDictionary.Create;
+  {$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 end;
 
 function TLKStreamables.CreateStreamableFromStream(const ACaret: ILKStreamCaret): TLKStreamable;
@@ -724,10 +801,22 @@ begin
 end;
 
 function TLKStreamables.GetStreamableTypeByGUID(const AGUID: TGUID): TLKStreamableType;
+{$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+  var
+    LIndex: Integer;
+{$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 begin
-
-  if not (FStreamableTypes.TryGetValue(AGUID, Result)) then
-    Result := nil;
+  {$IFDEF LKSL_EVENTENGINE_USEBINARYLISTS}
+    FStreamableTypes.AcquireReadLock;
+    try
+//      LIndex := FStreamableTypes.IndexOf()
+    finally
+      FStreamableTypes.ReleaseReadLock;
+    end;
+  {$ELSE}
+    if not (FStreamableTypes.TryGetValue(AGUID, Result)) then
+      Result := nil;
+  {$ENDIF LKSL_EVENTENGINE_USEBINARYLISTS}
 end;
 {
 function TLKStreamables.GetStreamableTypeByIndex(const AIndex: Integer): TLKStreamableType;

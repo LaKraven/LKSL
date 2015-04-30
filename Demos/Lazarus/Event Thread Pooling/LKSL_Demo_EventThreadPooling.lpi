@@ -251,6 +251,7 @@
       <Unit11>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Generics.Collections"/>
       </Unit11>
       <Unit12>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
