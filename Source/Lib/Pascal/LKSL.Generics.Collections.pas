@@ -116,13 +116,13 @@ type
 
   { Callback Types }
   {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
-    TLKIterateCallbackAnon<T> = reference to procedure(const AIndex: Integer; const AItem: T);
-    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
-    TLKIterateCallbackOfObject<T> = procedure(const AIndex: Integer; const AItem: T) of object;
-    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
-    TLKIterateCallbackUnbound<T> = procedure(const AIndex: Integer; const AItem: T);
+    ///  <summary><c>Used by TLKListBase (and descendants) to Iterate Items in the List.</c></summary>
+    TLKListIterateCallbackAnon<T> = reference to procedure(const AIndex: Integer; const AItem: T);
   {$ENDIF SUPPORTS_REFERENCETOMETHOD}
+  ///  <summary><c>Used by TLKListBase (and descendants) to Iterate Items in the List.</c></summary>
+  TLKListIterateCallbackOfObject<T> = procedure(const AIndex: Integer; const AItem: T) of object;
+  ///  <summary><c>Used by TLKListBase (and descendants) to Iterate Items in the List.</c></summary>
+  TLKListIterateCallbackUnbound<T> = procedure(const AIndex: Integer; const AItem: T);
 
   { Exception Types }
   ELKGenericCollectionsException = class(ELKException);
@@ -183,13 +183,13 @@ type
     procedure Remove(const AItems: Array of T); overload;
 
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
+      procedure Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+      procedure Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
     {$ENDIF SUPPORTS_REFERENCETOMETHOD}
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
 
     function Contains(const AItem: T): Boolean; overload;
     function Contains(const AItems: Array of T): Boolean; overload;
@@ -266,14 +266,12 @@ type
     function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
   end;
 
-  {
-    TLKArray<T>
-      - A very simple "Managed Array" for items of the nominated type.
-      - Items are UNSORTED
-      - The Array expands by 1 each time a new item is added
-      - The Array collapses by 1 each time an item is removed
-      - If referencing the "ArrayRaw" property, don't forget to call "Lock" and "Unlock" manually!
-  }
+  ///  <summary><c>A very simple "Managed Array" for items of the nominated Type.</c></summary>
+  ///  <remarks>
+  ///    <para><c>Array expands by one each time an Item is Added.</c></para>
+  ///    <para><c>Array collapses by 1 each time an Item is Removed.</c></para>
+  ///    <para>ArrayRaw <c>property violates thread-safe Locking!</c></para>
+  ///  </remarks>
   TLKArray<T> = class(TLKInterfacedObject, ILKArray<T>)
   type
     TLKArrayType = Array of T;
@@ -419,13 +417,13 @@ type
     procedure Remove(const AItems: Array of T); overload;
 
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
+      procedure Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+      procedure Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
     {$ENDIF SUPPORTS_REFERENCETOMETHOD}
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
 
     function Contains(const AItem: T): Boolean; overload; inline;
     function Contains(const AItems: Array of T): Boolean; overload;
@@ -552,7 +550,7 @@ type
         - In a sense, this means you have a combined Queue AND Stack acting like a singular Array.
       - NOT RELATED TO TLKListBase<T> IN ANY WAY! ENTIRELY DISTINCT IMPLEMENTATION!
   }
-  TLKCenteredList<T> = class(TPersistent)
+  TLKCenteredList<T> = class(TInterfacedObject, ILKCenteredList<T>)
   private
     type
       TArrayOfT = Array of T;
@@ -676,7 +674,7 @@ type
       - A special version of TLKCenteredList<T> for Objects
       - Has the ability to OWN its Items (so they are destroyed with the List)
   }
-  TLKCenteredObjectList<T: class> = class(TLKCenteredList<T>)
+  TLKCenteredObjectList<T: class> = class(TLKCenteredList<T>, ILKCenteredObjectList<T>)
   private
     FOwnsObjects: Boolean;
   protected
@@ -696,7 +694,7 @@ type
       - A special Generic Tree Object with thread-safe Locks
       - Acts as both the Root and Child node (dependant on whether or not it contains a Parent)
   }
-  TLKTreeNode<T> = class(TLKObject)
+  TLKTreeNode<T> = class(TLKInterfacedObject, ILKTreeNode<T>)
   private type
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
       TLKValueCallback<V> = reference to procedure(const Value: V);
@@ -772,7 +770,7 @@ type
       - Special variant of TLKTreeNode<T> for Objects
       - Has the ability to OWN its Values (so they are destroyed with the Node)
   }
-  TLKTreeObjectNode<T: class> = class(TLKTreeNode<T>)
+  TLKTreeObjectNode<T: class> = class(TLKTreeNode<T>, ILKTreeObjectNode<T>)
   private
     FOwnsObject: Boolean;
     function GetOwnsObjects: Boolean;
@@ -787,7 +785,6 @@ type
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 {$ENDIF FPC}
-
 const
   LKSL_LIST_CAPACITY_DEFAULT = 10;
   LKSL_LIST_MULTIPLIER_MINIMUM = 1.10;
@@ -1193,7 +1190,7 @@ begin
   Inc(FCount); // Incrememnt the Count
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection);
 var
   I: Integer;
 begin
@@ -1208,7 +1205,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackUnbound<T>; const AFrom, ATo: Integer);
 var
   I: Integer;
 begin
@@ -1231,7 +1228,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection);
 var
   I: Integer;
 begin
@@ -1246,7 +1243,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackOfObject<T>; const AFrom, ATo: Integer);
 var
   I: Integer;
 begin
@@ -1270,7 +1267,7 @@ begin
 end;
 
 {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer);
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AFrom, ATo: Integer);
   var
     I: Integer;
   begin
@@ -1293,7 +1290,7 @@ end;
     end;
   end;
 
-  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight);
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKListIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight);
   var
     I: Integer;
   begin
@@ -2760,7 +2757,6 @@ end;
       ReleaseWriteLock;
     end;
   end;
-
 {$ENDIF FPC}
 
 end.
