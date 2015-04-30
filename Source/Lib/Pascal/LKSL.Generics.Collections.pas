@@ -76,7 +76,7 @@ type
     TArray<T> = Array of T;
   {$ELSE}
     { Interface Forward Declarations }
-    ILKSortHandler<T> = interface;
+    ILKComparer<T> = interface;
     ILKArray<T> = interface;
     ILKListBase<T> = interface;
     ILKList<T> = interface;
@@ -87,7 +87,7 @@ type
     ILKTreeNode<T> = interface;
     ILKTreeObjectNode<T: class> = interface;
     { Class Forward Declaration }
-    TLKSortHandler<T> = class;
+    TLKComparer<T> = class;
     TLKArray<T> = class;
     TLKDictionary<TKey, TValue> = class;
 //    TLKHashMap<TKey, TValue> = class;
@@ -97,6 +97,9 @@ type
     TLKSortedListBase<T> = class;
     TLKSortedList<T> = class;
     TLKSortedObjectList<T: class> = class;
+    TLKLookupListBase<TKey, TValue> = class;
+    TLKLookupList<TKey, TValue> = class;
+    TLKObjectLookupList<TKey, TValue: class> = class;
     {$IFDEF LKSL_INCLUDE_CENTEREDLIST}
       TLKCenteredList<T> = class;
       TLKCenteredObjectList<T: class> = class;
@@ -111,6 +114,16 @@ type
   TLKListFinalizeMode = (fmNoFinalize, fmFinalize);
   TLKListSmartCompactMode = (scmNoSmartCompact, scmSmartCompact);
 
+  { Callback Types }
+  {$IFDEF SUPPORTS_REFERENCETOMETHOD}
+    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
+    TLKIterateCallbackAnon<T> = reference to procedure(const AIndex: Integer; const AItem: T);
+    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
+    TLKIterateCallbackOfObject<T> = procedure(const AIndex: Integer; const AItem: T) of object;
+    // Used by TLKListBase<T> (and descendants) to Iterate Items in the List.
+    TLKIterateCallbackUnbound<T> = procedure(const AIndex: Integer; const AItem: T);
+  {$ENDIF SUPPORTS_REFERENCETOMETHOD}
+
   { Exception Types }
   ELKGenericCollectionsException = class(ELKException);
     ELKGenericCollectionsLimitException = class(ELKGenericCollectionsException);
@@ -118,7 +131,7 @@ type
     ELKGenericCollectionsKeyAlreadyExists = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyNotFound = class(ELKGenericCollectionsException);
 
-  ILKSortHandler<T> = interface
+  ILKComparer<T> = interface(ILKInterface)
   ['{2E102784-D058-44D6-9104-915FE4BCE3FD}']
     function AEqualToB(const A, B: T): Boolean;
     function AGreaterThanB(const A, B: T): Boolean;
@@ -127,7 +140,7 @@ type
     function ALessThanOrEqualB(const A, B: T): Boolean;
   end;
 
-  ILKArray<T> = interface
+  ILKArray<T> = interface(ILKInterface)
   ['{04C10AB7-8438-4EAF-BB11-F19F8590F3D8}']
     function GetItem(const AIndex: Integer): T;
     procedure SetItem(const AIndex: Integer; const AItem: T);
@@ -139,8 +152,7 @@ type
     property Items[const AIndex: Integer]: T read GetItem write SetItem;
   end;
 
-  // TODO -oSJS -cILKListBase<T>: Resolve commented out methods and make TLKListBase inherit from interface ILKListBase
-  ILKListBase<T> = interface
+  ILKListBase<T> = interface(ILKInterface)
   ['{FC258E80-7236-4F7D-A113-D2FB1856122E}']
     function GetCapacity: Integer;
     function GetCapacityMultiplier: Single;
@@ -171,19 +183,19 @@ type
     procedure Remove(const AItems: Array of T); overload;
 
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-//      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
-//      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
     {$ENDIF SUPPORTS_REFERENCETOMETHOD}
-//    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection = ldRight); overload;
-//    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer); overload;
-//    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection = ldRight); overload;
-//    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
 
     function Contains(const AItem: T): Boolean; overload;
     function Contains(const AItems: Array of T): Boolean; overload;
     function IndexOf(const AItem: T): Integer;
 
-    procedure Sort(const ASortHandler: ILKSortHandler<T>; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure Sort(const AComparer: ILKComparer<T>; const ASortOrder: TLKListSortOrder = soAscending);
 
     ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
     ///  <remarks><c>Read-Only</c></remarks>
@@ -203,12 +215,15 @@ type
 
   ILKList<T> = interface(ILKListBase<T>)
   ['{D25C4FC1-1E33-43FA-942D-E4CC6A92CB3D}']
-
+    procedure Insert(const AItem: T; const AIndex: Integer);
   end;
 
   ILKObjectList<T: class> = interface(ILKList<T>)
   ['{59B2887B-6857-4A20-BF4C-5613C62BF957}']
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
 
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
   ILKSortedListBase<T> = interface
@@ -237,11 +252,11 @@ type
   end;
 
   {
-    TLKSortHandler<T>
+    TLKComparer<T>
       - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
       - Allows you to provide Dynamic Sorting Behaviour at Runtime!
   }
-  TLKSortHandler<T> = class abstract(TLKInterfacedObject, ILKSortHandler<T>)
+  TLKComparer<T> = class abstract(TLKInterfacedObject, ILKComparer<T>)
   public
     // Parity Checks
     function AEqualToB(const A, B: T): Boolean; virtual; abstract;
@@ -331,16 +346,10 @@ type
     TLKListBase<T>
       - Abstract Base Type for TLKList[variation]<T> types
   }
-  TLKListBase<T> = class abstract(TLKPersistent)
+  TLKListBase<T> = class abstract(TLKInterfacedObject, ILKListBase<T>)
   private
     type
       TArrayOfT = Array of T;
-      {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-        TIterateCallbackAnon = reference to procedure(const AIndex: Integer; const AItem: T);
-      {$ENDIF SUPPORTS_REFERENCETOMETHOD}
-      TIterateCallbackOfObject = procedure(const AIndex: Integer; const AItem: T) of object;
-      TIterateCallbackUnbound = procedure(const AIndex: Integer; const AItem: T);
-      TLKSortHandlerT = class(TLKSortHandler<T>);
   private
     FArray: TArrayOfT;
     FCapacityMultiplier: Single;
@@ -379,7 +388,7 @@ type
     // Insert
     procedure InsertActual(const AItem: T; const AIndex: Integer); inline;
     // Quick Sort
-    procedure QuickSort(const ASortHandler: TLKSortHandlerT; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure QuickSort(const AComparer: ILKComparer<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder = soAscending);
     // Smart Compact
     procedure CompactActual;
     procedure SmartCompact;
@@ -394,7 +403,7 @@ type
     destructor Destroy; override;
 
     function Add(const AItem: T): Integer; overload; virtual;
-    procedure Add(const AItems: TArrayOfT); overload;
+    procedure Add(const AItems: Array of T); overload;
 
     procedure Clear(const ACompact: Boolean = True); virtual;
     procedure Compact; inline;
@@ -407,22 +416,22 @@ type
     procedure DeleteRange(const AIndex, ACount: Integer); virtual;
 
     function Remove(const AItem: T): Integer; overload; inline;
-    procedure Remove(const AItems: TArrayOfT); overload;
+    procedure Remove(const AItems: Array of T); overload;
 
     {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight); overload;
-      procedure Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer); overload;
+      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+      procedure Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer); overload;
     {$ENDIF SUPPORTS_REFERENCETOMETHOD}
-    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer); overload;
-    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection = ldRight); overload;
-    procedure Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection = ldRight); overload;
+    procedure Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer); overload;
 
     function Contains(const AItem: T): Boolean; overload; inline;
-    function Contains(const AItems: TArrayOfT): Boolean; overload;
+    function Contains(const AItems: Array of T): Boolean; overload;
     function IndexOf(const AItem: T): Integer;
 
-    procedure Sort(const ASortHandler: TLKSortHandlerT; const ASortOrder: TLKListSortOrder = soAscending);
+    procedure Sort(const AComparer: ILKComparer<T>; const ASortOrder: TLKListSortOrder = soAscending);
 
     ///  <summary><c>The number of Slots presently allocated for the List.</c></summary>
     ///  <remarks><c>Read-Only</c></remarks>
@@ -444,7 +453,7 @@ type
     TLKList<T>
       - A simple Generic List Type (light-weight)
   }
-  TLKList<T> = class(TLKListBase<T>)
+  TLKList<T> = class(TLKListBase<T>, ILKList<T>)
   public
     procedure Insert(const AItem: T; const AIndex: Integer);
   end;
@@ -453,7 +462,7 @@ type
     TLKObjectList<T: class>
       - A version of TLKList<T> capable of handling ownership of Class Instances
   }
-  TLKObjectList<T: class> = class(TLKList<T>)
+  TLKObjectList<T: class> = class(TLKList<T>, ILKObjectList<T>)
   private
     FOwnsObjects: Boolean;
     function GetOwnsObjects: Boolean;
@@ -476,7 +485,7 @@ type
       - A TLKListBase<T> with Sorted Insertion
       - Abstract methods need to be implemented on type-specific descendants
   }
-  TLKSortedListBase<T> = class abstract(TLKListBase<T>)
+  TLKSortedListBase<T> = class abstract(TLKListBase<T>, ILKSortedListBase<T>)
   protected
     // Parity Checks
     function AEqualToB(const A, B: T): Boolean; virtual; abstract;
@@ -493,7 +502,7 @@ type
       - An implementation of TLKSortedListBase<T> supporting Duplicate Sorted Keys
       - Abstract methods need to be implemented on type-specific descendants
   }
-  TLKSortedList<T> = class abstract(TLKSortedListBase<T>)
+  TLKSortedList<T> = class abstract(TLKSortedListBase<T>, ILKSortedList<T>)
   protected
     function AddActual(const AItem: T): Integer; override;
   end;
@@ -503,7 +512,7 @@ type
       - A version of TLKSortedList<T> capable of handling ownership of Class Instances
       - Abstract methods need to be implemented on type-specific descendants
   }
-  TLKSortedObjectList<T: class> = class abstract(TLKSortedListBase<T>)
+  TLKSortedObjectList<T: class> = class abstract(TLKSortedListBase<T>, ILKSortedObjectList<T>)
   private
     FOwnsObjects: Boolean;
     function GetOwnsObjects: Boolean;
@@ -519,6 +528,18 @@ type
     procedure Delete(const AIndex: Integer); override;
 
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+  TLKLookupListBase<TKey, TValue> = class(TLKListBase<TValue>)
+
+  end;
+
+  TLKLookupList<TKey, TValue> = class(TLKLookupListBase<TKey, TValue>)
+
+  end;
+
+  TLKObjectLookupList<TKey, TValue: class> = class(TLKLookupList<TKey, TValue>)
+
   end;
 
 {$IFDEF LKSL_INCLUDE_CENTEREDLIST}
@@ -922,7 +943,7 @@ begin
   CheckCapacity(Count);
 end;
 
-procedure TLKListBase<T>.Add(const AItems: TArrayOfT);
+procedure TLKListBase<T>.Add(const AItems: Array of T);
 var
   I: Integer;
 begin
@@ -969,7 +990,7 @@ begin
   end;
 end;
 
-function TLKListBase<T>.Contains(const AItems: TArrayOfT): Boolean;
+function TLKListBase<T>.Contains(const AItems: Array of T): Boolean;
 var
   I: Integer;
 begin
@@ -1172,7 +1193,7 @@ begin
   Inc(FCount); // Incrememnt the Count
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound; const AIterateDirection: TLKListDirection);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AIterateDirection: TLKListDirection);
 var
   I: Integer;
 begin
@@ -1187,7 +1208,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackUnbound; const AFrom, ATo: Integer);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackUnbound<T>; const AFrom, ATo: Integer);
 var
   I: Integer;
 begin
@@ -1210,7 +1231,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObject; const AIterateDirection: TLKListDirection);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AIterateDirection: TLKListDirection);
 var
   I: Integer;
 begin
@@ -1225,7 +1246,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackOfObject; const AFrom, ATo: Integer);
+procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackOfObject<T>; const AFrom, ATo: Integer);
 var
   I: Integer;
 begin
@@ -1249,7 +1270,7 @@ begin
 end;
 
 {$IFDEF SUPPORTS_REFERENCETOMETHOD}
-  procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AFrom, ATo: Integer);
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AFrom, ATo: Integer);
   var
     I: Integer;
   begin
@@ -1272,7 +1293,7 @@ end;
     end;
   end;
 
-  procedure TLKListBase<T>.Iterate(const AIterateCallback: TIterateCallbackAnon; const AIterateDirection: TLKListDirection = ldRight);
+  procedure TLKListBase<T>.Iterate(const AIterateCallback: TLKIterateCallbackAnon<T>; const AIterateDirection: TLKListDirection = ldRight);
   var
     I: Integer;
   begin
@@ -1299,7 +1320,7 @@ begin
 end;
 
 
-procedure TLKListBase<T>.QuickSort(const ASortHandler: TLKSortHandlerT; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
+procedure TLKListBase<T>.QuickSort(const AComparer: ILKComparer<T>; ALow, AHigh: Integer; const ASortOrder: TLKListSortOrder);
 var
   I, J: Integer;
   LPivot, LTemp: T;
@@ -1314,15 +1335,15 @@ begin
     repeat
       case ASortOrder of
         soAscending: begin
-                       while ASortHandler.ALessThanB(FArray[I], LPivot) do
+                       while AComparer.ALessThanB(FArray[I], LPivot) do
                          Inc(I);
-                       while ASortHAndler.AGreaterThanB(FArray[J], LPivot) do
+                       while AComparer.AGreaterThanB(FArray[J], LPivot) do
                          Dec(J);
                      end;
         soDescending: begin
-                       while ASortHandler.ALessThanB(LPivot, FArray[I]) do
+                       while AComparer.ALessThanB(LPivot, FArray[I]) do
                          Inc(I);
-                       while ASortHAndler.AGreaterThanB(LPivot, FArray[J]) do
+                       while AComparer.AGreaterThanB(LPivot, FArray[J]) do
                          Dec(J);
                       end;
       end;
@@ -1339,12 +1360,12 @@ begin
       end;
     until I > J;
     if ALow < J then
-      QuickSort(ASortHandler, ALow, J, ASortOrder);
+      QuickSort(AComparer, ALow, J, ASortOrder);
     ALow := I;
   until I >= AHigh;
 end;
 
-procedure TLKListBase<T>.Remove(const AItems: TArrayOfT);
+procedure TLKListBase<T>.Remove(const AItems: Array of T);
 var
   I: Integer;
 begin
@@ -1406,11 +1427,11 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.Sort(const ASortHandler: TLKSortHandlerT; const ASortOrder: TLKListSortOrder = soAscending);
+procedure TLKListBase<T>.Sort(const AComparer: ILKComparer<T>; const ASortOrder: TLKListSortOrder = soAscending);
 begin
   AcquireWriteLock;
   try
-    QuickSort(ASortHandler, 0, FCount - 1, ASortOrder);
+    QuickSort(AComparer, 0, FCount - 1, ASortOrder);
   finally
     ReleaseWriteLock;
   end;
