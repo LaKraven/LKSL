@@ -78,6 +78,7 @@ type
     { Interface Forward Declarations }
     ILKComparer<T> = interface;
     ILKArray<T> = interface;
+    ILKObjectArray<T: class> = interface;
     ILKListBase<T> = interface;
     ILKList<T> = interface;
     ILKObjectList<T: class> = interface;
@@ -91,6 +92,7 @@ type
     { Class Forward Declaration }
     TLKComparer<T> = class;
     TLKArray<T> = class;
+    TLKObjectArray<T: class> = class;
     TLKDictionary<TKey, TValue> = class;
 //    TLKHashMap<TKey, TValue> = class;
     TLKListBase<T> = class;
@@ -156,6 +158,14 @@ type
     procedure Delete(const AIndex: Integer);
 
     property Items[const AIndex: Integer]: T read GetItem write SetItem;
+  end;
+
+  ILKObjectArray<T: class> = interface(ILKArray<T>)
+  ['{BCBDF151-09FD-4E0E-8311-4483957AE63E}']
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
   ILKListBase<T> = interface(ILKInterface)
@@ -301,11 +311,33 @@ type
     procedure SetItem(const AIndex: Integer; const AItem: T);
   public
     function Add(const AItem: T): Integer;
-    procedure Clear; inline;
+    procedure Clear; virtual;
     procedure Delete(const AIndex: Integer); virtual;
 
     property ArrayRaw: TLKArrayType read FArray;
     property Items[const AIndex: Integer]: T read GetItem write SetItem;
+  end;
+
+  ///  <summary><c>A very simple "Managed Object Array" for items of the nominated Type.</c></summary>
+  ///  <remarks>
+  ///    <para><c>Can take ownership of Object Instances in the List, and manage their lifetime</c></para>
+  ///    <para><c>Array expands by one each time an Item is Added.</c></para>
+  ///    <para><c>Array collapses by 1 each time an Item is Removed.</c></para>
+  ///    <para>ArrayRaw <c>property violates thread-safe Locking!</c></para>
+  ///  </remarks>
+  TLKObjectArray<T: class> = class(TLKArray<T>, ILKObjectArray<T>)
+  private
+    FOwnsObjects: Boolean;
+    function GetOwnsObjects: Boolean;
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const AOwnsObjects: Boolean = True); reintroduce;
+    destructor Destroy; override;
+
+    procedure Clear; override;
+    procedure Delete(const AIndex: Integer); override;
+
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
   {
@@ -833,7 +865,12 @@ end;
 
 procedure TLKArray<T>.Clear;
 begin
-  SetLength(FArray, 0);
+  AcquireWriteLock;
+  try
+    SetLength(FArray, 0);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKArray<T>.Delete(const AIndex: Integer);
@@ -866,6 +903,67 @@ begin
   AcquireWriteLock;
   try
     FArray[AIndex] := AItem;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKObjectArray<T> }
+
+procedure TLKObjectArray<T>.Clear;
+var
+  I: Integer;
+begin
+  AcquireWriteLock;
+  try
+    if FOwnsObjects then
+      for I := Low(FArray) to High(FArray) do
+        FArray[I].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+    inherited;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+constructor TLKObjectArray<T>.Create(const AOwnsObjects: Boolean);
+begin
+  inherited Create;
+  FOwnsObjects := AOwnsObjects;
+end;
+
+procedure TLKObjectArray<T>.Delete(const AIndex: Integer);
+begin
+  AcquireWriteLock;
+  try
+    if FOwnsObjects then
+      FArray[AIndex].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+    inherited;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+destructor TLKObjectArray<T>.Destroy;
+begin
+
+  inherited;
+end;
+
+function TLKObjectArray<T>.GetOwnsObjects: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObjects;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKObjectArray<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObjects := AOwnsObjects;
   finally
     ReleaseWriteLock;
   end;
@@ -2857,5 +2955,6 @@ begin
   end;
 end;
 {$ENDIF FPC}
+
 end.
 
