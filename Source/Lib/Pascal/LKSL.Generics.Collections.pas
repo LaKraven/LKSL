@@ -918,7 +918,7 @@ begin
   try
     if FOwnsObjects then
       for I := Low(FArray) to High(FArray) do
-        FArray[I].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+        FArray[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
     inherited;
   finally
     ReleaseWriteLock;
@@ -936,7 +936,7 @@ begin
   AcquireWriteLock;
   try
     if FOwnsObjects then
-      FArray[AIndex].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+      FArray[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
     inherited;
   finally
     ReleaseWriteLock;
@@ -2539,7 +2539,7 @@ end;
 procedure TLKCenteredObjectList<T>.DeleteCenter;
 begin
   if FOwnsObjects then
-    FCenter.{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+    FCenter.{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
 
   inherited;
 end;
@@ -2547,14 +2547,14 @@ end;
 procedure TLKCenteredObjectList<T>.DeleteLeft(const AIndex: Integer);
 begin
   if FOwnsObjects then
-    FArrayLeft[AIndex].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+    FArrayLeft[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
   inherited;
 end;
 
 procedure TLKCenteredObjectList<T>.DeleteRight(const AIndex: Integer);
 begin
   if FOwnsObjects then
-    FArrayRight[AIndex].{$IFDEF NEXTGEN}DisposeOf{$ELSE}Free{$ENDIF NEXTGEN};
+    FArrayRight[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
   inherited;
 end;
 
