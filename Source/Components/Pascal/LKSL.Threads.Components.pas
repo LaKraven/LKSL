@@ -50,14 +50,14 @@ interface
 
 uses
   System.Classes, System.SysUtils,
-  LKSL.Threads.Main;
+  LKSL.Common.Types, LKSL.Threads.Main;
 
 type
   { Forward Declarations }
   TLKThreadGeneric = class;
   TLKPrecisionThread = class;
 
-  TLKThreadTickCallback = procedure (const ADelta, AStartTime: Double) of object;
+  TLKThreadTickCallback = procedure (const ADelta, AStartTime: LKFloat) of object;
 
   {
     TLKThreadGeneric
@@ -68,7 +68,7 @@ type
     FOnTick: TLKThreadTickCallback;
   protected
     function GetInitialThreadState: TLKThreadState; override;
-    procedure Tick(const ADelta, AStartTime: Double); override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
   public
     property OnTick: TLKThreadTickCallback read FOnTick write FOnTick;
   end;
@@ -83,31 +83,31 @@ type
     FThread: TLKThreadGeneric;
     // Getters
     function GetActive: Boolean;
-    function GetNextTickTime: Double;
+    function GetNextTickTime: LKFloat;
     function GetOnTick: TLKThreadTickCallback;
-    function GetTickRate: Double;
-    function GetTickRateAverage: Double;
+    function GetTickRate: LKFloat;
+    function GetTickRateAverage: LKFloat;
     function GetTickRateAverageOver: Cardinal;
-    function GetTickRateDesired: Double;
-    function GetTickRateLimit: Double;
+    function GetTickRateDesired: LKFloat;
+    function GetTickRateLimit: LKFloat;
     // Setters
     procedure SetActive(const AActive: Boolean);
     procedure SetOnTick(const AOnTick: TLKThreadTickCallback);
     procedure SetTickRateAverageOver(const AAverageOver: Cardinal);
-    procedure SetTickRateDesired(const ATickRateDesired: Double);
-    procedure SetTickRateLimit(const ATickRateLimit: Double);
+    procedure SetTickRateDesired(const ATickRateDesired: LKFloat);
+    procedure SetTickRateLimit(const ATickRateLimit: LKFloat);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
   published
     property Active: Boolean read GetActive write SetActive;
-    property NextTickTime: Double read GetNextTickTime;
+    property NextTickTime: LKFloat read GetNextTickTime;
     property OnTick: TLKThreadTickCallback read GetOnTick write SetOnTick;
-    property TickRate: Double read GetTickRate;
-    property TickRateAverage: Double read GetTickRateAverage;
+    property TickRate: LKFloat read GetTickRate;
+    property TickRateAverage: LKFloat read GetTickRateAverage;
     property TickRateAverageOver: Cardinal read GetTickRateAverageOver write SetTickRateAverageOver;
-    property TickRateDesired: Double read GetTickRateDesired write SetTickRateDesired;
-    property TickRateLimit: Double read GetTickRateLimit write SetTickRateLimit;
+    property TickRateDesired: LKFloat read GetTickRateDesired write SetTickRateDesired;
+    property TickRateLimit: LKFloat read GetTickRateLimit write SetTickRateLimit;
   end;
 
 implementation
@@ -119,7 +119,7 @@ begin
   Result := tsPaused;
 end;
 
-procedure TLKThreadGeneric.Tick(const ADelta, AStartTime: Double);
+procedure TLKThreadGeneric.Tick(const ADelta, AStartTime: LKFloat);
 begin
   if Assigned(FOnTick) then
   begin
@@ -152,7 +152,7 @@ begin
     Result := (FThread.ThreadState = tsRunning);
 end;
 
-function TLKPrecisionThread.GetNextTickTime: Double;
+function TLKPrecisionThread.GetNextTickTime: LKFloat;
 begin
   Result := FThread.NextTickTime;
 end;
@@ -162,12 +162,12 @@ begin
   Result := FThread.OnTick;
 end;
 
-function TLKPrecisionThread.GetTickRate: Double;
+function TLKPrecisionThread.GetTickRate: LKFloat;
 begin
   Result := FThread.TickRate;
 end;
 
-function TLKPrecisionThread.GetTickRateAverage: Double;
+function TLKPrecisionThread.GetTickRateAverage: LKFloat;
 begin
   Result := FThread.TickRateAverage;
 end;
@@ -177,12 +177,12 @@ begin
   Result := FThread.TickRateAverageOver;
 end;
 
-function TLKPrecisionThread.GetTickRateDesired: Double;
+function TLKPrecisionThread.GetTickRateDesired: LKFloat;
 begin
   Result := FThread.TickRateDesired;
 end;
 
-function TLKPrecisionThread.GetTickRateLimit: Double;
+function TLKPrecisionThread.GetTickRateLimit: LKFloat;
 begin
   Result := Fthread.TickRateLimit;
 end;
@@ -207,12 +207,12 @@ begin
   FThread.TickRateAverageOver := AAverageOver;
 end;
 
-procedure TLKPrecisionThread.SetTickRateDesired(const ATickRateDesired: Double);
+procedure TLKPrecisionThread.SetTickRateDesired(const ATickRateDesired: LKFloat);
 begin
   FThread.TickRateDesired := ATickRateDesired;
 end;
 
-procedure TLKPrecisionThread.SetTickRateLimit(const ATickRateLimit: Double);
+procedure TLKPrecisionThread.SetTickRateLimit(const ATickRateLimit: LKFloat);
 begin
   FThread.TickRateLimit := ATickRateLimit;
 end;

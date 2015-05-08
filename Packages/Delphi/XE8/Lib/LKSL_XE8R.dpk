@@ -45,7 +45,7 @@ contains
   LKSL.Streams.System in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
   LKSL.Streams.Types in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
   LKSL.Threads.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',
-  LKSL.Streams.Helpers in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Helpers.pas',
-  LKSL.Streams.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas';
+  LKSL.Streams.Main in '..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas',
+  LKSL.Common.SyncObjs in '..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas';
 
 end.

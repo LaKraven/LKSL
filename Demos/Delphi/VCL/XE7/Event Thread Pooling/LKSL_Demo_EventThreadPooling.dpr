@@ -22,7 +22,7 @@ uses
 {$R *.res}
 
 begin
-  {$IFDEF DEBUG}ReportMemoryLeaksOnShutdown := True;{$ENDIF}
+  {$IFDEF DEBUG}ReportMemoryLeaksOnShutdown := True;{$ENDIF DEBUG}
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm1, Form1);
