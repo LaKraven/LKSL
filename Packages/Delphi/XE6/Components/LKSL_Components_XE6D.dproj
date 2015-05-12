@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{30C9BDFA-AAF0-4BBF-B4B2-BE6489A9FF09}</ProjectGuid>
-        <MainSource>LKSL_Components_XE7D.dpk</MainSource>
+        <MainSource>LKSL_Components_XE6D.dpk</MainSource>
         <ProjectVersion>16.1</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
@@ -49,13 +49,13 @@
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Component Package;FileVersion=1.0.0.0;InternalName=LKSL Component Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_Components_XE7D.bpl;ProductName=LKSL Component Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Component Package;FileVersion=1.0.0.0;InternalName=LKSL Component Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_Components_XE6D.bpl;ProductName=LKSL Component Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <GenPackage>true</GenPackage>
-        <SanitizedProjectName>LKSL_Components_XE7D</SanitizedProjectName>
+        <SanitizedProjectName>LKSL_Components_XE6D</SanitizedProjectName>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <GenDll>true</GenDll>
         <VerInfo_Locale>2057</VerInfo_Locale>
-        <DCC_DcuOutput>..\..\..\..\DCU\XE7\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_DcuOutput>..\..\..\..\DCU\XE6\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
@@ -69,7 +69,7 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <DCC_UsePackage>rtl;LKSL_XE7R;LKSL_Components_XE7R;$(DCC_UsePackage)</DCC_UsePackage>
+        <DCC_UsePackage>rtl;LKSL_XE6R;LKSL_Components_XE6R;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
@@ -100,8 +100,8 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="LKSL_XE7R.dcp"/>
-        <DCCReference Include="LKSL_Components_XE7R.dcp"/>
+        <DCCReference Include="LKSL_XE6R.dcp"/>
+        <DCCReference Include="LKSL_Components_XE6R.dcp"/>
         <DCCReference Include="..\..\..\..\Source\Components\Pascal\LKSL.Components.Reg.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -121,7 +121,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">LKSL_Components_XE7D.dpk</Source>
+                    <Source Name="MainSource">LKSL_Components_XE6D.dpk</Source>
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcboffice2k210.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
@@ -131,15 +131,15 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\Bpl\LKSL_Components_XE7D.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\..\Bin\Win32\Debug\LKSL_Components_XE6D.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>LKSL_Components_XE7D.bpl</RemoteName>
+                        <RemoteName>LKSL_Components_XE6D.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\..\..\Bin\Win32\Debug\LKSL_Components_XE7D.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\Bpl\LKSL_Components_XE6D.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>LKSL_Components_XE7D.bpl</RemoteName>
+                        <RemoteName>LKSL_Components_XE6D.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -309,6 +309,7 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
+                <DeployClass Name="ProjectiOSDeviceInfoPList"/>
                 <DeployClass Name="ProjectiOSInfoPList"/>
                 <DeployClass Name="iPad_Launch1024">
                     <Platform Name="iOSDevice">
@@ -318,6 +319,7 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
+                <DeployClass Name="ProjectiOSSimulatorInfoPList"/>
                 <DeployClass Name="Android_DefaultAppIcon">
                     <Platform Name="Android">
                         <RemoteDir>res\drawable</RemoteDir>

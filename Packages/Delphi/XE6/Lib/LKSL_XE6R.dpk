@@ -1,4 +1,4 @@
-package LKSL_XE7R;
+package LKSL_XE6R;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}

@@ -47,7 +47,6 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <GenDll>true</GenDll>
-        <DCC_BplOutput>..\..\..\..\Bin\$(Platform)\$(Config)</DCC_BplOutput>
         <VerInfo_Locale>2057</VerInfo_Locale>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <GenPackage>true</GenPackage>
@@ -55,7 +54,7 @@
         <SanitizedProjectName>LKSL_XE7R</SanitizedProjectName>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Runtime Package;FileVersion=1.0.0.0;InternalName=LKSL Runtime Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_XE7R.bpl;ProductName=LKSL Runtime Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <DCC_DcuOutput>..\..\..\..\DCU\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_DcuOutput>..\..\..\..\DCU\XE7\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
@@ -85,7 +84,7 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
     </PropertyGroup>
@@ -113,8 +112,8 @@
         <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
         <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
         <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
-        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Helpers.pas"/>
         <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -136,7 +135,8 @@
                     <Source Name="MainSource">LKSL_XE7R.dpk</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="C:\(SIMON)\(LIBS)\LKSL\Bin\Win32\Debug\LKSL_Components_XE7D.bpl">(untitled)</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k210.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp210.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k210.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dclofficexp210.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>

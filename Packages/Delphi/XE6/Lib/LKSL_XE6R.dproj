@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{30C9BDFA-AAF0-4BBF-B4B2-BE6489A9FF09}</ProjectGuid>
-        <MainSource>LKSL_Components_XE7D.dpk</MainSource>
+        <ProjectGuid>{A86699F4-DE57-472F-976B-47C572F30A4D}</ProjectGuid>
+        <MainSource>LKSL_XE6R.dpk</MainSource>
         <ProjectVersion>16.1</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
@@ -45,17 +45,16 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\..\..\..\Source\Lib\Pascal;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <DesignOnlyPackage>true</DesignOnlyPackage>
-        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Component Package;FileVersion=1.0.0.0;InternalName=LKSL Component Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_Components_XE7D.bpl;ProductName=LKSL Component Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <GenPackage>true</GenPackage>
-        <SanitizedProjectName>LKSL_Components_XE7D</SanitizedProjectName>
-        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <GenDll>true</GenDll>
         <VerInfo_Locale>2057</VerInfo_Locale>
-        <DCC_DcuOutput>..\..\..\..\DCU\XE7\$(Platform)\$(Config)</DCC_DcuOutput>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <GenPackage>true</GenPackage>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <SanitizedProjectName>LKSL_XE6R</SanitizedProjectName>
+        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Runtime Package;FileVersion=1.0.0.0;InternalName=LKSL Runtime Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_XE6R.bpl;ProductName=LKSL Runtime Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <DCC_DcuOutput>..\..\..\..\DCU\XE6\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
@@ -67,11 +66,11 @@
         <DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <DCC_UsePackage>rtl;LKSL_XE7R;LKSL_Components_XE7R;$(DCC_UsePackage)</DCC_UsePackage>
-        <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_UsePackage>rtl;$(DCC_UsePackage)</DCC_UsePackage>
@@ -100,9 +99,21 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="LKSL_XE7R.dcp"/>
-        <DCCReference Include="LKSL_Components_XE7R.dcp"/>
-        <DCCReference Include="..\..\..\..\Source\Components\Pascal\LKSL.Components.Reg.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Collections.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Math.SIUnits.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Math.Time.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
+        <DCCReference Include="..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -121,7 +132,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">LKSL_Components_XE7D.dpk</Source>
+                    <Source Name="MainSource">LKSL_XE6R.dpk</Source>
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcboffice2k210.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
@@ -131,15 +142,15 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\Bpl\LKSL_Components_XE7D.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\..\Bin\Win32\Debug\LKSL_XE6R.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>LKSL_Components_XE7D.bpl</RemoteName>
+                        <RemoteName>LKSL_XE6R.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\..\..\Bin\Win32\Debug\LKSL_Components_XE7D.bpl" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\15.0\Bpl\LKSL_XE6R.bpl" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>LKSL_Components_XE7D.bpl</RemoteName>
+                        <RemoteName>LKSL_XE6R.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
