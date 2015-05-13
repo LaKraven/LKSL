@@ -198,7 +198,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="15">
+    <Units Count="16">
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -268,7 +268,12 @@
       <Unit14>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Generics.CollectionsRedux.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Generics.CollectionsRedux"/>
       </Unit14>
+      <Unit15>
+        <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Comparers.System.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit15>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

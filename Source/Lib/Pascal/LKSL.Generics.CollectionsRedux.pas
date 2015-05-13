@@ -50,16 +50,10 @@ interface
 
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
-    System.Classes, System.SysUtils, System.SyncObjs,
+    System.Classes, System.SysUtils,
   {$ELSE}
-    Classes, SysUtils, SyncObjs,
+    Classes, SysUtils,
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  {$IFNDEF FPC}
-    Generics.Defaults,
-    Generics.Collections,
-  {$ELSE}
-    fgl,
-  {$ENDIF FPC}
   LKSL.Common.Types, LKSL.Common.SyncObjs,
   LKSL.Generics.Defaults;
 
@@ -72,19 +66,19 @@ type
     { Interface Forward Declarations }
     ILKArray<T> = interface;
     ILKArrayContainer<T> = interface;
-    ILKComparer<T> = interface;
     ILKListSorter<T> = interface;
     ILKListExpander<T> = interface;
     ILKListCompactor<T> = interface;
     ILKList<T> = interface;
+    ILKObjectList<T: class> = interface;
     { Class Forward Declarations }
     TLKArray<T> = class;
     TLKArrayContainer<T> = class;
-    TLKComparer<T> = class;
     TLKListSorter<T> = class;
     TLKListExpander<T> = class;
     TLKListCompactor<T> = class;
     TLKList<T> = class;
+    TLKObjectList<T: class> = class;
   {$ENDIF FPC}
 
   { Exception Types }
@@ -117,16 +111,6 @@ type
     function GetArray: ILKArray<T>;
   end;
 
-  ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
-  ILKComparer<T> = interface(ILKInterface)
-  ['{3E6657DE-65CB-4106-9647-27F3E5BC88D6}']
-    function AEqualToB(const A, B: T): Boolean;
-    function AGreaterThanB(const A, B: T): Boolean;
-    function AGreaterThanOrEqualB(const A, B: T): Boolean;
-    function ALessThanB(const A, B: T): Boolean;
-    function ALessThanOrEqualB(const A, B: T): Boolean;
-  end;
-
   ILKListSorter<T> = interface(ILKInterface)
   ['{2644E14D-A7C9-44BC-B8DD-109EC0C0A0D1}']
     // Getters
@@ -147,6 +131,12 @@ type
 
   end;
 
+  ///  <summary><c>Generic List Type.</c></summary>
+  ///  <remarks>
+  ///    <para><c>You can specify a </c>TLKListCompactor<c> to dynamically compact the List.</c></para>
+  ///    <para><c>You can specify a </c>TLKListExpander<c> to dynamically expand the List.</c></para>
+  ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
+  ///  </remarks>
   ILKList<T> = interface(ILKInterface)
   ['{FD2E0742-9079-4E03-BDA5-A39D5FAC80A0}']
     // Getters
@@ -161,6 +151,18 @@ type
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  ///  <summary><c>Specialized Generic List for Object Types</c></summary>
+  ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
+  ILKObjectList<T: class> = interface(ILKList<T>)
+  ['{A6CBAAD7-0FAB-48D1-901B-83C70B555AA9}']
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
   ///  <summary><c>A Simple Generic Array with basic Management Methods.</c></summary>
@@ -193,15 +195,6 @@ type
     constructor Create(const AArray: ILKArray<T>); reintroduce;
   end;
 
-  TLKComparer<T> = class abstract(TLKInterfacedObject, ILKComparer<T>)
-  public
-    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
-    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
-    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
-    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
-    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
-  end;
-
   TLKListSorter<T> = class abstract(TLKArrayContainer<T>, ILKListSorter<T>)
   private
     FComparer: ILKComparer<T>;
@@ -222,6 +215,12 @@ type
 
   end;
 
+  ///  <summary><c>Generic List Type.</c></summary>
+  ///  <remarks>
+  ///    <para><c>You can specify a </c>TLKListCompactor<c> to dynamically compact the List.</c></para>
+  ///    <para><c>You can specify a </c>TLKListExpander<c> to dynamically expand the List.</c></para>
+  ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
+  ///  </remarks>
   TLKList<T> = class abstract(TLKInterfacedObject, ILKList<T>)
   private
     FArray: ILKArray<T>;
@@ -246,6 +245,22 @@ type
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  ///  <summary><c>Specialized Generic List for Object Types</c></summary>
+  ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
+  TLKObjectList<T: class> = class(TLKList<T>, ILKObjectList<T>)
+  private
+    FOwnsObjects: Boolean;
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const AOwnsObjects: Boolean = True; const ACapacity: Integer = 0); reintroduce;
+    destructor Destroy; override;
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
 implementation
@@ -427,6 +442,40 @@ begin
   AcquireWriteLock;
   try
     FSorter := ASorter;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKObjectList<T> }
+
+constructor TLKObjectList<T>.Create(const AOwnsObjects: Boolean; const ACapacity: Integer);
+begin
+  inherited Create(ACapacity);
+  FOwnsObjects := AOwnsObjects;
+end;
+
+destructor TLKObjectList<T>.Destroy;
+begin
+
+  inherited;
+end;
+
+function TLKObjectList<T>.GetOwnsObjects: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObjects;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObjects := AOwnsObjects;
   finally
     ReleaseWriteLock;
   end;

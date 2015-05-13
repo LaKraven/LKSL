@@ -92,6 +92,23 @@ type
   TLKObject = class;
   TLKInterfacedPersistent = class;
   TLKInterfacedObject = class;
+  {$IFNDEF FPC}
+    ILKComparer<T> = interface;
+    TLKComparer<T> = class;
+  {$ENDIF FPC}
+
+  {$IFDEF LKSL_FLOAT_SINGLE}
+    ///  <summary><c>Single-Precision Floating Point Type.</c></summary>
+    LKFloat = Single;
+  {$ELSE}
+    {$IFDEF LKSL_FLOAT_EXTENDED}
+      ///  <summary><c>Extended-Precision Floating Point Type.</c></summary>
+      LKFloat = Extended;
+    {$ELSE}
+      ///  <summary><c>Double-Precision Floating Point Type.</c></summary>
+      LKFloat = Double; // This is our default
+    {$ENDIF LKSL_FLOAT_DOUBLE}
+  {$ENDIF LKSL_FLOAT_SINGLE}
 
   { Exception Types }
   ELKException = class(Exception);
@@ -188,18 +205,35 @@ type
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
-  {$IFDEF LKSL_FLOAT_SINGLE}
-    ///  <summary><c>Single-Precision Floating Point Type.</c></summary>
-    LKFloat = Single;
-  {$ELSE}
-    {$IFDEF LKSL_FLOAT_EXTENDED}
-      ///  <summary><c>Extended-Precision Floating Point Type.</c></summary>
-      LKFloat = Extended;
-    {$ELSE}
-      ///  <summary><c>Double-Precision Floating Point Type.</c></summary>
-      LKFloat = Double; // This is our default
-    {$ENDIF LKSL_FLOAT_DOUBLE}
-  {$ENDIF LKSL_FLOAT_SINGLE}
+  ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
+  ILKComparer<T> = interface(ILKInterface)
+  ['{3E6657DE-65CB-4106-9647-27F3E5BC88D6}']
+    function AEqualToB(const A, B: T): Boolean;
+    function AGreaterThanB(const A, B: T): Boolean;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean;
+    function ALessThanB(const A, B: T): Boolean;
+    function ALessThanOrEqualB(const A, B: T): Boolean;
+  end;
+
+  ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
+  TLKComparer<T> = class abstract(TLKInterfacedObject, ILKComparer<T>)
+  public
+    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+  end;
+
+  ILKFloatComparer = ILKComparer<LKFloat>;
+
+  TLKFloatComparer = class(TLKComparer<LKFloat>)
+    function AEqualToB(const A, B: LKFloat): Boolean; override;
+    function AGreaterThanB(const A, B: LKFloat): Boolean; override;
+    function AGreaterThanOrEqualB(const A, B: LKFloat): Boolean; override;
+    function ALessThanB(const A, B: LKFloat): Boolean; override;
+    function ALessThanOrEqualB(const A, B: LKFloat): Boolean; override;
+  end;
 
 implementation
 
@@ -381,6 +415,33 @@ end;
 function TLKInterfacedObject.TryAcquireWriteLock: Boolean;
 begin
   Result := FLock.TryAcquireWrite;
+end;
+
+{ TLKFloatComparer }
+
+function TLKFloatComparer.AEqualToB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A = B);
+end;
+
+function TLKFloatComparer.AGreaterThanB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A > B);
+end;
+
+function TLKFloatComparer.AGreaterThanOrEqualB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A >= B);
+end;
+
+function TLKFloatComparer.ALessThanB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A < B);
+end;
+
+function TLKFloatComparer.ALessThanOrEqualB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A <= B);
 end;
 
 end.
