@@ -227,7 +227,7 @@ type
 
   ILKFloatComparer = ILKComparer<LKFloat>;
 
-  TLKFloatComparer = class(TLKComparer<LKFloat>)
+  TLKFloatComparer = class(TLKComparer<LKFloat>, ILKFloatComparer)
     function AEqualToB(const A, B: LKFloat): Boolean; override;
     function AGreaterThanB(const A, B: LKFloat): Boolean; override;
     function AGreaterThanOrEqualB(const A, B: LKFloat): Boolean; override;
