@@ -87,8 +87,6 @@ type
     ILKSortedObjectList<T: class> = interface;
     ILKTreeNode<T> = interface;
     ILKTreeObjectNode<T: class> = interface;
-    ILKCenteredList<T> = interface;
-    ILKCenteredObjectList<T: class> = interface;
     { Class Forward Declaration }
     TLKComparer<T> = class;
     TLKArray<T> = class;
@@ -262,16 +260,6 @@ type
 
   ILKTreeObjectNode<T: class> = interface(ILKTreeNode<T>)
   ['{D24E33FD-1959-48A8-8FB0-79E9CABA786D}']
-
-  end;
-
-  ILKCenteredList<T> = interface(ILKInterface)
-  ['{48E9FC78-B09E-430B-AAAE-6560E0656EBB}']
-
-  end;
-
-  ILKCenteredObjectList<T: class> = interface(ILKCenteredList<T>)
-  ['{41398B45-6B00-41D6-A001-31E5B696A1BE}']
 
   end;
 
