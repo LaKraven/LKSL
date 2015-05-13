@@ -40,12 +40,6 @@ unit LKSL.Common.Types;
 {$I LKSL.inc}
 
 {$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-
   {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
     {.$IF FPC_VERSION < 3}
       {.$ERROR 'FreePascal (FPC) 3.0 or above is required for the LKSL.'}

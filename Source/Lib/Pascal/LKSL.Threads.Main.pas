@@ -47,14 +47,6 @@ interface
 
 {$I LKSL.inc}
 
-{$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-{$ENDIF FPC}
-
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,

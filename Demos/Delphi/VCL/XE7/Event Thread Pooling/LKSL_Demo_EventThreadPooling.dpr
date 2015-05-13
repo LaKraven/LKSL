@@ -17,7 +17,8 @@ uses
   LKSL.Common.Performance in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas',
   LKSL.Generics.Defaults in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas',
   LKSL.Streams.Main in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas',
-  LKSL.Common.SyncObjs in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas';
+  LKSL.Common.SyncObjs in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas',
+  LKSL.Generics.CollectionsRedux in '..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.CollectionsRedux.pas';
 
 {$R *.res}
 

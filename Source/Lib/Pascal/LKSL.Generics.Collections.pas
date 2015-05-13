@@ -41,14 +41,6 @@ interface
 
 {$I LKSL.inc}
 
-{$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-{$ENDIF FPC}
-
 {
   About this unit:
     - This unit provides useful enhancements for Generics types used in the LKSL.
