@@ -868,7 +868,7 @@ begin
   if (FRefCount = 0) then
   begin
     if (FLifetimeControl = elcAutomatic) then
-      Free
+      {$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF}
     else
       FState := esProcessed;
   end;
@@ -1659,7 +1659,7 @@ begin
     try
       LCount := FEventThreads.Count;
       for I := LCount - 1 downto 0 do
-        FEventThreads[I].Free;
+        FEventThreads[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
     finally
       FEventThreads.ReleaseWriteLock;
     end;
@@ -1814,7 +1814,7 @@ begin
   for I := Count - 1 downto 0 do
   begin
     Items[I].Unref;
-    Items[I].Free;
+    Items[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
   end;
   Clear(False);
   inherited;
