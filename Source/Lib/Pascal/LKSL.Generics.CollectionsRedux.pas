@@ -71,6 +71,8 @@ type
     ILKListCompactor<T> = interface;
     ILKList<T> = interface;
     ILKObjectList<T: class> = interface;
+    ILKLookupList<TKey, TValue> = interface;
+    ILKObjectLookupList<TKey, TValue: class> = interface;
     { Class Forward Declarations }
     TLKArray<T> = class;
     TLKArrayContainer<T> = class;
@@ -79,14 +81,20 @@ type
     TLKListCompactor<T> = class;
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
+    TLKLookupList<TKey, TValue> = class;
+    TLKObjectLookupList<TKey, TValue: class> = class;
   {$ENDIF FPC}
 
   { Exception Types }
-  ELKGenericCollectionsException = class(ELKException);
+  ELKGenericCollectionsException = class abstract(ELKException);
     ELKGenericCollectionsLimitException = class(ELKGenericCollectionsException);
     ELKGenericCollectionsRangeException = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyAlreadyExists = class(ELKGenericCollectionsException);
     ELKGenericCollectionsKeyNotFound = class(ELKGenericCollectionsException);
+
+{
+  Interfaces Start Here
+}
 
   ///  <summary><c>A Simple Generic Array with basic Management Methods.</c></summary>
   ILKArray<T> = interface(ILKInterface)
@@ -106,11 +114,15 @@ type
     property Items[const AIndex: Integer]: T read GetItem write SetItem;
   end;
 
+  ///  <summary><c>An Object containing an ILKArray instance.</c></summary>
+  ///  <remarks><c>Exists merely to eliminate code replication.</c></remarks>
   ILKArrayContainer<T> = interface(ILKInterface)
   ['{9E6880CA-D55C-4166-9B72-45CCA6900488}']
     function GetArray: ILKArray<T>;
   end;
 
+  ///  <summary><c>A Sorting Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Can do either Sorted Insertion or On-Demand Sorting.</c></remarks>
   ILKListSorter<T> = interface(ILKInterface)
   ['{2644E14D-A7C9-44BC-B8DD-109EC0C0A0D1}']
     // Getters
@@ -121,11 +133,15 @@ type
     property Comparer: ILKComparer<T> read GetComparer write SetComparer;
   end;
 
+  ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
   ILKListExpander<T> = interface(ILKInterface)
   ['{9B4D9541-96E4-4767-81A7-5565AC24F4A9}']
 
   end;
 
+  ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
   ILKListCompactor<T> = interface(ILKInterface)
   ['{B72ECE0C-F629-4002-A84A-2F7FAEC122E0}']
 
@@ -142,14 +158,24 @@ type
     // Getters
     function GetCompactor: ILKListCompactor<T>;
     function GetExpander: ILKListExpander<T>;
+    function GetItem(const AIndex: Integer): T;
     function GetSorter: ILKListSorter<T>;
     // Setters
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
+    procedure SetItem(const AIndex: Integer; const AItem: T);
     procedure SetSorter(const ASorter: ILKListSorter<T>);
+    // Management Methods
+    procedure Add(const AItem: T);
+    procedure AddRange(const AItems: TArray<T>);
+    procedure Delete(const AIndex: Integer);
+    procedure DeleteRange(const AFirst, ACount: Integer);
+    procedure Insert(const AItem: T; const AIndex: Integer);
+    procedure InsertRange(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
+    property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
     property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
   end;
 
@@ -164,6 +190,26 @@ type
     // Properties
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
+
+  ///  <summary><c>Pairs a List of Values with a Sorted List of Keys</c></summary>
+  ILKLookupList<TKey, TValue> = interface(ILKList<TValue>)
+  ['{A425AFB5-E2CD-4842-BADD-5F91EC159A58}']
+
+  end;
+
+  ILKObjectLookupList<TKey, TValue: class> = interface(ILKLookupList<TKey, TValue>)
+  ['{FA05DF5C-9C9B-410D-9758-6DA91671961D}']
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+{
+  Classes Start Here
+}
 
   ///  <summary><c>A Simple Generic Array with basic Management Methods.</c></summary>
   TLKArray<T> = class(TLKInterfacedObject, ILKArray<T>)
@@ -187,6 +233,8 @@ type
     property Items[const AIndex: Integer]: T read GetItem write SetItem;
   end;
 
+  ///  <summary><c>An Object containing an ILKArray instance.</c></summary>
+  ///  <remarks><c>Exists merely to eliminate code replication.</c></remarks>
   TLKArrayContainer<T> = class(TLKInterfacedObject, ILKArrayContainer<T>)
   protected
     FArray: ILKArray<T>;
@@ -195,6 +243,8 @@ type
     constructor Create(const AArray: ILKArray<T>); reintroduce;
   end;
 
+  ///  <summary><c>A Sorting Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Can do either Sorted Insertion or On-Demand Sorting.</c></remarks>
   TLKListSorter<T> = class abstract(TLKArrayContainer<T>, ILKListSorter<T>)
   private
     FComparer: ILKComparer<T>;
@@ -207,10 +257,14 @@ type
     property Comparer: ILKComparer<T> read GetComparer write SetComparer;
   end;
 
+  ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
   TLKListExpander<T> = class abstract(TLKArrayContainer<T>, ILKListExpander<T>)
 
   end;
 
+  ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
+  ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
   TLKListCompactor<T> = class abstract(TLKArrayContainer<T>, ILKListCompactor<T>)
 
   end;
@@ -227,29 +281,57 @@ type
     FCompactor: ILKListCompactor<T>;
     FExpander: ILKListExpander<T>;
     FSorter: ILKListSorter<T>;
-
     // Getters
     function GetCompactor: ILKListCompactor<T>;
     function GetExpander: ILKListExpander<T>;
+    function GetItem(const AIndex: Integer): T; inline;
     function GetSorter: ILKListSorter<T>;
-
     // Setters
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
+    procedure SetItem(const AIndex: Integer; const AItem: T); inline;
     procedure SetSorter(const ASorter: ILKListSorter<T>);
+  protected
+    procedure CheckCompact(const AAmount: Integer);
+    procedure CheckExpand(const AAmount: Integer);
   public
     constructor Create(const ACapacity: Integer = 0); reintroduce;
     destructor Destroy; override;
-
+    // Management Methods
+    procedure Add(const AItem: T);
+    procedure AddRange(const AItems: TArray<T>);
+    procedure Delete(const AIndex: Integer);
+    procedure DeleteRange(const AFirst, ACount: Integer);
+    procedure Insert(const AItem: T; const AIndex: Integer);
+    procedure InsertRange(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
+    property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
     property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
   end;
 
   ///  <summary><c>Specialized Generic List for Object Types</c></summary>
   ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
   TLKObjectList<T: class> = class(TLKList<T>, ILKObjectList<T>)
+  private
+    FOwnsObjects: Boolean;
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const AOwnsObjects: Boolean = True; const ACapacity: Integer = 0); reintroduce;
+    destructor Destroy; override;
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+  TLKLookupList<TKey, TValue> = class(TLKList<TValue>, ILKLookupList<TKey, TValue>)
+
+  end;
+
+  TLKObjectLookupList<TKey, TValue: class> = class(TLKLookupList<TKey, TValue>, ILKObjectLookupList<TKey, TValue>)
   private
     FOwnsObjects: Boolean;
     // Getters
@@ -375,10 +457,49 @@ end;
 
 { TLKListBase<T> }
 
+procedure TLKList<T>.Add(const AItem: T);
+begin
+  CheckExpand(1);
+end;
+
+procedure TLKList<T>.AddRange(const AItems: TArray<T>);
+begin
+  CheckExpand(Length(AItems));
+end;
+
+procedure TLKList<T>.CheckCompact(const AAmount: Integer);
+begin
+  if FCompactor = nil then
+    FArray.Capacity := FArray.Capacity - AAmount
+  else
+    // Pass this request along to the Compactor
+end;
+
+procedure TLKList<T>.CheckExpand(const AAmount: Integer);
+begin
+  if FExpander = nil then
+    FArray.Capacity := FArray.Capacity + AAmount
+  else
+    // Pass this request along to the Expander
+end;
+
 constructor TLKList<T>.Create(const ACapacity: Integer);
 begin
   inherited Create;
+  FArray := TLKArray<T>.Create;
   FArray.Capacity := ACapacity;
+end;
+
+procedure TLKList<T>.Delete(const AIndex: Integer);
+begin
+
+  CheckCompact(1);
+end;
+
+procedure TLKList<T>.DeleteRange(const AFirst, ACount: Integer);
+begin
+
+  CheckCompact(ACount);
 end;
 
 destructor TLKList<T>.Destroy;
@@ -407,6 +528,16 @@ begin
   end;
 end;
 
+function TLKList<T>.GetItem(const AIndex: Integer): T;
+begin
+  AcquireReadLock;
+  try
+    Result := FArray.Items[AIndex];
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
 function TLKList<T>.GetSorter: ILKListSorter<T>;
 begin
   AcquireReadLock;
@@ -415,6 +546,18 @@ begin
   finally
     ReleaseReadLock;
   end;
+end;
+
+procedure TLKList<T>.Insert(const AItem: T; const AIndex: Integer);
+begin
+  CheckExpand(1);
+
+end;
+
+procedure TLKList<T>.InsertRange(const AItems: TArray<T>; const AIndex: Integer);
+begin
+  CheckExpand(Length(AItems));
+
 end;
 
 procedure TLKList<T>.SetCompactor(const ACompactor: ILKListCompactor<T>);
@@ -434,6 +577,16 @@ begin
     FExpander := AExpander;
   finally
     ReleaseReadLock;
+  end;
+end;
+
+procedure TLKList<T>.SetItem(const AIndex: Integer; const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    FArray.Items[AIndex] := AItem;
+  finally
+    ReleaseWriteLock;
   end;
 end;
 
@@ -472,6 +625,40 @@ begin
 end;
 
 procedure TLKObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObjects := AOwnsObjects;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKObjectLookupList<T> }
+
+constructor TLKObjectLookupList<TKey, TValue>.Create(const AOwnsObjects: Boolean; const ACapacity: Integer);
+begin
+  inherited Create(ACapacity);
+  FOwnsObjects := AOwnsObjects;
+end;
+
+destructor TLKObjectLookupList<TKey, TValue>.Destroy;
+begin
+
+  inherited;
+end;
+
+function TLKObjectLookupList<TKey, TValue>.GetOwnsObjects: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObjects;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKObjectLookupList<TKey, TValue>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
   AcquireWriteLock;
   try
