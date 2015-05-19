@@ -222,14 +222,24 @@ type
   ///  <summary><c>A simple Reference Counted container.</c></summary>
   ILKHolder<T> = interface(ILKInterface)
   ['{280B501C-E16B-445F-9538-AFBB50301B13}']
-
+    // Getters
+    function GetItem: T;
+    // Setters
+    procedure SetItem(const AItem: T);
+    // Properties
+    property Item: T read GetItem write SetItem;
   end;
 
   ///  <summary><c>A Reference Counted Object container.</c></summary>
   ///  <remarks><c>Can take ownership of an Object and automatically destroy it when no references remain.</c></remarks>
   ILKObjectHolder<T: class> = interface(ILKHolder<T>)
   ['{57E82372-C304-449E-BA42-4679B5F15368}']
-
+    // Getters
+    function GetOwnsObject: Boolean;
+    // Setters
+    procedure SetOwnsObject(const AOwnsObject: Boolean);
+    // Properties
+    property OwnsObject: Boolean read GetOwnsObject write SetOwnsObject;
   end;
 
   ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
@@ -256,8 +266,14 @@ type
   TLKHolder<T> = class(TLKInterfacedObject, ILKHolder<T>)
   protected
     FItem: T;
+    // Getters
+    function GetItem: T;
+    // Setters
+    procedure SetItem(const AItem: T);
   public
     constructor Create(const AItem: T); reintroduce;
+    // Properties
+    property Item: T read GetItem write SetItem;
   end;
 
   ///  <summary><c>A Reference Counted Object container.</c></summary>
@@ -491,6 +507,26 @@ constructor TLKHolder<T>.Create(const AItem: T);
 begin
   inherited Create;
   FItem := AItem;
+end;
+
+function TLKHolder<T>.GetItem: T;
+begin
+  AcquireReadLock;
+  try
+    Result := FItem;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKHolder<T>.SetItem(const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    FItem := AItem;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 { TLKObjectHolder<T> }
