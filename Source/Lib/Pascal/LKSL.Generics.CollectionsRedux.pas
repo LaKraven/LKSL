@@ -73,6 +73,8 @@ type
     ILKObjectList<T: class> = interface;
     ILKLookupList<TKey, TValue> = interface;
     ILKObjectLookupList<TKey, TValue: class> = interface;
+    ILKCircularList<T> = interface;
+    ILKCircularObjectList<T: class> = interface;
     { Class Forward Declarations }
     TLKArray<T> = class;
     TLKArrayContainer<T> = class;
@@ -83,6 +85,8 @@ type
     TLKObjectList<T: class> = class;
     TLKLookupList<TKey, TValue> = class;
     TLKObjectLookupList<TKey, TValue: class> = class;
+    TLKCircularList<T> = class;
+    TLKCircularObjectList<T: class> = class;
   {$ENDIF FPC}
 
   { Exception Types }
@@ -197,6 +201,7 @@ type
 
   end;
 
+  ///  <summary><c>Pairs a List of Objects with a Sorted List of Keys</c></summary>
   ILKObjectLookupList<TKey, TValue: class> = interface(ILKLookupList<TKey, TValue>)
   ['{FA05DF5C-9C9B-410D-9758-6DA91671961D}']
     // Getters
@@ -205,6 +210,23 @@ type
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
     // Properties
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+  ///  <summary><c>A Fixed-Capacity Revolving List</c></summary>
+  ///  <remarks>
+  ///    <para><c>When the current Index is equal to the Capacity, the Index resets to 0, and items are subsequently Replaced by new ones.</c></para>
+  ///    <para><c>NOT an ancestor of ILKList.</c></para>
+  ///  </remarks>
+  ILKCircularList<T> = interface(ILKInterface)
+  ['{229BD38F-FFFE-4CE1-89B2-4E9ED8B08E32}']
+
+  end;
+
+  ///  <summary><c>Specialized Revolving List for Object Types</c></summary>
+  ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
+  ILKCircularObjectList<T: class> = interface(ILKCircularList<T>)
+  ['{9BDA7DA2-F270-4AEA-BEAA-1513AC17C1E2}']
+
   end;
 
 {
@@ -327,10 +349,12 @@ type
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
+  ///  <summary><c>Pairs a List of Values with a Sorted List of Keys</c></summary>
   TLKLookupList<TKey, TValue> = class(TLKList<TValue>, ILKLookupList<TKey, TValue>)
 
   end;
 
+  ///  <summary><c>Pairs a List of Objects with a Sorted List of Keys</c></summary>
   TLKObjectLookupList<TKey, TValue: class> = class(TLKLookupList<TKey, TValue>, ILKObjectLookupList<TKey, TValue>)
   private
     FOwnsObjects: Boolean;
@@ -343,6 +367,21 @@ type
     destructor Destroy; override;
     // Properties
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
+  ///  <summary><c>A Fixed-Capacity Revolving List</c></summary>
+  ///  <remarks>
+  ///    <para><c>When the current Index is equal to the Capacity, the Index resets to 0, and items are subsequently Replaced by new ones.</c></para>
+  ///    <para><c>NOT an ancestor of TLKList.</c></para>
+  ///  </remarks>
+  TLKCircularList<T> = class(TLKInterfacedObject, ILKCircularList<T>)
+
+  end;
+
+  ///  <summary><c>Specialized Revolving List for Object Types</c></summary>
+  ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
+  TLKCircularObjectList<T: class> = class(TLKCircularList<T>, ILKCircularObjectList<T>)
+
   end;
 
 implementation
