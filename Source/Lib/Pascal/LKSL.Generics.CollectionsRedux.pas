@@ -219,14 +219,32 @@ type
   ///  </remarks>
   ILKCircularList<T> = interface(ILKInterface)
   ['{229BD38F-FFFE-4CE1-89B2-4E9ED8B08E32}']
-
+    // Getters
+    function GetCapacity: Integer;
+    function GetCount: Integer;
+    function GetItem(const AIndex: Integer): T;
+    // Setters
+    procedure SetItem(const AIndex: Integer; const AItem: T);
+    // Management Methods
+    function Add(const AItem: T): Integer;
+    procedure Clear;
+    procedure Delete(const AIndex: Integer);
+    // Properties
+    property Capacity: Integer read GetCapacity;
+    property Count: Integer read GetCount;
+    property Items[const AIndex: Integer]:  T read GetItem write SetItem;
   end;
 
   ///  <summary><c>Specialized Revolving List for Object Types</c></summary>
   ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
   ILKCircularObjectList<T: class> = interface(ILKCircularList<T>)
   ['{9BDA7DA2-F270-4AEA-BEAA-1513AC17C1E2}']
-
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
 {
@@ -375,13 +393,61 @@ type
   ///    <para><c>NOT an ancestor of TLKList.</c></para>
   ///  </remarks>
   TLKCircularList<T> = class(TLKInterfacedObject, ILKCircularList<T>)
-
+  private
+    FCount: Integer;
+    FIndex: Integer;
+    FItems: Array of T;
+    // Getters
+    function GetCapacity: Integer;
+    function GetCount: Integer;
+    function GetItem(const AIndex: Integer): T;
+    // Setters
+    procedure SetItem(const AIndex: Integer; const AItem: T);
+  protected
+    ///  <summary><c>Adds or Replaces the Item in the Array and manages the Index for the NEXT call.</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    function AddActual(const AItem: T): Integer;
+    ///  <summary><c>Manages the Finalization of Items within the Array.</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    procedure ClearActual;
+    ///  <summary><c>Manages the Movement and Finalization of Items within the Array.</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    procedure DeleteActual(const AIndex: Integer);
+    ///  <summary><c>Finalized a specific element in the Array.</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    procedure Finalize(const AIndex, ACount: Integer);
+    ///  <summary><c>Shifts elements within the Array in a single operation.</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    procedure Move(const AFromIndex, AToIndex, ACount: Integer);
+  public
+    constructor Create(const ACapacity: Integer); reintroduce;
+    // Management Methods
+    function Add(const AItem: T): Integer; virtual;
+    procedure Clear; virtual;
+    procedure Delete(const AIndex: Integer); virtual;
+    // Properties
+    property Capacity: Integer read GetCapacity;
+    property Count: Integer read GetCount;
+    property Items[const AIndex: Integer]:  T read GetItem write SetItem;
   end;
 
   ///  <summary><c>Specialized Revolving List for Object Types</c></summary>
   ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
   TLKCircularObjectList<T: class> = class(TLKCircularList<T>, ILKCircularObjectList<T>)
-
+  private
+    FOwnsObjects: Boolean;
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const ACapacity: Integer; const AOwnsObjects: Boolean = True); reintroduce;
+    destructor Destroy; override;
+    // Management Methods
+    procedure Clear; override;
+    procedure Delete(const AIndex: Integer); override;
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
 implementation
@@ -698,6 +764,197 @@ begin
 end;
 
 procedure TLKObjectLookupList<TKey, TValue>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObjects := AOwnsObjects;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKCircularList<T> }
+
+function TLKCircularList<T>.Add(const AItem: T): Integer;
+begin
+  AcquireWriteLock;
+  try
+    Result := AddActual(AItem);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+function TLKCircularList<T>.AddActual(const AItem: T): Integer;
+begin
+  Result := FIndex;
+  FItems[FIndex] := AItem;
+  Inc(FIndex);
+  if FIndex > High(FItems) then
+    FIndex := 0;
+  if FCount < High(FItems) then
+    Inc(FCount);
+end;
+
+procedure TLKCircularList<T>.Clear;
+begin
+  AcquireWriteLock;
+  try
+    ClearActual;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKCircularList<T>.ClearActual;
+begin
+  FCount := 0;
+  FIndex := 0;
+  Finalize(0, Length(FItems) - 1);
+end;
+
+constructor TLKCircularList<T>.Create(const ACapacity: Integer);
+begin
+  inherited Create;
+  FCount := 0;
+  FIndex := 0;
+  SetLength(FItems, ACapacity);
+end;
+
+procedure TLKCircularList<T>.Delete(const AIndex: Integer);
+begin
+  AcquireWriteLock;
+  try
+    DeleteActual(AIndex);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKCircularList<T>.DeleteActual(const AIndex: Integer);
+begin
+  if AIndex < Length(FItems) then
+  begin
+    Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all items left by 1
+    Finalize(FCount - 1, 1); // Finalize the last item in the Array
+  end else
+    Finalize(AIndex, 1); // Finalize the item at the specified Index
+  Dec(FCount); // Decrement the Count
+  Dec(FIndex); // Shift the Index back by 1
+end;
+
+procedure TLKCircularList<T>.Finalize(const AIndex, ACount: Integer);
+begin
+  System.FillChar(FItems[AIndex], ACount * SizeOf(T), 0);
+end;
+
+function TLKCircularList<T>.GetCapacity: Integer;
+begin
+  AcquireReadLock;
+  try
+    Result := Length(FItems);
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKCircularList<T>.GetCount: Integer;
+begin
+  AcquireReadLock;
+  try
+    Result := FCount;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKCircularList<T>.GetItem(const AIndex: Integer): T;
+begin
+  AcquireReadLock;
+  try
+    // TODO -oSJS -cGenerics Redux: Index Validation here!
+    Result := FItems[AIndex];
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKCircularList<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
+begin
+  System.Move(FItems[AFromIndex], FItems[AToIndex], ACount * SizeOf(T));
+end;
+
+procedure TLKCircularList<T>.SetItem(const AIndex: Integer; const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    // TODO -oSJS -cGenerics Redux: Index Validation here!
+    FItems[AIndex] := AItem;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKCircularObjectList<T> }
+
+procedure TLKCircularObjectList<T>.Clear;
+var
+  I: Integer;
+begin
+  AcquireWriteLock;
+  try
+    if FOwnsObjects then
+    begin
+      for I := 0 to FCount - 1 do
+        FItems[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+    end;
+    ClearActual;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+constructor TLKCircularObjectList<T>.Create(const ACapacity: Integer; const AOwnsObjects: Boolean);
+begin
+  inherited Create(ACapacity);
+  FOwnsObjects := AOwnsObjects;
+end;
+
+procedure TLKCircularObjectList<T>.Delete(const AIndex: Integer);
+begin
+  AcquireWriteLock;
+  try
+    if FOwnsObjects then
+      FItems[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+    DeleteActual(AIndex);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+destructor TLKCircularObjectList<T>.Destroy;
+var
+  I: Integer;
+begin
+  if FOwnsObjects then
+  begin
+    for I := 0 to FCount - 1 do
+      FItems[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+  end;
+  inherited;
+end;
+
+function TLKCircularObjectList<T>.GetOwnsObjects: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObjects;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKCircularObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
   AcquireWriteLock;
   try
