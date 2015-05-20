@@ -1562,7 +1562,7 @@ begin
         if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (LEvent is FListeners[I].GetEventClass)) or
             ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (LEvent.ClassType = FListeners[I].GetEventClass))) and
            ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (LEvent.DispatchTime + LEvent.ExpiresAfter))) and
-           (((FListeners[I].FNewestOnly) and (AEvent.DispatchTime > FListeners[I].FLastProcessed)) or (not FListeners[I].FNewestOnly)) and
+           (((FListeners[I].FNewestOnly) and (LEvent.DispatchTime > FListeners[I].FLastProcessed)) or (not FListeners[I].FNewestOnly)) and
            (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
           FListeners[I].DoEvent(LEvent);
   finally
