@@ -999,18 +999,20 @@ var
   LCountPosition, LEndPosition: Int64;
   LTarget: TLKEventTarget;
   LTargetCount: Integer;
+  LEvent: TLKEvent;
 begin
-  FEvent.AcquireReadLock;
+  LEvent := FEvent.Item;
+  LEvent.AcquireReadLock;
   try
     ACaret.AcquireWriteLock;
     try
-      StreamInsertLKFloat(ACaret, FEvent.Item.FCreatedTime);
-      StreamInsertLKFloat(ACaret, FEvent.Item.FDispatchAfter);
-      StreamInsertTLKEventDispatchMethod(ACaret, FEvent.Item.FDispatchMethod);
+      StreamInsertLKFloat(ACaret, LEvent.FCreatedTime);
+      StreamInsertLKFloat(ACaret, LEvent.FDispatchAfter);
+      StreamInsertTLKEventDispatchMethod(ACaret, LEvent.FDispatchMethod);
       LTargetCount := 0;
       LCountPosition := ACaret.Position;
       StreamInsertInteger(ACaret, LTargetCount);
-      for LTarget in FEvent.Item.FDispatchTargets do
+      for LTarget in LEvent.FDispatchTargets do
       begin
         Inc(LTargetCount);
         StreamInsertTLKEventTarget(ACaret, LTarget);
@@ -1018,47 +1020,49 @@ begin
       LEndPosition := ACaret.Position;
       StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
       ACaret.Position := LEndPosition;
-      StreamInsertLKFloat(ACaret, FEvent.Item.FDispatchTime);
-      StreamInsertLKFloat(ACaret, FEvent.Item.FExpiresAfter);
-      StreamInsertTLKEventOrigin(ACaret, FEvent.Item.FOrigin);
-      StreamInsertLKFloat(ACaret, FEvent.Item.FProcessedTime);
-      StreamInsertTLKEventState(ACaret, FEvent.Item.FState);
+      StreamInsertLKFloat(ACaret, LEvent.FDispatchTime);
+      StreamInsertLKFloat(ACaret, LEvent.FExpiresAfter);
+      StreamInsertTLKEventOrigin(ACaret, LEvent.FOrigin);
+      StreamInsertLKFloat(ACaret, LEvent.FProcessedTime);
+      StreamInsertTLKEventState(ACaret, LEvent.FState);
 
       InsertEventIntoStream(ACaret);
     finally
       ACaret.ReleaseWriteLock;
     end;
   finally
-    FEvent.ReleaseReadLock;
+    LEvent.ReleaseReadLock;
   end;
 end;
 
 procedure TLKEventStreamable.ReadFromStream(const ACaret: ILKStreamCaret);
 var
   I, LCount: Integer;
+  LEvent: TLKEvent;
 begin
-  FEvent.AcquireWriteLock;
+  LEvent := FEvent.Item;
+  LEvent.AcquireWriteLock;
   try
     ACaret.AcquireReadLock;
     try
-      FEvent.Item.FCreatedTime := StreamReadLKFloat(ACaret);
-      FEvent.Item.FDispatchAfter := StreamReadLKFloat(ACaret);
-      FEvent.Item.FDispatchMethod := StreamReadTLKEventDispatchMethod(ACaret);
-      FEvent.Item.FDispatchTargets := [];
+      LEvent.FCreatedTime := StreamReadLKFloat(ACaret);
+      LEvent.FDispatchAfter := StreamReadLKFloat(ACaret);
+      LEvent.FDispatchMethod := StreamReadTLKEventDispatchMethod(ACaret);
+      LEvent.FDispatchTargets := [];
       LCount := StreamReadInteger(ACaret);
       for I := 0 to LCount - 1 do
-        FEvent.Item.FDispatchTargets := FEvent.Item.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
-      FEvent.Item.FDispatchTime := StreamReadLKFloat(ACaret);
-      FEvent.Item.FExpiresAfter := StreamReadLKFloat(ACaret);
-      FEvent.Item.FOrigin := StreamReadTLKEventOrigin(ACaret);
-      FEvent.Item.FProcessedTime := StreamReadLKFloat(ACaret);
-      FEvent.Item.FState := StreamReadTLKEventState(ACaret);
+        LEvent.FDispatchTargets := LEvent.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
+      LEvent.FDispatchTime := StreamReadLKFloat(ACaret);
+      LEvent.FExpiresAfter := StreamReadLKFloat(ACaret);
+      LEvent.FOrigin := StreamReadTLKEventOrigin(ACaret);
+      LEvent.FProcessedTime := StreamReadLKFloat(ACaret);
+      LEvent.FState := StreamReadTLKEventState(ACaret);
       ReadEventFromStream(ACaret);
     finally
       ACaret.ReleaseReadLock;
     end;
   finally
-    FEvent.ReleaseWriteLock;
+    LEvent.ReleaseWriteLock;
   end;
 end;
 
@@ -1067,18 +1071,20 @@ var
   LCountPosition, LEndPosition: Int64;
   LTarget: TLKEventTarget;
   LTargetCount: Integer;
+  LEvent: TLKEvent;
 begin
-  FEvent.AcquireReadLock;
+  LEvent := FEvent.Item;
+  LEvent.AcquireReadLock;
   try
     ACaret.AcquireWriteLock;
     try
-      StreamWriteLKFloat(ACaret, FEvent.Item.FCreatedTime);
-      StreamWriteLKFloat(ACaret, FEvent.Item.FDispatchAfter);
-      StreamWriteTLKEventDispatchMethod(ACaret, FEvent.Item.FDispatchMethod);
+      StreamWriteLKFloat(ACaret, LEvent.FCreatedTime);
+      StreamWriteLKFloat(ACaret, LEvent.FDispatchAfter);
+      StreamWriteTLKEventDispatchMethod(ACaret, LEvent.FDispatchMethod);
       LTargetCount := 0;
       LCountPosition := ACaret.Position;
       StreamWriteInteger(ACaret, LTargetCount);
-      for LTarget in FEvent.Item.FDispatchTargets do
+      for LTarget in LEvent.FDispatchTargets do
       begin
         Inc(LTargetCount);
         StreamWriteTLKEventTarget(ACaret, LTarget);
@@ -1086,17 +1092,17 @@ begin
       LEndPosition := ACaret.Position;
       StreamWriteInteger(ACaret, LTargetCount, LCountPosition);
       ACaret.Position := LEndPosition;
-      StreamWriteLKFloat(ACaret, FEvent.Item.FDispatchTime);
-      StreamWriteLKFloat(ACaret, FEvent.Item.FExpiresAfter);
-      StreamWriteTLKEventOrigin(ACaret, FEvent.Item.FOrigin);
-      StreamWriteLKFloat(ACaret, FEvent.Item.FProcessedTime);
-      StreamWriteTLKEventState(ACaret, FEvent.Item.FState);
+      StreamWriteLKFloat(ACaret, LEvent.FDispatchTime);
+      StreamWriteLKFloat(ACaret, LEvent.FExpiresAfter);
+      StreamWriteTLKEventOrigin(ACaret, LEvent.FOrigin);
+      StreamWriteLKFloat(ACaret, LEvent.FProcessedTime);
+      StreamWriteTLKEventState(ACaret, LEvent.FState);
       WriteEventToStream(ACaret);
     finally
       ACaret.ReleaseWriteLock;
     end;
   finally
-    FEvent.ReleaseReadLock;
+    LEvent.ReleaseReadLock;
   end;
 end;
 
@@ -1483,16 +1489,18 @@ end;
 procedure TLKEventThread.ProcessEvent(const AEvent: ILKEventHolder; const ADelta, AStartTime: LKFloat);
 var
   I: Integer;
+  LEvent: TLKEvent;
 begin
+  LEvent := AEvent.Item;
   FListeners.AcquireWriteLock;
   try
     for I := 0 to FListeners.Count - 1 do
-      if (AEvent.Item.State <> esCancelled) and (not AEvent.Item.HasExpired) then // We don't want to bother actioning the Event if it has been Cancelled or has Expired
-        if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (AEvent.Item is FListeners[I].GetEventClass)) or
-            ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (AEvent.Item.ClassType = FListeners[I].GetEventClass))) and
-           ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (AEvent.Item.DispatchTime + AEvent.Item.ExpiresAfter))) and
+      if (LEvent.State <> esCancelled) and (not LEvent.HasExpired) then // We don't want to bother actioning the Event if it has been Cancelled or has Expired
+        if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (LEvent is FListeners[I].GetEventClass)) or
+            ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (LEvent.ClassType = FListeners[I].GetEventClass))) and
+           ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (LEvent.DispatchTime + LEvent.ExpiresAfter))) and
            (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
-          FListeners[I].DoEvent(AEvent.Item);
+          FListeners[I].DoEvent(LEvent);
   finally
     FListeners.ReleaseWriteLock;
   end;
@@ -1802,15 +1810,17 @@ end;
 procedure TLKEventScheduler.Tick(const ADelta, AStartTime: LKFloat);
 var
   LThrottleInterval: Cardinal;
+  LEvent: TLKEvent;
 begin
   LThrottleInterval := ThrottleInterval; // Pull once to prevent unnecessary locking
   if FEvents.Count > 0 then
   begin
-    if FEvents[0].Item.FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
+    LEvent := FEvents[0].Item;
+    if LEvent.FDispatchAt <= GetReferenceTime then // Is it time to dispatch this Event yet?
     begin
-      FEvents[0].Item.FDispatchAfter := 0;
-      FEvents[0].Item.FDispatchTime := GetReferenceTime;
-      case FEvents[0].Item.FDispatchMethod of // If so...
+      LEvent.FDispatchAfter := 0;
+      LEvent.FDispatchTime := GetReferenceTime;
+      case LEvent.FDispatchMethod of // If so...
         edmQueue: EventEngine.QueueEvent(FEvents[0]); // ... Dispatch to the queue...
         edmStack: EventEngine.StackEvent(FEvents[0]); // ... or the Stack...
       end;
@@ -1822,7 +1832,7 @@ begin
         FEvents.ReleaseWriteLock;
       end;
     end else
-      if (FEvents[0].Item.FDispatchAt - GetReferenceTime >= LThrottleInterval / 1000) then
+      if (LEvent.FDispatchAt - GetReferenceTime >= LThrottleInterval / 1000) then
         TThread.Sleep(LThrottleInterval);
   end else
     Rest;
@@ -1855,22 +1865,24 @@ end;
 procedure TLKEventEngine.QueueEvent(const AEvent: ILKEventHolder);
 var
   I: Integer;
+  LEvent: TLKEvent;
 begin
-  if AEvent.Item.DispatchAfter > 0 then
+  LEvent := AEvent.Item;
+  if LEvent.DispatchAfter > 0 then
   begin
-    AEvent.Item.FDispatchAt := (AEvent.Item.FDispatchTime + AEvent.Item.FDispatchAfter);
-    AEvent.Item.FState := esScheduled;
+    LEvent.FDispatchAt := (LEvent.FDispatchTime + LEvent.FDispatchAfter);
+    LEvent.FState := esScheduled;
     FScheduler.ScheduleEvent(AEvent);
   end else
   begin
-    if TLKEventTarget.edThreads in AEvent.Item.FDispatchTargets then
+    if TLKEventTarget.edThreads in LEvent.FDispatchTargets then
       QueueInThreads(AEvent);
-    if TLKEventTarget.edPools in AEvent.Item.FDispatchTargets then
+    if TLKEventTarget.edPools in LEvent.FDispatchTargets then
       QueueInPools(AEvent);
     FPreProcessors.AcquireReadLock;
     try
       for I := 0 to FPreProcessors.Count - 1 do
-        if (FPreProcessors[I].GetTargetFlag in AEvent.Item.FDispatchTargets) then
+        if (FPreProcessors[I].GetTargetFlag in LEvent.FDispatchTargets) then
           FPreProcessors[I].QueueEvent(AEvent)
     finally
       FPreProcessors.ReleaseReadLock;
@@ -1952,22 +1964,24 @@ end;
 procedure TLKEventEngine.StackEvent(const AEvent: ILKEventHolder);
 var
   I: Integer;
+  LEvent: TLKEvent;
 begin
-  if AEvent.Item.DispatchAfter > 0 then
+  LEvent := AEvent.Item;
+  if LEvent.DispatchAfter > 0 then
   begin
-    AEvent.Item.FDispatchAt := (AEvent.Item.FDispatchTime + AEvent.Item.FDispatchAfter);
-    AEvent.Item.FState := esScheduled;
+    LEvent.FDispatchAt := (LEvent.FDispatchTime + LEvent.FDispatchAfter);
+    LEvent.FState := esScheduled;
     FScheduler.ScheduleEvent(AEvent);
   end else
   begin
-    if TLKEventTarget.edThreads in AEvent.Item.FDispatchTargets then
+    if TLKEventTarget.edThreads in LEvent.FDispatchTargets then
       StackInThreads(AEvent);
-    if TLKEventTarget.edPools in AEvent.Item.FDispatchTargets then
+    if TLKEventTarget.edPools in LEvent.FDispatchTargets then
       StackInPools(AEvent);
     FPreProcessors.AcquireWriteLock;
     try
       for I := 0 to FPreProcessors.Count - 1 do
-        if (FPreProcessors[I].GetTargetFlag in AEvent.Item.FDispatchTargets) then
+        if (FPreProcessors[I].GetTargetFlag in LEvent.FDispatchTargets) then
           FPreProcessors[I].StackEvent(AEvent)
     finally
       FPreProcessors.ReleaseWriteLock;
