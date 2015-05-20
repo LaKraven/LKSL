@@ -420,9 +420,11 @@ type
     ///  <summary><c>Shifts elements within the Array in a single operation.</c></summary>
     ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
+    ///  <summary><c>Finalizes an Item at the given Index</c></summary>
+    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
+    procedure Remove(const AIndex: Integer); virtual;
   public
     constructor Create(const ACapacity: Integer); reintroduce;
-    destructor Destroy; override;
     // Management Methods
     function Add(const AItem: T): Integer; virtual;
     procedure AddItems(const AItems: Array of T); virtual;
@@ -443,6 +445,8 @@ type
     function GetOwnsObjects: Boolean;
     // Setters
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  protected
+    procedure Remove(const AIndex: Integer); override;
   public
     constructor Create(const ACapacity: Integer; const AOwnsObjects: Boolean = True); reintroduce;
     destructor Destroy; override;
@@ -793,6 +797,8 @@ end;
 function TLKCircularList<T>.AddActual(const AItem: T): Integer;
 begin
   Result := FIndex;
+  if FIndex <= FCount then
+    Remove(FIndex);
   FItems[FIndex] := AItem;
   Inc(FIndex);
   if FIndex > High(FItems) then
@@ -859,12 +865,6 @@ begin
     Dec(FIndex); // Shift the Index back by 1
 end;
 
-destructor TLKCircularList<T>.Destroy;
-begin
-  Clear;
-  inherited;
-end;
-
 procedure TLKCircularList<T>.Finalize(const AIndex, ACount: Integer);
 begin
   System.Finalize(FItems[AIndex], ACount);
@@ -906,6 +906,11 @@ end;
 procedure TLKCircularList<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
 begin
   System.Move(FItems[AFromIndex], FItems[AToIndex], ACount * SizeOf(T));
+end;
+
+procedure TLKCircularList<T>.Remove(const AIndex: Integer);
+begin
+  Finalize(AIndex, 1);
 end;
 
 procedure TLKCircularList<T>.SetItem(const AIndex: Integer; const AItem: T);
@@ -976,6 +981,13 @@ begin
   finally
     ReleaseReadLock;
   end;
+end;
+
+procedure TLKCircularObjectList<T>.Remove(const AIndex: Integer);
+begin
+  if FOwnsObjects then
+    FItems[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+  inherited;
 end;
 
 procedure TLKCircularObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
