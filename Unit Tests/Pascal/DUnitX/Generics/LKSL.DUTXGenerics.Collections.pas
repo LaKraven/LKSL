@@ -332,7 +332,6 @@ begin
     Assert.IsTrue(FCircularObjectList.Items[AIndex].Foo = ITEMS[AIndex], Format('Item %d did not match. Expected "%s" but got "%s"', [AIndex, ITEMS[AIndex], FCircularObjectList.Items[AIndex].Foo]))
 end;
 
-
 procedure TLKCircularObjectListTests.ListIntegrity;
 const
   ITEMS: Array[0..9] of String = (
