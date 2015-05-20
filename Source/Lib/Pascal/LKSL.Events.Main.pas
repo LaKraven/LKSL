@@ -238,20 +238,29 @@ type
     FEventThread: TLKEventThread;
     ///  <summary><c>The maximum Age (time from Dispatch) of a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance before this Listener loses interest in it.</c></summary>
     FExpireAfter: LKFloat;
+    ///  <summary><c>The Reference Time at which the last Event was processed.</c></summary>
+    FLastProcessed: LKFloat;
+    ///  <summary><c>Defines whether this Listener is only interested in Events that are NEWER than the last one processed</c></summary>
+    FNewestOnly: Boolean;
     ///  <summary><c>Dictates whether this Listener should be automatically Registered after Construction.</c></summary>
     FRegistrationMode: TLKEventRegistrationMode;
     ///  <summary><c></c></summary>
     FTypeRestriction: TLKEventTypeRestriction;
 
     function GetExpireAfter: LKFloat;
+    function GetLastProcessed: LKFloat;
+    function GetNewestOnly: Boolean;
     function GetTypeRestriction: TLKEventTypeRestriction;
 
     procedure SetExpireAfter(const AExpireAfter: LKFloat);
+    procedure SetNewestOnly(const ANewestOnly: Boolean);
     procedure SetTypeRestriction(const ATypeRestriction: TLKEventTypeRestriction);
   protected
     ///  <summary><c>Override if you want to make your Event Listener ignore by default any </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance dispatched further back in time than the given value.</c></summary>
     ///  <remarks><c>Default = 0.00</c></remarks>
     function GetDefaultExpireAfter: LKFloat; virtual;
+    ///  <summary><c>Override if you want to make your Event Listener discard any Event older than the last one processed.</c></summary>
+    function GetDefaultNewestOnly: Boolean; virtual;
     ///  <summary><c>Override if you want to make your Event Listener ignore Descendants of the defined Event Type.</c></summary>
     ///  <remarks><c>Default = </c>etrAllowDescendants</remarks>
     function GetDefaultTypeRestriction: TLKEventTypeRestriction; virtual;
@@ -260,7 +269,7 @@ type
     ///  <returns><c>Default = </c>True</returns>
     function GetEventRelevant(const AEvent: ILKEventHolder): Boolean; virtual;
     ///  <summary><c>You MUST override "DoEvent" to define what action is to take place.</c></summary>
-    procedure DoEvent(const AEvent: TLKEvent); virtual; abstract;
+    procedure DoEvent(const AEvent: TLKEvent); virtual;
   public
     constructor Create(const AEventThread: TLKEventThread; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
 
@@ -274,7 +283,17 @@ type
     ///  <summary><c>Unregisters the Listener with its parent </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> instance.</c></summary>
     procedure Unregister;
 
+    ///  <summary><c>Dictates how old an Event can be before the Listener is no longer interested in processing it.</c></summary>
+    ///  <remarks>
+    ///    <para>0<c> = Never</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
     property ExpireAfter: LKFloat read GetExpireAfter write SetExpireAfter;
+    ///  <summary><c>The Reference Time at which the last Event was Processed.</c></summary>
+    property LastProcessed: LKFloat read GetLastProcessed;
+    ///  <summary><c>Dictates whether this Listener only cares about Events newer than the last one it Processed.</c></summary>
+    property NewestOnly: Boolean read GetNewestOnly write SetNewestOnly;
+    ///  <summary><c>Dictates whether the Listener is interested in DESCENDANTS on the nominated Event Type</c></summary>
     property TypeRestriction: TLKEventTypeRestriction read GetTypeRestriction write SetTypeRestriction;
   end;
 
@@ -859,6 +878,8 @@ constructor TLKEventListener.Create(const AEventThread: TLKEventThread; const AR
 begin
   inherited Create;
   FExpireAfter := GetDefaultExpireAfter;
+  FLastProcessed := 0;
+  FNewestOnly := GetDefaultNewestOnly;
   FTypeRestriction := GetDefaultTypeRestriction;
   FEventThread := AEventThread;
   if FEventThread = nil then
@@ -866,9 +887,19 @@ begin
   FRegistrationMode := ARegistrationMode;
 end;
 
+procedure TLKEventListener.DoEvent(const AEvent: TLKEvent);
+begin
+  FLastProcessed := AEvent.DispatchTime;
+end;
+
 function TLKEventListener.GetDefaultExpireAfter: LKFloat;
 begin
   Result := 0;
+end;
+
+function TLKEventListener.GetDefaultNewestOnly: Boolean;
+begin
+  Result := False;
 end;
 
 function TLKEventListener.GetDefaultTypeRestriction: TLKEventTypeRestriction;
@@ -886,6 +917,26 @@ begin
   AcquireReadLock;
   try
     Result := FExpireAfter;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKEventListener.GetLastProcessed: LKFloat;
+begin
+  AcquireReadLock;
+  try
+    Result := FLastProcessed;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKEventListener.GetNewestOnly: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FNewestOnly;
   finally
     ReleaseReadLock;
   end;
@@ -911,6 +962,16 @@ begin
   AcquireWriteLock;
   try
     FExpireAfter := AExpireAfter;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKEventListener.SetNewestOnly(const ANewestOnly: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FNewestOnly := ANewestOnly;
   finally
     ReleaseWriteLock;
   end;
@@ -953,6 +1014,7 @@ end;
 {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 procedure TLKEventListener<T>.DoEvent(const AEvent: TLKEvent);
 begin
+  inherited DoEvent(AEvent);
   if Assigned(FOnEventUnbound) then
     FOnEventUnbound(AEvent)
   else if Assigned(FOnEventOfObject) then
@@ -1500,6 +1562,7 @@ begin
         if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (LEvent is FListeners[I].GetEventClass)) or
             ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (LEvent.ClassType = FListeners[I].GetEventClass))) and
            ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (LEvent.DispatchTime + LEvent.ExpiresAfter))) and
+           (((FListeners[I].FNewestOnly) and (AEvent.DispatchTime > FListeners[I].FLastProcessed)) or (not FListeners[I].FNewestOnly)) and
            (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
           FListeners[I].DoEvent(LEvent);
   finally
