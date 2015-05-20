@@ -9,7 +9,7 @@ uses
 type
 
   [TestFixture]
-  TLKCircularListTest = class(TObject)
+  TLKCircularListTests = class(TObject)
   private
     FCircularList: TLKCircularList<String>;
   public
@@ -25,7 +25,7 @@ type
 
 implementation
 
-procedure TLKCircularListTest.AddingItems;
+procedure TLKCircularListTests.AddingItems;
 const
   ITEMS: Array[0..9] of String = (
                                    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
@@ -42,7 +42,7 @@ begin
     Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], 'Items do not match... List has no Integirty!');
 end;
 
-procedure TLKCircularListTest.ReplacingOldestItems;
+procedure TLKCircularListTests.ReplacingOldestItems;
 const
   ITEMS: Array[0..9] of String = (
                                     'Apple',
@@ -79,17 +79,17 @@ begin
       Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], Format('Did not replace item at Index %d. Expected "%s" but got "%s"', [I, ITEMS[I], FCircularList.Items[I]]))
 end;
 
-procedure TLKCircularListTest.Setup;
+procedure TLKCircularListTests.Setup;
 begin
   FCircularList := TLKCircularList<String>.Create(10);
 end;
 
-procedure TLKCircularListTest.TearDown;
+procedure TLKCircularListTests.TearDown;
 begin
   FCircularList.Free;
 end;
 
 
 initialization
-  TDUnitX.RegisterTestFixture(TLKCircularListTest);
+  TDUnitX.RegisterTestFixture(TLKCircularListTests);
 end.
