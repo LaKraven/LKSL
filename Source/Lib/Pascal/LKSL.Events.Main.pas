@@ -94,12 +94,6 @@ type
   TLKEventCancelCondition = (eccIfNotProcessing, eccRegardless);
   ///  <summary><c>The Method by which the Event was Dispatched.</c></summary>
   TLKEventDispatchMethod = (edmNotDispatched, edmQueue, edmStack);
-  ///  <summary><c>The means by which the Lifetime of a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance is managed.</c></summary>
-  ///  <remarks>
-  ///    <para>elcAutomatic <c>= Dispatched Events are Reference Counted and destroyed once processed.</c></para>
-  ///    <para>elcManual <c>= Dispatched Events are NOT Reference Counted, and must be destroyed by the implementing developer's code (very carefully, of course).</c></para>
-  ///  </remarks>
-  TLKEventLifetimeControl = (elcAutomatic, elcManual);
   ///  <summary><c>Defined Origins for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance.</c></summary>
   TLKEventOrigin = (eoInternal, eoReplay, eoRemote, eoUnknown);
   ///  <summary><c>Defined Target for a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Instance.</c></summary>
@@ -166,9 +160,6 @@ type
     FExpiresAfter: LKFloat;
     ///  <summary><c>Holder for this Event</c></summary>
     FHolder: TLKEventHolder;
-    ///  <summary><c>Dictates whether the Event Engine should take control of this Event's Lifetime</c></summary>
-    ///  <remarks><c>Default =</c> elcAutomatic</remarks>
-    FLifetimeControl: TLKEventLifetimeControl;
     ///  <summary><c>Where this Event came from.</c></summary>
     FOrigin: TLKEventOrigin;
     ///  <summary><c>The Reference Time at which the Event was First Processed.</c></summary>
@@ -205,7 +196,7 @@ type
     ///  <remarks><c>Default = </c>nil</remarks>
     class function GetStreamableType: TLKEventStreamableClass; virtual;
 
-    constructor Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); reintroduce;
+    constructor Create; override;
     destructor Destroy; override;
 
     ///  <summary><c>Cancels the Event after Dispatch.</c></summary>
@@ -213,14 +204,14 @@ type
     procedure Cancel(const ACancelConditions: TLKEventCancelCondition = eccIfNotProcessing);
 
     ///  <summary><c>Dispatch the Event through the Queue.</c></summary>
-    procedure Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
+    procedure Queue; overload;
     ///  <summary><c>Dispatch the Event through the Stack.</c></summary>
-    procedure Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic); overload;
+    procedure Stack; overload;
 
     ///  <summary><c>Schedule the Event to be Dispatched through the Queue</c></summary>
-    procedure ScheduleQueue(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+    procedure ScheduleQueue(const AScheduleFor: LKFloat);
     ///  <summary><c>Schedule the Event to be Dispatched through the Stack</c></summary>
-    procedure ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+    procedure ScheduleStack(const AScheduleFor: LKFloat);
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
     property DispatchAfter: LKFloat read GetDispatchAfter write SetDispatchAfter;
@@ -229,7 +220,6 @@ type
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
     property HasExpired: Boolean read GetHasExpired;
-    property LifetimeControl: TLKEventLifetimeControl read FLifetimeControl; // SET ON CONSTRUCTION ONLY
     property Origin: TLKEventOrigin read FOrigin; // SET ON CONSTRUCTION ONLY
     property ProcessedTime: LKFloat read GetProcessedTime;
     property State: TLKEventState read GetState;
@@ -673,7 +663,7 @@ begin
   end;
 end;
 
-constructor TLKEvent.Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+constructor TLKEvent.Create;
 begin
   inherited Create;
   FCreatedTime := GetReferenceTime; // We've just created it...
@@ -682,7 +672,6 @@ begin
   FDispatchTime := 0; // We haven't dispatched it yet...
   FDispatchTargets := GetDefaultDispatchTargets;
   FExpiresAfter := GetDefaultExpiresAfter; // We request the default expiration for its Type...
-  FLifetimeControl := ALifetimeControl; // Define who is responsible for Lifetime Control...
   FOrigin := eoInternal; // We presume it originates internally...
   FProcessedTime := 0; // We haven't processed it yet (it hasn't even been dispatched)...
   FState := esNotDispatched; // We haven't dispatched it yet...
@@ -792,28 +781,27 @@ begin
   Result := nil;
 end;
 
-procedure TLKEvent.Queue(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+procedure TLKEvent.Queue;
 begin
   if DispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
-    FLifetimeControl := ALifetimeControl;
     FState := esDispatched;
     FDispatchMethod := edmQueue;
     EventEngine.QueueEvent(FHolder);
   end;
 end;
 
-procedure TLKEvent.ScheduleQueue(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
+procedure TLKEvent.ScheduleQueue(const AScheduleFor: LKFloat);
 begin
   FDispatchAfter := AScheduleFor;
-  Queue(ALifetimeControl);
+  Queue;
 end;
 
-procedure TLKEvent.ScheduleStack(const AScheduleFor: LKFloat; const ALifetimeControl: TLKEventLifetimeControl);
+procedure TLKEvent.ScheduleStack(const AScheduleFor: LKFloat);
 begin
   FDispatchAfter := AScheduleFor;
-  Stack(ALifetimeControl);
+  Stack;
 end;
 
 procedure TLKEvent.SetDispatchAfter(const ADispatchAfter: LKFloat);
@@ -846,12 +834,11 @@ begin
   end
 end;
 
-procedure TLKEvent.Stack(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+procedure TLKEvent.Stack;
 begin
   if DispatchMethod = edmNotDispatched then
   begin
     FDispatchTime := GetReferenceTime;
-    FLifetimeControl := ALifetimeControl;
     FState := esDispatched;
     FDispatchMethod := edmStack;
     EventEngine.StackEvent(FHolder);
@@ -1033,7 +1020,6 @@ begin
       ACaret.Position := LEndPosition;
       StreamInsertLKFloat(ACaret, FEvent.Item.FDispatchTime);
       StreamInsertLKFloat(ACaret, FEvent.Item.FExpiresAfter);
-      StreamInsertTLKEventLifetimeControl(ACaret, FEvent.Item.FLifetimeControl);
       StreamInsertTLKEventOrigin(ACaret, FEvent.Item.FOrigin);
       StreamInsertLKFloat(ACaret, FEvent.Item.FProcessedTime);
       StreamInsertTLKEventState(ACaret, FEvent.Item.FState);
@@ -1064,7 +1050,6 @@ begin
         FEvent.Item.FDispatchTargets := FEvent.Item.FDispatchTargets + [StreamReadTLKEventTarget(ACaret)];
       FEvent.Item.FDispatchTime := StreamReadLKFloat(ACaret);
       FEvent.Item.FExpiresAfter := StreamReadLKFloat(ACaret);
-      FEvent.Item.FLifetimeControl := StreamReadTLKEventLifetimeControl(ACaret);
       FEvent.Item.FOrigin := StreamReadTLKEventOrigin(ACaret);
       FEvent.Item.FProcessedTime := StreamReadLKFloat(ACaret);
       FEvent.Item.FState := StreamReadTLKEventState(ACaret);
@@ -1103,7 +1088,6 @@ begin
       ACaret.Position := LEndPosition;
       StreamWriteLKFloat(ACaret, FEvent.Item.FDispatchTime);
       StreamWriteLKFloat(ACaret, FEvent.Item.FExpiresAfter);
-      StreamWriteTLKEventLifetimeControl(ACaret, FEvent.Item.FLifetimeControl);
       StreamWriteTLKEventOrigin(ACaret, FEvent.Item.FOrigin);
       StreamWriteLKFloat(ACaret, FEvent.Item.FProcessedTime);
       StreamWriteTLKEventState(ACaret, FEvent.Item.FState);
