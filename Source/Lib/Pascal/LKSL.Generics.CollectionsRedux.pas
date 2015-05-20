@@ -319,11 +319,13 @@ type
   TLKList<T> = class abstract(TLKInterfacedObject, ILKList<T>)
   private
     FArray: ILKArray<T>;
+    FCount: Integer;
     FCompactor: ILKListCompactor<T>;
     FExpander: ILKListExpander<T>;
     FSorter: ILKListSorter<T>;
     // Getters
     function GetCompactor: ILKListCompactor<T>;
+    function GetCount: Integer;
     function GetExpander: ILKListExpander<T>;
     function GetItem(const AIndex: Integer): T; inline;
     function GetSorter: ILKListSorter<T>;
@@ -346,6 +348,7 @@ type
     procedure Insert(const AItem: T; const AIndex: Integer);
     procedure InsertRange(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
+    property Count: Integer read GetCount;
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
@@ -602,6 +605,7 @@ begin
   inherited Create;
   FArray := TLKArray<T>.Create;
   FArray.Capacity := ACapacity;
+  FCount := 0;
 end;
 
 procedure TLKList<T>.Delete(const AIndex: Integer);
@@ -627,6 +631,16 @@ begin
   AcquireReadLock;
   try
     Result := FCompactor;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKList<T>.GetCount: Integer;
+begin
+  AcquireReadLock;
+  try
+    Result := FCount;
   finally
     ReleaseReadLock;
   end;

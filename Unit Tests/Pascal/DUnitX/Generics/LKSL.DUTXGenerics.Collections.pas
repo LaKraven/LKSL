@@ -29,6 +29,20 @@ type
   end;
 
   [TestFixture]
+  TLKListTests = class(TObject)
+  private
+    FList: TLKList<String>;
+  public
+    [Setup]
+    procedure Setup;
+    [TearDown]
+    procedure TearDown;
+    //TODO -oSJS -cUnit Tests [Generics - TLKList<T>]: Implement tests for TLKList<T>
+    [Test]
+    procedure ListIntegrity;
+  end;
+
+  [TestFixture]
   TLKCircularListTests = class(TObject)
   private
     FCircularList: TLKCircularList<String>;
@@ -146,6 +160,33 @@ begin
   FArray.Free;
 end;
 
+{ TLKListTests }
+
+procedure TLKListTests.ListIntegrity;
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FList.Add(ITEMS[I]);
+  Assert.IsTrue(FList.Count = Length(ITEMS), Format('Item Count Mismatch. Expected %d but got %d', [Length(ITEMS), FList.Count]));
+  for I := 0 to FList.Count - 1 do
+    Assert.IsTrue(FList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I]]))
+end;
+
+procedure TLKListTests.Setup;
+begin
+  FList := TLKList<String>.Create;
+end;
+
+procedure TLKListTests.TearDown;
+begin
+  FList.Free;
+end;
+
 { TLKCircularListTests}
 
 procedure TLKCircularListTests.DeletingItems;
@@ -201,10 +242,7 @@ const
 var
   I: Integer;
 begin
-  TDUnitX.CurrentRunner.Status('Testing simple List Integrity');
   FCircularList.AddItems(ITEMS);
-  TDUnitX.CurrentRunner.Status('Added 10 items to Circular List');
-  TDUnitX.CurrentRunner.Status('Verifying that Items match...');
   for I := 0 to FCircularList.Count - 1 do
     Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], 'Items do not match... List has no Integirty!');
 end;
@@ -217,11 +255,8 @@ const
 var
   I: Integer;
 begin
-  TDUnitX.CurrentRunner.Status('Testing simple List Integrity');
   for I := Low(ITEMS) to High(ITEMS) do
     FCircularList.Add(ITEMS[I]);
-  TDUnitX.CurrentRunner.Status('Added 10 items to Circular List');
-  TDUnitX.CurrentRunner.Status('Verifying that Items match...');
   for I := 0 to FCircularList.Count - 1 do
     Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FCircularList.Items[I]]))
 end;
@@ -340,11 +375,8 @@ const
 var
   I: Integer;
 begin
-  TDUnitX.CurrentRunner.Status('Testing simple List Integrity');
   for I := Low(ITEMS) to High(ITEMS) do
     FCircularObjectList.Add(TFoo.Create(ITEMS[I]));
-  TDUnitX.CurrentRunner.Status('Added 10 items to Circular List');
-  TDUnitX.CurrentRunner.Status('Verifying that Items match...');
   for I := 0 to FCircularObjectList.Count - 1 do
     Assert.IsTrue(FCircularObjectList.Items[I].Foo = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FCircularObjectList.Items[I].Foo]))
 end;
@@ -398,6 +430,7 @@ end;
 
 initialization
   TDUnitX.RegisterTestFixture(TLKArrayTests, 'TLKArray Tests');
+  TDUnitX.RegisterTestFixture(TLKListTests, 'TLKList Tests');
   TDUnitX.RegisterTestFixture(TLKCircularListTests, 'TLKCircularList Tests');
   TDUnitX.RegisterTestFixture(TLKCircularObjectListTests, 'TLKCircularObjectList Tests');
 end.
