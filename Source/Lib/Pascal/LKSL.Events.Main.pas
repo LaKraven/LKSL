@@ -220,6 +220,7 @@ type
     property DispatchTime: LKFloat read GetDispatchTime;
     property ExpiresAfter: LKFloat read GetExpiresAfter write SetExpiresAfter;
     property HasExpired: Boolean read GetHasExpired;
+    property Holder: TLKEventHolder read FHolder; // SET ON CONSTRUCTION ONLY
     property Origin: TLKEventOrigin read FOrigin; // SET ON CONSTRUCTION ONLY
     property ProcessedTime: LKFloat read GetProcessedTime;
     property State: TLKEventState read GetState;
