@@ -27,6 +27,7 @@ type
 
 var
   TestEventPool: TTestEventPool;
+//  TestEventThread: TTestEventThread;
 
 implementation
 
@@ -82,7 +83,9 @@ end;
 
 initialization
   TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
+//  TestEventThread := TTestEventThread.Create;
 finalization
   TestEventPool.Free;
+//  TestEventThread.Free;
 
 end.

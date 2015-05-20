@@ -286,7 +286,7 @@ type
     // Setters
     procedure SetOwnsObject(const AOwnsObject: Boolean);
   public
-    constructor Create(const AItem: T; const AOwnsObject: Boolean); reintroduce;
+    constructor Create(const AItem: T; const AOwnsObject: Boolean = True); reintroduce;
     destructor Destroy; override;
     // Properties
     property OwnsObject: Boolean read GetOwnsObject write SetOwnsObject;
@@ -531,7 +531,7 @@ end;
 
 { TLKObjectHolder<T> }
 
-constructor TLKObjectHolder<T>.Create(const AItem: T; const AOwnsObject: Boolean);
+constructor TLKObjectHolder<T>.Create(const AItem: T; const AOwnsObject: Boolean = True);
 begin
   inherited Create(AItem);
   FOwnsObject := AOwnsObject;

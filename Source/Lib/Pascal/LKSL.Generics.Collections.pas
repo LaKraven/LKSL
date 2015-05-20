@@ -393,6 +393,7 @@ type
     // Setters - Capacity
     procedure SetCapacityMultiplier(const AMultiplier: Single);
     procedure SetCapacityThreshold(const AThreshold: Integer);
+    procedure SetItemByIndex(const AIndex: Integer; const AItem: T);
 
     procedure InitializeArray;
   protected
@@ -469,7 +470,7 @@ type
     ///  <summary><c>Returns </c>True<c> if the List contains no Items.</c></summary>
     property IsEmpty: Boolean read GetIsEmpty;
     ///  <summary><c>Retrieves the Item at the given Index</c></summary>
-    property Items[const AIndex: Integer]: T read GetItemByIndex; default;
+    property Items[const AIndex: Integer]: T read GetItemByIndex write SetItemByIndex; default;
   end;
 
   {
@@ -1358,6 +1359,19 @@ begin
   try
     FCapacityThreshold := AThreshold;
     CheckCapacity; // Adjust the Array Capacity if necessary
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKListBase<T>.SetItemByIndex(const AIndex: Integer; const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    if (AIndex > -1) and (AIndex <= FCount) then
+      FArray[AIndex] := AItem
+    else
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Range.', [AIndex]);
   finally
     ReleaseWriteLock;
   end;
