@@ -227,6 +227,7 @@ type
     procedure SetItem(const AIndex: Integer; const AItem: T);
     // Management Methods
     function Add(const AItem: T): Integer;
+    procedure AddItems(const AItems: Array of T);
     procedure Clear;
     procedure Delete(const AIndex: Integer);
     // Properties
@@ -421,8 +422,10 @@ type
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
   public
     constructor Create(const ACapacity: Integer); reintroduce;
+    destructor Destroy; override;
     // Management Methods
     function Add(const AItem: T): Integer; virtual;
+    procedure AddItems(const AItems: Array of T); virtual;
     procedure Clear; virtual;
     procedure Delete(const AIndex: Integer); virtual;
     // Properties
@@ -490,6 +493,8 @@ function TLKArray<T>.GetItem(const AIndex: Integer): T;
 begin
   AcquireReadLock;
   try
+    if (AIndex < Low(FArray)) or (AIndex > High(FArray)) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index [%d] Out Of Range', [AIndex]);
     Result := FArray[AIndex];
   finally
     ReleaseReadLock;
@@ -792,8 +797,21 @@ begin
   Inc(FIndex);
   if FIndex > High(FItems) then
     FIndex := 0;
-  if FCount < High(FItems) then
+  if FCount <= High(FItems) then
     Inc(FCount);
+end;
+
+procedure TLKCircularList<T>.AddItems(const AItems: array of T);
+var
+  I: Integer;
+begin
+  AcquireWriteLock;
+  try
+    for I := Low(AItems) to High(AItems) do
+      AddActual(AItems[I]);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKCircularList<T>.Clear;
@@ -808,9 +826,9 @@ end;
 
 procedure TLKCircularList<T>.ClearActual;
 begin
+  Finalize(0, FCount - 1);
   FCount := 0;
   FIndex := 0;
-  Finalize(0, Length(FItems) - 1);
 end;
 
 constructor TLKCircularList<T>.Create(const ACapacity: Integer);
@@ -833,18 +851,23 @@ end;
 
 procedure TLKCircularList<T>.DeleteActual(const AIndex: Integer);
 begin
+  Finalize(AIndex, 1); // Finalize the item at the specified Index
   if AIndex < Length(FItems) then
-  begin
-    Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all items left by 1
-    Finalize(FCount - 1, 1); // Finalize the last item in the Array
-  end else
-    Finalize(AIndex, 1); // Finalize the item at the specified Index
+    Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all subsequent items left by 1
   Dec(FCount); // Decrement the Count
-  Dec(FIndex); // Shift the Index back by 1
+  if AIndex <= FIndex then
+    Dec(FIndex); // Shift the Index back by 1
+end;
+
+destructor TLKCircularList<T>.Destroy;
+begin
+  Clear;
+  inherited;
 end;
 
 procedure TLKCircularList<T>.Finalize(const AIndex, ACount: Integer);
 begin
+  System.Finalize(FItems[AIndex], ACount);
   System.FillChar(FItems[AIndex], ACount * SizeOf(T), 0);
 end;
 
@@ -872,7 +895,8 @@ function TLKCircularList<T>.GetItem(const AIndex: Integer): T;
 begin
   AcquireReadLock;
   try
-    // TODO -oSJS -cGenerics Redux: Index Validation here!
+    if (AIndex < 0) or (AIndex > FCount - 1) then
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index [%d] Out Of Range', [AIndex]);
     Result := FItems[AIndex];
   finally
     ReleaseReadLock;

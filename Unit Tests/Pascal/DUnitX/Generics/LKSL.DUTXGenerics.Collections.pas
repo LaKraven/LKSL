@@ -7,6 +7,26 @@ uses
   LKSL.Generics.CollectionsRedux;
 
 type
+  [TestFixture]
+  TLKArrayTests = class(TObject)
+  private
+    FArray: TLKArray<String>;
+  public
+    [Setup]
+    procedure Setup;
+    [TearDown]
+    procedure TearDown;
+    [Test]
+    procedure ArrayIntegrity;
+    [Test]
+    [TestCase('In Range at 1', '1,True')]
+    [TestCase('Out Of Range at 11', '11,False')]
+    [TestCase('In Range at 2', '2,True')]
+    [TestCase('Out Of Range at 1337', '1337,False')]
+    [TestCase('In Range at 9', '9,True')]
+    [TestCase('Out Of Range at 10', '10,False')]
+    procedure ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+  end;
 
   [TestFixture]
   TLKCircularListTests = class(TObject)
@@ -18,14 +38,145 @@ type
     [TearDown]
     procedure TearDown;
     [Test]
-    procedure AddingItems;
+    procedure ListIntegrity;
+    [Test]
+    [TestCase('In Range at 1', '1,True')]
+    [TestCase('Out Of Range at 11', '11,False')]
+    [TestCase('In Range at 2', '2,True')]
+    [TestCase('Out Of Range at 1337', '1337,False')]
+    [TestCase('In Range at 9', '9,True')]
+    [TestCase('Out Of Range at 10', '10,False')]
+    procedure ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
     [Test]
     procedure ReplacingOldestItems;
+    [Test]
+    procedure ListFromArrayIntegrity;
+    [Test]
+    procedure DeletingItems;
   end;
 
 implementation
 
-procedure TLKCircularListTests.AddingItems;
+
+{ TLKArrayTests }
+
+procedure TLKArrayTests.ArrayIntegrity;
+const
+  ITEMS: Array[0..9] of String = (
+                                  'Item0',
+                                  'Item1',
+                                  'Item2',
+                                  'Item3',
+                                  'Item4',
+                                  'Item5',
+                                  'Item6',
+                                  'Item7',
+                                  'Item8',
+                                  'Item9'
+                                 );
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FArray.Items[I] := ITEMS[I];
+  for I := 0 to FArray.Capacity - 1 do
+    Assert.IsTrue(FArray.Items[I] = ITEMS[I], Format('Item at Index %d does not match. Expected "%s" but got "%s"', [I, FArray.Items[I], ITEMS[I]]));
+end;
+
+procedure TLKArrayTests.ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+const
+  ITEMS: Array[0..9] of String = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J');
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FArray.Items[I] := ITEMS[I];
+
+  if not (AExpectInRange) then
+    Assert.WillRaise(procedure
+                     begin
+                       FArray.Items[AIndex]
+                     end,
+                     ELKGenericCollectionsRangeException,
+                     Format('Item %d SHOULD be out of range!', [AIndex]))
+  else
+    Assert.IsTrue(FArray.Items[AIndex] = ITEMS[AIndex], Format('Item %d did not match. Expected "%s" but got "%s"', [AIndex, ITEMS[AIndex], FArray.Items[AIndex]]))
+end;
+
+procedure TLKArrayTests.Setup;
+begin
+  FArray := TLKArray<String>.Create(10);
+end;
+
+procedure TLKArrayTests.TearDown;
+begin
+  FArray.Free;
+end;
+
+{ TLKCircularListTests}
+
+procedure TLKCircularListTests.DeletingItems;
+const
+  ITEMS: Array[0..9] of String = (
+                                  'Item0',
+                                  'Item1',
+                                  'Item2',
+                                  'Item3',
+                                  'Item4',
+                                  'Item5',
+                                  'Item6',
+                                  'Item7',
+                                  'Item8',
+                                  'Item9'
+                                 );
+var
+  I: Integer;
+begin
+  FCircularList.AddItems(Items);
+  FCircularList.Delete(5);
+
+  for I := 0 to FCircularList.Count - 1 do
+    if I < 5 then
+      Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FCircularList.Items[I]]))
+    else
+      Assert.IsTrue(FCircularList.Items[I] = ITEMS[I + 1], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FCircularList.Items[I]]))
+end;
+
+procedure TLKCircularListTests.ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+begin
+  FCircularList.AddItems(ITEMS);
+  if not (AExpectInRange) then
+    Assert.WillRaise(procedure
+                     begin
+                       FCircularList.Items[AIndex]
+                     end,
+                     ELKGenericCollectionsRangeException,
+                     Format('Item %d SHOULD be out of range!', [AIndex]))
+  else
+    Assert.IsTrue(FCircularList.Items[AIndex] = ITEMS[AIndex], Format('Item %d did not match. Expected "%s" but got "%s"', [AIndex, ITEMS[AIndex], FCircularList.Items[AIndex]]))
+end;
+
+procedure TLKCircularListTests.ListFromArrayIntegrity;
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+var
+  I: Integer;
+begin
+  TDUnitX.CurrentRunner.Status('Testing simple List Integrity');
+  FCircularList.AddItems(ITEMS);
+  TDUnitX.CurrentRunner.Status('Added 10 items to Circular List');
+  TDUnitX.CurrentRunner.Status('Verifying that Items match...');
+  for I := 0 to FCircularList.Count - 1 do
+    Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], 'Items do not match... List has no Integirty!');
+end;
+
+procedure TLKCircularListTests.ListIntegrity;
 const
   ITEMS: Array[0..9] of String = (
                                    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
@@ -39,7 +190,7 @@ begin
   TDUnitX.CurrentRunner.Status('Added 10 items to Circular List');
   TDUnitX.CurrentRunner.Status('Verifying that Items match...');
   for I := 0 to FCircularList.Count - 1 do
-    Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], 'Items do not match... List has no Integirty!');
+    Assert.IsTrue(FCircularList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FCircularList.Items[I]]))
 end;
 
 procedure TLKCircularListTests.ReplacingOldestItems;
@@ -89,7 +240,7 @@ begin
   FCircularList.Free;
 end;
 
-
 initialization
-  TDUnitX.RegisterTestFixture(TLKCircularListTests);
+  TDUnitX.RegisterTestFixture(TLKArrayTests, 'TLKArray Tests');
+  TDUnitX.RegisterTestFixture(TLKCircularListTests, 'TLKCircularList Tests');
 end.
