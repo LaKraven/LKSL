@@ -202,6 +202,7 @@
       <Unit0>
         <Filename Value="LKSL_Demo_EventThreadPooling.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL_Demo_EventThreadPooling"/>
       </Unit0>
       <Unit1>
         <Filename Value="Demo.EventThreadPooling.MainForm.pas"/>
@@ -273,6 +274,7 @@
       <Unit15>
         <Filename Value="..\..\..\Source\Lib\Pascal\LKSL.Comparers.System.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="LKSL.Comparers.System"/>
       </Unit15>
     </Units>
   </ProjectOptions>

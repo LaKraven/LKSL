@@ -133,6 +133,9 @@ type
     function GetComparer: ILKComparer<T>;
     // Setters
     procedure SetComparer(const AComparer: ILKComparer<T>);
+    // Management Methods
+    procedure Add(const AItem: T);
+    procedure Sort;
     // Properties
     property Comparer: ILKComparer<T> read GetComparer write SetComparer;
   end;
@@ -141,14 +144,16 @@ type
   ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
   ILKListExpander<T> = interface(ILKInterface)
   ['{9B4D9541-96E4-4767-81A7-5565AC24F4A9}']
-
+    // Management Methods
+    procedure CheckExpand(const AAmount: Integer);
   end;
 
   ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
   ILKListCompactor<T> = interface(ILKInterface)
   ['{B72ECE0C-F629-4002-A84A-2F7FAEC122E0}']
-
+    // Management Methods
+    procedure CheckCompact(const AAmount: Integer);
   end;
 
   ///  <summary><c>Generic List Type.</c></summary>
@@ -160,24 +165,31 @@ type
   ILKList<T> = interface(ILKInterface)
   ['{FD2E0742-9079-4E03-BDA5-A39D5FAC80A0}']
     // Getters
+    function GetCapacity: Integer;
     function GetCompactor: ILKListCompactor<T>;
+    function GetCount: Integer;
     function GetExpander: ILKListExpander<T>;
     function GetItem(const AIndex: Integer): T;
     function GetSorter: ILKListSorter<T>;
     // Setters
+    procedure SetCapacity(const ACapacity: Integer);
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
     procedure SetItem(const AIndex: Integer; const AItem: T);
     procedure SetSorter(const ASorter: ILKListSorter<T>);
     // Management Methods
-    procedure Add(const AItem: T);
-    procedure AddRange(const AItems: TArray<T>);
+    procedure Add(const AItem: T); overload;
+    procedure Add(const AList: ILKList<T>); overload;
+    procedure AddItems(const AItems: Array of T);
+    procedure Clear;
     procedure Delete(const AIndex: Integer);
     procedure DeleteRange(const AFirst, ACount: Integer);
     procedure Insert(const AItem: T; const AIndex: Integer);
-    procedure InsertRange(const AItems: TArray<T>; const AIndex: Integer);
+    procedure InsertItems(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
+    property Count: Integer read GetCount;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
     property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
@@ -294,6 +306,9 @@ type
     // Setters
     procedure SetComparer(const AComparer: ILKComparer<T>);
   public
+    // Management Methods
+    procedure Add(const AItem: T); virtual; abstract;
+    procedure Sort; virtual; abstract;
     // Properties
     property Comparer: ILKComparer<T> read GetComparer write SetComparer;
   end;
@@ -301,13 +316,14 @@ type
   ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
   TLKListExpander<T> = class abstract(TLKArrayContainer<T>, ILKListExpander<T>)
-
+  public
+    procedure CheckExpand(const AAmount: Integer); virtual; abstract;
   end;
 
   ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
   TLKListCompactor<T> = class abstract(TLKArrayContainer<T>, ILKListCompactor<T>)
-
+    procedure CheckCompact(const AAmount: Integer); virtual; abstract;
   end;
 
   ///  <summary><c>Generic List Type.</c></summary>
@@ -324,30 +340,46 @@ type
     FExpander: ILKListExpander<T>;
     FSorter: ILKListSorter<T>;
     // Getters
+    function GetCapacity: Integer;
     function GetCompactor: ILKListCompactor<T>;
     function GetCount: Integer;
     function GetExpander: ILKListExpander<T>;
     function GetItem(const AIndex: Integer): T; inline;
     function GetSorter: ILKListSorter<T>;
     // Setters
+    procedure SetCapacity(const ACapacity: Integer);
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
     procedure SetItem(const AIndex: Integer; const AItem: T); inline;
     procedure SetSorter(const ASorter: ILKListSorter<T>);
   protected
+    ///  <summary><c>Override if you need something special to occur before and/or after an Item has been added.</c></summary>
+    procedure AddActual(const AItem: T);
+    ///  <summary><c>Override if you need something special to occur before and/or after the list is emptied.</c></summary>
+    procedure ClearActual; virtual;
+    ///  <summary><c>Override if you want to use a custom Compactor</c></summary>
+    ///  <remarks><c>By default, the List will be Compacted by One for each Removed Item (Default = </c>nil<c>).</c></remarks>
+    function CreateDefaultCompactor: ILKListCompactor<T>; virtual;
+    ///  <summary><c>Override if you want to use a custom Expander</c></summary>
+    ///  <remarks><c>By default, the List will be Expanded by One for each Added Item (Default = </c>nil<c>).</c></remarks>
+    function CreateDefaultExpander: ILKListExpander<T>; virtual;
     procedure CheckCompact(const AAmount: Integer);
     procedure CheckExpand(const AAmount: Integer);
+    procedure DeleteActual(const AIndex: Integer); virtual;
   public
     constructor Create(const ACapacity: Integer = 0); reintroduce;
     destructor Destroy; override;
     // Management Methods
-    procedure Add(const AItem: T);
-    procedure AddRange(const AItems: TArray<T>);
+    procedure Add(const AItem: T); overload;
+    procedure Add(const AList: ILKList<T>); overload;
+    procedure AddItems(const AItems: Array of T);
+    procedure Clear;
     procedure Delete(const AIndex: Integer);
     procedure DeleteRange(const AFirst, ACount: Integer);
     procedure Insert(const AItem: T; const AIndex: Integer);
-    procedure InsertRange(const AItems: TArray<T>; const AIndex: Integer);
+    procedure InsertItems(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
+    property Capacity: Integer read GetCapacity write SetCapacity;
     property Count: Integer read GetCount;
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
@@ -364,9 +396,10 @@ type
     function GetOwnsObjects: Boolean;
     // Setters
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  protected
+    procedure DeleteActual(const AIndex: Integer); override;
   public
     constructor Create(const AOwnsObjects: Boolean = True; const ACapacity: Integer = 0); reintroduce;
-    destructor Destroy; override;
     // Properties
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
@@ -576,12 +609,50 @@ end;
 
 procedure TLKList<T>.Add(const AItem: T);
 begin
-  CheckExpand(1);
+  AcquireWriteLock;
+  try
+    CheckExpand(1);
+    AddActual(AItem);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
-procedure TLKList<T>.AddRange(const AItems: TArray<T>);
+procedure TLKList<T>.Add(const AList: ILKList<T>);
+var
+  I: Integer;
 begin
-  CheckExpand(Length(AItems));
+  AcquireWriteLock;
+  try
+    CheckExpand(AList.Count);    
+    for I := 0 to AList.Count - 1 do
+      AddActual(AList[I]);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKList<T>.AddActual(const AItem: T);
+begin
+  if FSorter = nil then
+    FArray.Items[FCount] := AItem
+  else
+    FSorter.Add(AItem);
+  Inc(FCount);
+end;
+
+procedure TLKList<T>.AddItems(const AItems: Array of T);
+var
+  I: Integer;
+begin
+  AcquireWriteLock;
+  try
+    CheckExpand(Length(AItems));
+    for I := Low(AItems) to High(AItems) do
+      AddActual(AItems[I]);    
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKList<T>.CheckCompact(const AAmount: Integer);
@@ -589,7 +660,7 @@ begin
   if FCompactor = nil then
     FArray.Capacity := FArray.Capacity - AAmount
   else
-    // Pass this request along to the Compactor
+    FCompactor.CheckCompact(AAmount);
 end;
 
 procedure TLKList<T>.CheckExpand(const AAmount: Integer);
@@ -597,7 +668,22 @@ begin
   if FExpander = nil then
     FArray.Capacity := FArray.Capacity + AAmount
   else
-    // Pass this request along to the Expander
+    FExpander.CheckExpand(AAmount);
+end;
+
+procedure TLKList<T>.Clear;
+begin
+  AcquireWriteLock;
+  try
+    ClearActual;  
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKList<T>.ClearActual;
+begin
+  DeleteRange(0, FCount);
 end;
 
 constructor TLKList<T>.Create(const ACapacity: Integer);
@@ -606,24 +692,62 @@ begin
   FArray := TLKArray<T>.Create;
   FArray.Capacity := ACapacity;
   FCount := 0;
+  FCompactor := CreateDefaultCompactor;
+  FExpander := CreateDefaultExpander;
+end;
+
+function TLKList<T>.CreateDefaultCompactor: ILKListCompactor<T>;
+begin
+  Result := nil; // By default, we don't want to use a Compactor
+end;
+
+function TLKList<T>.CreateDefaultExpander: ILKListExpander<T>;
+begin
+  Result := nil; // By default, we don't want to use an Expander
 end;
 
 procedure TLKList<T>.Delete(const AIndex: Integer);
 begin
+  AcquireWriteLock;
+  try
+    DeleteActual(AIndex);
+    CheckCompact(1);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
 
-  CheckCompact(1);
+procedure TLKList<T>.DeleteActual(const AIndex: Integer);
+begin
+  FArray.Finalize(AIndex, 1);
+  if AIndex < FCount then
+    FArray.Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all subsequent items left by 1
+  Dec(FCount); // Decrement the Count
 end;
 
 procedure TLKList<T>.DeleteRange(const AFirst, ACount: Integer);
+var
+  I: Integer;
 begin
-
-  CheckCompact(ACount);
+  AcquireWriteLock;
+  try
+    for I := AFirst + (ACount - 1) downto AFirst do
+      DeleteActual(I);
+    CheckCompact(ACount);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 destructor TLKList<T>.Destroy;
 begin
-
+  Clear;
   inherited;
+end;
+
+function TLKList<T>.GetCapacity: Integer;
+begin
+  Result := FArray.Capacity;
 end;
 
 function TLKList<T>.GetCompactor: ILKListCompactor<T>;
@@ -682,10 +806,15 @@ begin
 
 end;
 
-procedure TLKList<T>.InsertRange(const AItems: TArray<T>; const AIndex: Integer);
+procedure TLKList<T>.InsertItems(const AItems: TArray<T>; const AIndex: Integer);
 begin
   CheckExpand(Length(AItems));
 
+end;
+
+procedure TLKList<T>.SetCapacity(const ACapacity: Integer);
+begin
+  FArray.Capacity := ACapacity;
 end;
 
 procedure TLKList<T>.SetCompactor(const ACompactor: ILKListCompactor<T>);
@@ -736,13 +865,14 @@ begin
   FOwnsObjects := AOwnsObjects;
 end;
 
-destructor TLKObjectList<T>.Destroy;
+procedure TLKObjectList<T>.DeleteActual(const AIndex: Integer);
 begin
-
+  if FOwnsObjects then  
+    FArray.Items[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
   inherited;
 end;
 
-function TLKObjectList<T>.GetOwnsObjects: Boolean;
+function TLKObjectList<T>.GetOwnsObjects: Boolean;                               
 begin
   AcquireReadLock;
   try

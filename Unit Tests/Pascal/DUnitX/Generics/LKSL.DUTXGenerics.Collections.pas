@@ -7,6 +7,14 @@ uses
   LKSL.Generics.CollectionsRedux;
 
 type
+  TFoo = class(TObject)
+  private
+    FFoo: String;
+  public
+    constructor Create(const AFoo: String);
+    property Foo: String read FFoo;
+  end;
+
   [TestFixture]
   TLKArrayTests = class(TObject)
   private
@@ -37,9 +45,39 @@ type
     procedure Setup;
     [TearDown]
     procedure TearDown;
-    //TODO -oSJS -cUnit Tests [Generics - TLKList<T>]: Implement tests for TLKList<T>
     [Test]
     procedure ListIntegrity;
+    [Test]
+    [TestCase('In Range at 1', '1,True')]
+    [TestCase('Out Of Range at 11', '11,False')]
+    [TestCase('In Range at 2', '2,True')]
+    [TestCase('Out Of Range at 1337', '1337,False')]
+    [TestCase('In Range at 9', '9,True')]
+    [TestCase('Out Of Range at 10', '10,False')]
+    procedure ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+    [Test]
+    procedure DeletingItems;
+  end;
+
+  [TestFixture]
+  TLKObjectListTests = class(TObject)
+  private
+    FList: TLKObjectList<TFoo>;
+  public
+    [Setup]
+    procedure Setup;
+    [TearDown]
+    procedure TearDown;
+    [Test]
+    procedure ListIntegrity;
+    [Test]
+    [TestCase('In Range at 1', '1,True')]
+    [TestCase('Out Of Range at 11', '11,False')]
+    [TestCase('In Range at 2', '2,True')]
+    [TestCase('Out Of Range at 1337', '1337,False')]
+    [TestCase('In Range at 9', '9,True')]
+    [TestCase('Out Of Range at 10', '10,False')]
+    procedure ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
   end;
 
   [TestFixture]
@@ -69,14 +107,6 @@ type
     procedure DeletingItems;
   end;
 
-  TFoo = class(TObject)
-  private
-    FFoo: String;
-  public
-    constructor Create(const AFoo: String);
-    property Foo: String read FFoo;
-  end;
-
   [TestFixture]
   TLKCircularObjectListTests = class(TObject)
   private
@@ -104,22 +134,28 @@ type
 
 implementation
 
+{ TFoo }
+
+constructor TFoo.Create(const AFoo: String);
+begin
+  FFoo := AFoo;
+end;
 
 { TLKArrayTests }
 
 procedure TLKArrayTests.ArrayIntegrity;
 const
   ITEMS: Array[0..9] of String = (
-                                  'Item0',
-                                  'Item1',
-                                  'Item2',
-                                  'Item3',
-                                  'Item4',
-                                  'Item5',
-                                  'Item6',
-                                  'Item7',
-                                  'Item8',
-                                  'Item9'
+                                  'Bob',
+                                  'Terry',
+                                  'Andy',
+                                  'Rick',
+                                  'Sarah',
+                                  'Ellen',
+                                  'Hugh',
+                                  'Jack',
+                                  'Marie',
+                                  'Ninette'
                                  );
 var
   I: Integer;
@@ -162,6 +198,51 @@ end;
 
 { TLKListTests }
 
+procedure TLKListTests.DeletingItems;
+const
+  ITEMS: Array[0..9] of String = (
+                                  'Bob',
+                                  'Terry',
+                                  'Andy',
+                                  'Rick',
+                                  'Sarah',
+                                  'Ellen',
+                                  'Hugh',
+                                  'Jack',
+                                  'Marie',
+                                  'Ninette'
+                                 );
+var
+  I: Integer;
+begin
+  FList.AddItems(Items);
+  FList.Delete(5);
+
+  for I := 0 to FList.Count - 1 do
+    if I < 5 then
+      Assert.IsTrue(FList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I]]))
+    else
+      Assert.IsTrue(FList.Items[I] = ITEMS[I + 1], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I]]))
+end;
+
+procedure TLKListTests.ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+begin
+  FList.AddItems(ITEMS);
+  if not (AExpectInRange) then
+    Assert.WillRaise(procedure
+                     begin
+                       FList.Items[AIndex]
+                     end,
+                     ELKGenericCollectionsRangeException,
+                     Format('Item %d SHOULD be out of range!', [AIndex]))
+  else
+    Assert.IsTrue(FList.Items[AIndex] = ITEMS[AIndex], Format('Item %d did not match. Expected "%s" but got "%s"', [AIndex, ITEMS[AIndex], FList.Items[AIndex]]))
+end;
+
 procedure TLKListTests.ListIntegrity;
 const
   ITEMS: Array[0..9] of String = (
@@ -172,7 +253,8 @@ var
 begin
   for I := Low(ITEMS) to High(ITEMS) do
     FList.Add(ITEMS[I]);
-  Assert.IsTrue(FList.Count = Length(ITEMS), Format('Item Count Mismatch. Expected %d but got %d', [Length(ITEMS), FList.Count]));
+  Assert.IsTrue(FList.Count = Length(ITEMS), Format('Item Count Mismatch. Expected %d but got %d.', [Length(ITEMS), FList.Count]));
+  Assert.IsTrue(FList.Capacity = Length(ITEMS), Format('List Capacity Mismatch. Expected %d but got %d.', [Length(ITEMS), FList.Capacity]));
   for I := 0 to FList.Count - 1 do
     Assert.IsTrue(FList.Items[I] = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I]]))
 end;
@@ -187,21 +269,70 @@ begin
   FList.Free;
 end;
 
+{ TLKObjectListTests }
+
+procedure TLKObjectListTests.ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FList.Add(TFoo.Create(ITEMS[I]));
+  if not (AExpectInRange) then
+    Assert.WillRaise(procedure
+                     begin
+                       FList.Items[AIndex]
+                     end,
+                     ELKGenericCollectionsRangeException,
+                     Format('Item %d SHOULD be out of range!', [AIndex]))
+  else
+    Assert.IsTrue(FList.Items[AIndex].Foo = ITEMS[AIndex], Format('Item %d did not match. Expected "%s" but got "%s"', [AIndex, ITEMS[AIndex], FList.Items[AIndex].Foo]))
+end;
+
+procedure TLKObjectListTests.ListIntegrity;
+const
+  ITEMS: Array[0..9] of String = (
+                                   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'
+                                 );
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FList.Add(TFoo.Create(ITEMS[I]));
+  Assert.IsTrue(FList.Count = Length(ITEMS), Format('Item Count Mismatch. Expected %d but got %d', [Length(ITEMS), FList.Count]));
+  Assert.IsTrue(FList.Capacity = Length(ITEMS), Format('List Capacity Mismatch. Expected %d but got %d.', [Length(ITEMS), FList.Capacity]));
+  for I := 0 to FList.Count - 1 do
+    Assert.IsTrue(FList.Items[I].Foo = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I].Foo]))
+end;
+
+procedure TLKObjectListTests.Setup;
+begin
+  FList := TLKObjectList<TFoo>.Create;
+end;
+
+procedure TLKObjectListTests.TearDown;
+begin
+  FList.Free;
+end;
+
 { TLKCircularListTests}
 
 procedure TLKCircularListTests.DeletingItems;
 const
   ITEMS: Array[0..9] of String = (
-                                  'Item0',
-                                  'Item1',
-                                  'Item2',
-                                  'Item3',
-                                  'Item4',
-                                  'Item5',
-                                  'Item6',
-                                  'Item7',
-                                  'Item8',
-                                  'Item9'
+                                  'Bob',
+                                  'Terry',
+                                  'Andy',
+                                  'Rick',
+                                  'Sarah',
+                                  'Ellen',
+                                  'Hugh',
+                                  'Jack',
+                                  'Marie',
+                                  'Ninette'
                                  );
 var
   I: Integer;
@@ -308,28 +439,21 @@ begin
   FCircularList.Free;
 end;
 
-{ TFoo }
-
-constructor TFoo.Create(const AFoo: String);
-begin
-  FFoo := AFoo;
-end;
-
 { TLKCircularObjectListTests }
 
 procedure TLKCircularObjectListTests.DeletingItems;
 const
   ITEMS: Array[0..9] of String = (
-                                  'Item0',
-                                  'Item1',
-                                  'Item2',
-                                  'Item3',
-                                  'Item4',
-                                  'Item5',
-                                  'Item6',
-                                  'Item7',
-                                  'Item8',
-                                  'Item9'
+                                  'Bob',
+                                  'Terry',
+                                  'Andy',
+                                  'Rick',
+                                  'Sarah',
+                                  'Ellen',
+                                  'Hugh',
+                                  'Jack',
+                                  'Marie',
+                                  'Ninette'
                                  );
 var
   I: Integer;
