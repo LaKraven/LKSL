@@ -4,7 +4,7 @@
         <ProjectVersion>17.2</ProjectVersion>
         <MainSource>LKSL_DUnitX_Testbed.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Fixinsight</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Console</AppType>

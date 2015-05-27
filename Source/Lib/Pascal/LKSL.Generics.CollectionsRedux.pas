@@ -69,8 +69,11 @@ type
     ILKListSorter<T> = interface;
     ILKListExpander<T> = interface;
     ILKListCompactor<T> = interface;
+    ILKListBase<T> = interface;
     ILKList<T> = interface;
     ILKObjectList<T: class> = interface;
+    ILKSortedList<T> = interface;
+    ILKSortedObjectList<T> = interface;
     ILKLookupList<TKey, TValue> = interface;
     ILKLookupObjectList<TKey, TValue: class> = interface;
     ILKCircularList<T> = interface;
@@ -84,8 +87,11 @@ type
     TLKListExpanderDefault<T> = class;
     TLKListCompactor<T> = class;
     TLKListCompactorDefault<T> = class;
+    TLKListBase<T> = class;
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
+    TLKSortedList<T> = class;
+    TLKSortedObjectList<T: class> = class;
     TLKLookupList<TKey, TValue> = class;
     TLKLookupObjectList<TKey, TValue: class> = class;
     TLKCircularList<T> = class;
@@ -122,7 +128,7 @@ type
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
     // Properties
     property Capacity: Integer read GetCapacity write SetCapacity;
-    property Items[const AIndex: Integer]: T read GetItem write SetItem;
+    property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
   end;
 
   ///  <summary><c>An Object containing an ILKArray instance.</c></summary>
@@ -144,6 +150,7 @@ type
     procedure SetComparer(const AComparer: ILKComparer<T>);
     // Management Methods
     function Add(const AItem: T; const AExistingCount: Integer): Boolean;
+    function Contains(const AItem: T; const AExistingCount: Integer): Boolean;
     function Sort: Boolean;
     // Properties
     property AutoSort: Boolean read GetAutoSort write SetAutoSort;
@@ -166,13 +173,12 @@ type
     function CheckCompact(const AAmount: Integer; const AExistingCount: Integer): Integer;
   end;
 
-  ///  <summary><c>Generic List Type.</c></summary>
+  ///  <summary><c>Base Interface for Generic List Types.</c></summary>
   ///  <remarks>
   ///    <para><c>You can specify a </c>TLKListCompactor<c> to dynamically compact the List.</c></para>
   ///    <para><c>You can specify a </c>TLKListExpander<c> to dynamically expand the List.</c></para>
-  ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
   ///  </remarks>
-  ILKList<T> = interface(ILKInterface)
+  ILKListBase<T> = interface(ILKInterface)
   ['{FD2E0742-9079-4E03-BDA5-A39D5FAC80A0}']
     // Getters
     function GetCapacity: Integer;
@@ -180,16 +186,14 @@ type
     function GetCount: Integer;
     function GetExpander: ILKListExpander<T>;
     function GetItem(const AIndex: Integer): T;
-    function GetSorter: ILKListSorter<T>;
     // Setters
     procedure SetCapacity(const ACapacity: Integer);
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
     procedure SetItem(const AIndex: Integer; const AItem: T);
-    procedure SetSorter(const ASorter: ILKListSorter<T>);
     // Management Methods
     procedure Add(const AItem: T); overload;
-    procedure Add(const AList: ILKList<T>); overload;
+    procedure Add(const AList: ILKListBase<T>); overload;
     procedure AddItems(const AItems: Array of T);
     procedure Clear;
     procedure Delete(const AIndex: Integer);
@@ -202,7 +206,12 @@ type
     property Count: Integer read GetCount;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
-    property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  ///  <summary><c>A Simple Generic List.</c></summary>
+  ILKList<T> = interface(ILKListBase<T>)
+  ['{62EFA497-D06C-42C4-B9D6-CD3FA1842D57}']
+
   end;
 
   ///  <summary><c>Specialized Generic List for Object Types</c></summary>
@@ -217,8 +226,32 @@ type
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
+  ///  <summary><c>Sorted Generic List Type.</c></summary>
+  ///  <remarks>
+  ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
+  ///  </remarks>
+  ILKSortedList<T> = interface(ILKListBase<T>)
+  ['{C0FE590C-218B-46A2-890D-DE05422F9DE8}']
+    // Getters
+    function GetSorter: ILKListSorter<T>;
+    // Setters
+    procedure SetSorter(const ASorter: ILKListSorter<T>);
+    // Properties
+    property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  ILKSortedObjectList<T> = interface(ILKSortedList<T>)
+  ['{0BB00F5C-19CC-4311-A566-1F012E058377}']
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
   ///  <summary><c>Pairs a List of Values with a Sorted List of Keys</c></summary>
-  ILKLookupList<TKey, TValue> = interface(ILKList<TValue>)
+  ILKLookupList<TKey, TValue> = interface(ILKListBase<TValue>)
   ['{A425AFB5-E2CD-4842-BADD-5F91EC159A58}']
 
   end;
@@ -318,10 +351,15 @@ type
     // Setters
     procedure SetAutoSort(const AAutoSort: Boolean);
     procedure SetComparer(const AComparer: ILKComparer<T>);
+  protected
+    function AddActual(const AItem: T; const AExistingCount: Integer): Boolean; virtual; abstract;
+    function ContainsActual(const AItem: T; const AExistingCount: Integer): Boolean; virtual; abstract;
+    function SortActual: Boolean; virtual; abstract;
   public
     // Management Methods
-    function Add(const AItem: T; const AExistingCount: Integer): Boolean; virtual; abstract;
-    function Sort: Boolean; virtual; abstract;
+    function Add(const AItem: T; const AExistingCount: Integer): Boolean;
+    function Contains(const AItem: T; const AExistingCount: Integer): Boolean;
+    function Sort: Boolean;
     // Properties
     property AutoSort: Boolean read GetAutoSort write SetAutoSort;
     property Comparer: ILKComparer<T> read GetComparer write SetComparer;
@@ -330,10 +368,10 @@ type
   ///  <summary><c>The Default Sorting Algorithm for Lists.</c></summary>
   ///  <remarks><c>By default, Lists are entirely UNSORTED.</c></summary>
   TLKListSorterDefault<T> = class(TLKListSorter<T>)
-  public
-    // Management Methods
-    function Add(const AItem: T; const AExistingCount: Integer): Boolean; override;
-    function Sort: Boolean; override;
+  protected
+    function AddActual(const AItem: T; const AExistingCount: Integer): Boolean; override;
+    function ContainsActual(const AItem: T; const AExistingCount: Integer): Boolean; override;
+    function SortActual: Boolean; override;
   end;
 
   ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
@@ -370,57 +408,52 @@ type
     function CheckCompactActual(const AAmount: Integer; const AExistingCount: Integer): Integer; override;  
   end;
 
-  ///  <summary><c>Generic List Type.</c></summary>
+  ///  <summary><c>Absolute Base Type for Generic Lists.</c></summary>
   ///  <remarks>
   ///    <para><c>You can specify a </c>TLKListCompactor<c> to dynamically compact the List.</c></para>
   ///    <para><c>You can specify a </c>TLKListExpander<c> to dynamically expand the List.</c></para>
   ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
   ///  </remarks>
-  TLKList<T> = class abstract(TLKInterfacedObject, ILKList<T>)
+  TLKListBase<T> = class abstract(TLKInterfacedObject, ILKListBase<T>)
   private
     FArray: ILKArray<T>;
     FCount: Integer;
     FCompactor: ILKListCompactor<T>;
     FExpander: ILKListExpander<T>;
-    FSorter: ILKListSorter<T>;
     // Getters
     function GetCapacity: Integer;
     function GetCompactor: ILKListCompactor<T>;
     function GetCount: Integer;
     function GetExpander: ILKListExpander<T>;
     function GetItem(const AIndex: Integer): T; inline;
-    function GetSorter: ILKListSorter<T>;
     // Setters
     procedure SetCapacity(const ACapacity: Integer);
     procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
     procedure SetExpander(const AExpander: ILKListExpander<T>);
     procedure SetItem(const AIndex: Integer; const AItem: T); inline;
-    procedure SetSorter(const ASorter: ILKListSorter<T>);
   protected
     ///  <summary><c>Override if you need something special to occur before and/or after an Item has been added.</c></summary>
-    procedure AddActual(const AItem: T);
+    function AddActual(const AItem: T): Boolean; virtual; abstract;
+    ///  <summary><c>Compacts the Array according to the given Compactor Algorithm.</c></summary>
+    procedure CheckCompact(const AAmount: Integer);
+    ///  <summary><c>Expands the Array according to the given Expander Algorithm.</c></summary>
+    procedure CheckExpand(const AAmount: Integer);
     ///  <summary><c>Override if you need something special to occur before and/or after the list is emptied.</c></summary>
     procedure ClearActual; virtual;
     ///  <summary><c>Override if you want to use a custom Compactor</c></summary>
     ///  <remarks><c>By default, the List will be Compacted by One for each Removed Item (Default = </c>nil<c>).</c></remarks>
     function CreateDefaultCompactor: ILKListCompactor<T>; virtual;
     ///  <summary><c>Override if you want to use a custom Expander</c></summary>
-    ///  <remarks>
-    ///    <para><c>(Default = </c>TLKListExpanderDefault</para>
-    ///  </remarks>
+    ///  <remarks><c>(Default = </c>TLKListExpanderDefault</remarks>
     function CreateDefaultExpander: ILKListExpander<T>; virtual;
-    ///  <summary><c>Override if you want to use a custom Sorter</c></summary>
-    ///  <remarks><c>Default = </c>TLKListSorterDefault</remarks>
-    function CreateDefaultSorter: ILKListSorter<T>; virtual;
-    procedure CheckCompact(const AAmount: Integer);
-    procedure CheckExpand(const AAmount: Integer);
-    procedure DeleteActual(const AIndex: Integer); virtual;
+    ///  <summary><c>Override if you require some custom behavior when Deleting an Item.</c></summary>
+    function DeleteActual(const AIndex: Integer): Boolean; virtual;
   public
-    constructor Create(const ACapacity: Integer = 0); reintroduce;
+    constructor Create(const ACapacity: Integer = 0); reintroduce; virtual;
     destructor Destroy; override;
     // Management Methods
     procedure Add(const AItem: T); overload;
-    procedure Add(const AList: ILKList<T>); overload;
+    procedure Add(const AList: ILKListBase<T>); overload;
     procedure AddItems(const AItems: Array of T);
     procedure Clear;
     procedure Delete(const AIndex: Integer);
@@ -433,12 +466,16 @@ type
     property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
     property Expander: ILKListExpander<T> read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
-    property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  TLKList<T> = class abstract(TLKListBase<T>, ILKList<T>)
+  protected
+    function AddActual(const AItem: T): Boolean; override;
   end;
 
   ///  <summary><c>Specialized Generic List for Object Types</c></summary>
   ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
-  TLKObjectList<T: class> = class(TLKList<T>, ILKObjectList<T>)
+  TLKObjectList<T: class> = class abstract(TLKList<T>, ILKObjectList<T>)
   private
     FOwnsObjects: Boolean;
     // Getters
@@ -446,15 +483,51 @@ type
     // Setters
     procedure SetOwnsObjects(const AOwnsObjects: Boolean);
   protected
-    procedure DeleteActual(const AIndex: Integer); override;
+    function DeleteActual(const AIndex: Integer): Boolean; override;
   public
     constructor Create(const AOwnsObjects: Boolean = True; const ACapacity: Integer = 0); reintroduce;
     // Properties
     property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
   end;
 
+  ///  <summary><c>A Generic List Type with Sorting and Lookup capabilities.</c></summary>
+  ///  <remarks>
+  ///    <para><c>You can specify a </c>TLKListSorter<c> to organize the List.</c></para>
+  ///  </remarks>
+  TLKSortedList<T> = class abstract(TLKListBase<T>, ILKSortedList<T>)
+  private
+    FSorter: ILKListSorter<T>;
+    // Getters
+    function GetSorter: ILKListSorter<T>;
+    // Setters
+    procedure SetSorter(const ASorter: ILKListSorter<T>);
+  protected
+    ///  <summary><c>Override if you want to use a custom Sorter</c></summary>
+    ///  <remarks><c>Default = </c>TLKListSorterDefault</remarks>
+    function CreateDefaultSorter: ILKListSorter<T>; virtual;
+  public
+    constructor Create(const ACapacity: Integer = 0; const ASorter: ILKListSorter<T> = nil); reintroduce;
+    // Properties
+    property Sorter: ILKListSorter<T> read GetSorter write SetSorter;
+  end;
+
+  ///  <summary><c>Specialized Sorted Generic List for Object Types</c></summary>
+  ///  <remarks><c>Can take Ownership of the Objects, disposing of them for you.</c></remarks>
+  TLKSortedObjectList<T: class> = class abstract(TLKSortedList<T>, ILKSortedObjectList<T>)
+  private
+    FOwnsObjects: Boolean;
+    // Getters
+    function GetOwnsObjects: Boolean;
+    // Setters
+    procedure SetOwnsObjects(const AOwnsObjects: Boolean);
+  public
+    constructor Create(const AOwnsObjects: Boolean = True; const ACapacity: Integer = 0; const ASorter: ILKListSorter<T> = nil); reintroduce;
+    // Properties
+    property OwnsObjects: Boolean read GetOwnsObjects write SetOwnsObjects;
+  end;
+
   ///  <summary><c>Pairs a List of Values with a Sorted List of Keys</c></summary>
-  TLKLookupList<TKey, TValue> = class(TLKList<TValue>, ILKLookupList<TKey, TValue>)
+  TLKLookupList<TKey, TValue> = class(TLKListBase<TValue>, ILKLookupList<TKey, TValue>)
 
   end;
 
@@ -630,11 +703,31 @@ end;
 
 { TLKListSorter<T> }
 
+function TLKListSorter<T>.Add(const AItem: T; const AExistingCount: Integer): Boolean;
+begin
+  AcquireWriteLock;
+  try
+    Result := AddActual(AItem, AExistingCount);
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+function TLKListSorter<T>.Contains(const AItem: T; const AExistingCount: Integer): Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := ContainsActual(AItem, AExistingCount);
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
 function TLKListSorter<T>.GetAutoSort: Boolean;
 begin
   AcquireReadLock;
   try
-    Result := FAutoSort;  
+    Result := FAutoSort;
   finally
     ReleaseReadLock;
   end;
@@ -670,15 +763,30 @@ begin
   end;
 end;
 
+function TLKListSorter<T>.Sort: Boolean;
+begin
+  AcquireWriteLock;
+  try
+    Result := SortActual;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
 { TLKListSorterDefault<T> }
 
-function TLKListSorterDefault<T>.Add(const AItem: T; const AExistingCount: Integer): Boolean;
+function TLKListSorterDefault<T>.AddActual(const AItem: T; const AExistingCount: Integer): Boolean;
 begin
-  FArray.Items[AExistingCount] := AItem;
+  FArray[AExistingCount] := AItem;
   Result := True;
 end;
 
-function TLKListSorterDefault<T>.Sort: Boolean;
+function TLKListSorterDefault<T>.ContainsActual(const AItem: T; const AExistingCount: Integer): Boolean;
+begin
+
+end;
+
+function TLKListSorterDefault<T>.SortActual: Boolean;
 begin
   Result := False; // We aren't going to sort anything
 end;
@@ -729,20 +837,21 @@ begin
     FArray.Capacity := FArray.Capacity - Result;
 end;
 
-{ TLKList<T> }
+{ TLKListBase<T> }
 
-procedure TLKList<T>.Add(const AItem: T);
+procedure TLKListBase<T>.Add(const AItem: T);
 begin
   AcquireWriteLock;
   try
     CheckExpand(1);
-    AddActual(AItem);
+    if AddActual(AItem) then
+      Inc(FCount);
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.Add(const AList: ILKList<T>);
+procedure TLKListBase<T>.Add(const AList: ILKListBase<T>);
 var
   I: Integer;
 begin
@@ -750,19 +859,14 @@ begin
   try
     CheckExpand(AList.Count);    
     for I := 0 to AList.Count - 1 do
-      AddActual(AList[I]);
+      if AddActual(AList[I]) then
+        Inc(FCount);
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.AddActual(const AItem: T);
-begin
-  if FSorter.Add(AItem, FCount) then
-    Inc(FCount);
-end;
-
-procedure TLKList<T>.AddItems(const AItems: Array of T);
+procedure TLKListBase<T>.AddItems(const AItems: Array of T);
 var
   I: Integer;
 begin
@@ -770,38 +874,41 @@ begin
   try
     CheckExpand(Length(AItems));
     for I := Low(AItems) to High(AItems) do
-      AddActual(AItems[I]);    
+      if AddActual(AItems[I]) then
+        Inc(FCount);
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.CheckCompact(const AAmount: Integer);
+procedure TLKListBase<T>.CheckCompact(const AAmount: Integer);
 begin
   FCompactor.CheckCompact(AAmount, FCount);
 end;
 
-procedure TLKList<T>.CheckExpand(const AAmount: Integer);
+procedure TLKListBase<T>.CheckExpand(const AAmount: Integer);
 begin
   FExpander.CheckExpand(AAmount, FCount);
 end;
 
-procedure TLKList<T>.Clear;
+procedure TLKListBase<T>.Clear;
+var
+  LCount: Integer;
 begin
   AcquireWriteLock;
   try
-    ClearActual;  
+    ClearActual;
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.ClearActual;
+procedure TLKListBase<T>.ClearActual;
 begin
   DeleteRange(0, FCount);
 end;
 
-constructor TLKList<T>.Create(const ACapacity: Integer);
+constructor TLKListBase<T>.Create(const ACapacity: Integer);
 begin
   inherited Create;
   FArray := TLKArray<T>.Create;
@@ -809,69 +916,67 @@ begin
   FCount := 0;
   SetCompactor(CreateDefaultCompactor);
   SetExpander(CreateDefaultExpander);
-  SetSorter(CreateDefaultSorter);
 end;
 
-function TLKList<T>.CreateDefaultCompactor: ILKListCompactor<T>;
+function TLKListBase<T>.CreateDefaultCompactor: ILKListCompactor<T>;
 begin
   Result := TLKListCompactorDefault<T>.Create(FArray);
 end;
 
-function TLKList<T>.CreateDefaultExpander: ILKListExpander<T>;
+function TLKListBase<T>.CreateDefaultExpander: ILKListExpander<T>;
 begin
   Result := TLKListExpanderDefault<T>.Create(FArray); 
 end;
 
-function TLKList<T>.CreateDefaultSorter: ILKListSorter<T>;
-begin
-  Result := TLKListSorterDefault<T>.Create(FArray); // By default, Lists are Unsorted.
-end;
-
-procedure TLKList<T>.Delete(const AIndex: Integer);
+procedure TLKListBase<T>.Delete(const AIndex: Integer);
 begin
   AcquireWriteLock;
   try
-    DeleteActual(AIndex);
-    CheckCompact(1);
+    if DeleteActual(AIndex) then
+    begin
+      Dec(FCount);
+      CheckCompact(1);
+    end;
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.DeleteActual(const AIndex: Integer);
+function TLKListBase<T>.DeleteActual(const AIndex: Integer): Boolean;
 begin
   FArray.Finalize(AIndex, 1);
   if AIndex < FCount - 1 then
     FArray.Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all subsequent items left by 1
-  Dec(FCount); // Decrement the Count
+  Result := True;
 end;
 
-procedure TLKList<T>.DeleteRange(const AFirst, ACount: Integer);
+procedure TLKListBase<T>.DeleteRange(const AFirst, ACount: Integer);
 var
   I: Integer;
 begin
   AcquireWriteLock;
   try
     for I := AFirst + (ACount - 1) downto AFirst do
-      DeleteActual(I);
+      if DeleteActual(I) then
+        Dec(FCount);
     CheckCompact(ACount);
   finally
     ReleaseWriteLock;
   end;
 end;
 
-destructor TLKList<T>.Destroy;
+destructor TLKListBase<T>.Destroy;
 begin
   Clear;
   inherited;
 end;
 
-function TLKList<T>.GetCapacity: Integer;
+function TLKListBase<T>.GetCapacity: Integer;
 begin
   Result := FArray.Capacity;
 end;
 
-function TLKList<T>.GetCompactor: ILKListCompactor<T>;
+function TLKListBase<T>.GetCompactor: ILKListCompactor<T>;
 begin
   AcquireReadLock;
   try
@@ -881,7 +986,7 @@ begin
   end;
 end;
 
-function TLKList<T>.GetCount: Integer;
+function TLKListBase<T>.GetCount: Integer;
 begin
   AcquireReadLock;
   try
@@ -891,7 +996,7 @@ begin
   end;
 end;
 
-function TLKList<T>.GetExpander: ILKListExpander<T>;
+function TLKListBase<T>.GetExpander: ILKListExpander<T>;
 begin
   AcquireReadLock;
   try
@@ -901,44 +1006,34 @@ begin
   end;
 end;
 
-function TLKList<T>.GetItem(const AIndex: Integer): T;
+function TLKListBase<T>.GetItem(const AIndex: Integer): T;
 begin
   AcquireReadLock;
   try
-    Result := FArray.Items[AIndex];
+    Result := FArray[AIndex];
   finally
     ReleaseReadLock;
   end;
 end;
 
-function TLKList<T>.GetSorter: ILKListSorter<T>;
-begin
-  AcquireReadLock;
-  try
-    Result := FSorter;
-  finally
-    ReleaseReadLock;
-  end;
-end;
-
-procedure TLKList<T>.Insert(const AItem: T; const AIndex: Integer);
+procedure TLKListBase<T>.Insert(const AItem: T; const AIndex: Integer);
 begin
   CheckExpand(1);
 
 end;
 
-procedure TLKList<T>.InsertItems(const AItems: TArray<T>; const AIndex: Integer);
+procedure TLKListBase<T>.InsertItems(const AItems: TArray<T>; const AIndex: Integer);
 begin
   CheckExpand(Length(AItems));
 
 end;
 
-procedure TLKList<T>.SetCapacity(const ACapacity: Integer);
+procedure TLKListBase<T>.SetCapacity(const ACapacity: Integer);
 begin
   FArray.Capacity := ACapacity;
 end;
 
-procedure TLKList<T>.SetCompactor(const ACompactor: ILKListCompactor<T>);
+procedure TLKListBase<T>.SetCompactor(const ACompactor: ILKListCompactor<T>);
 begin
   if ACompactor = nil then
     raise ELKGenericCollectionsNilCompactor.Create('Cannot assign a Nil Compactor.');
@@ -950,7 +1045,7 @@ begin
   end;
 end;
 
-procedure TLKList<T>.SetExpander(const AExpander: ILKListExpander<T>);
+procedure TLKListBase<T>.SetExpander(const AExpander: ILKListExpander<T>);
 begin
   if AExpander = nil then
     raise ELKGenericCollectionsNilExpander.Create('Cannot assign a Nil Expander.');
@@ -962,26 +1057,22 @@ begin
   end;
 end;
 
-procedure TLKList<T>.SetItem(const AIndex: Integer; const AItem: T);
+procedure TLKListBase<T>.SetItem(const AIndex: Integer; const AItem: T);
 begin
   AcquireWriteLock;
   try
-    FArray.Items[AIndex] := AItem;
+    FArray[AIndex] := AItem;
   finally
     ReleaseWriteLock;
   end;
 end;
 
-procedure TLKList<T>.SetSorter(const ASorter: ILKListSorter<T>);
+{ TLKList<T> }
+
+function TLKList<T>.AddActual(const AItem: T): Boolean;
 begin
-  if ASorter = nil then
-    raise ELKGenericCollectionsNilSorter.Create('Cannot assign a Nil Sorter.');    
-  AcquireWriteLock;
-  try
-    FSorter := ASorter;
-  finally
-    ReleaseWriteLock;
-  end;
+  FArray[FCount] := AItem;
+  Result := True;
 end;
 
 { TLKObjectList<T> }
@@ -992,14 +1083,14 @@ begin
   FOwnsObjects := AOwnsObjects;
 end;
 
-procedure TLKObjectList<T>.DeleteActual(const AIndex: Integer);
+function TLKObjectList<T>.DeleteActual(const AIndex: Integer): Boolean;
 begin
   if FOwnsObjects then  
-    FArray.Items[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
-  inherited;
+    FArray[AIndex].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+  Result := inherited;
 end;
 
-function TLKObjectList<T>.GetOwnsObjects: Boolean;                               
+function TLKObjectList<T>.GetOwnsObjects: Boolean;
 begin
   AcquireReadLock;
   try
@@ -1010,6 +1101,72 @@ begin
 end;
 
 procedure TLKObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObjects := AOwnsObjects;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKSortedList<T> }
+
+constructor TLKSortedList<T>.Create(const ACapacity: Integer; const ASorter: ILKListSorter<T>);
+begin
+  inherited Create(ACapacity);
+  if ASorter <> nil then
+    FSorter := ASorter
+  else
+    FSorter := CreateDefaultSorter;
+end;
+
+function TLKSortedList<T>.CreateDefaultSorter: ILKListSorter<T>;
+begin
+  Result := TLKListSorterDefault<T>.Create(FArray);
+end;
+
+function TLKSortedList<T>.GetSorter: ILKListSorter<T>;
+begin
+  AcquireReadLock;
+  try
+    Result := FSorter;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKSortedList<T>.SetSorter(const ASorter: ILKListSorter<T>);
+begin
+  if ASorter = nil then
+    raise ELKGenericCollectionsNilSorter.Create('Sorter Cannot be Nil.');
+  AcquireWriteLock;
+  try
+    FSorter := ASorter;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKSortedObjectList<T> }
+
+constructor TLKSortedObjectList<T>.Create(const AOwnsObjects: Boolean; const ACapacity: Integer; const ASorter: ILKListSorter<T>);
+begin
+  inherited Create(ACapacity, ASorter);
+  FOwnsObjects := AOwnsObjects;
+end;
+
+function TLKSortedObjectList<T>.GetOwnsObjects: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObjects;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKSortedObjectList<T>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
   AcquireWriteLock;
   try
