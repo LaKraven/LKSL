@@ -72,7 +72,7 @@ type
     ILKList<T> = interface;
     ILKObjectList<T: class> = interface;
     ILKLookupList<TKey, TValue> = interface;
-    ILKObjectLookupList<TKey, TValue: class> = interface;
+    ILKLookupObjectList<TKey, TValue: class> = interface;
     ILKCircularList<T> = interface;
     ILKCircularObjectList<T: class> = interface;
     { Class Forward Declarations }
@@ -87,7 +87,7 @@ type
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
     TLKLookupList<TKey, TValue> = class;
-    TLKObjectLookupList<TKey, TValue: class> = class;
+    TLKLookupObjectList<TKey, TValue: class> = class;
     TLKCircularList<T> = class;
     TLKCircularObjectList<T: class> = class;
   {$ENDIF FPC}
@@ -224,7 +224,7 @@ type
   end;
 
   ///  <summary><c>Pairs a List of Objects with a Sorted List of Keys</c></summary>
-  ILKObjectLookupList<TKey, TValue: class> = interface(ILKLookupList<TKey, TValue>)
+  ILKLookupObjectList<TKey, TValue: class> = interface(ILKLookupList<TKey, TValue>)
   ['{FA05DF5C-9C9B-410D-9758-6DA91671961D}']
     // Getters
     function GetOwnsObjects: Boolean;
@@ -459,7 +459,7 @@ type
   end;
 
   ///  <summary><c>Pairs a List of Objects with a Sorted List of Keys</c></summary>
-  TLKObjectLookupList<TKey, TValue: class> = class(TLKLookupList<TKey, TValue>, ILKObjectLookupList<TKey, TValue>)
+  TLKLookupObjectList<TKey, TValue: class> = class(TLKLookupList<TKey, TValue>, ILKLookupObjectList<TKey, TValue>)
   private
     FOwnsObjects: Boolean;
     // Getters
@@ -1019,21 +1019,21 @@ begin
   end;
 end;
 
-{ TLKObjectLookupList<T> }
+{ TLKLookupObjectList<T> }
 
-constructor TLKObjectLookupList<TKey, TValue>.Create(const AOwnsObjects: Boolean; const ACapacity: Integer);
+constructor TLKLookupObjectList<TKey, TValue>.Create(const AOwnsObjects: Boolean; const ACapacity: Integer);
 begin
   inherited Create(ACapacity);
   FOwnsObjects := AOwnsObjects;
 end;
 
-destructor TLKObjectLookupList<TKey, TValue>.Destroy;
+destructor TLKLookupObjectList<TKey, TValue>.Destroy;
 begin
 
   inherited;
 end;
 
-function TLKObjectLookupList<TKey, TValue>.GetOwnsObjects: Boolean;
+function TLKLookupObjectList<TKey, TValue>.GetOwnsObjects: Boolean;
 begin
   AcquireReadLock;
   try
@@ -1043,7 +1043,7 @@ begin
   end;
 end;
 
-procedure TLKObjectLookupList<TKey, TValue>.SetOwnsObjects(const AOwnsObjects: Boolean);
+procedure TLKLookupObjectList<TKey, TValue>.SetOwnsObjects(const AOwnsObjects: Boolean);
 begin
   AcquireWriteLock;
   try

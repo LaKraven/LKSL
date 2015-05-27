@@ -18,12 +18,10 @@ type
   [TestFixture]
   TLKArrayTests = class(TObject)
   private
-    FArray: TLKArray<String>;
+    FArray: ILKArray<String>;
   public
     [Setup]
     procedure Setup;
-    [TearDown]
-    procedure TearDown;
     [Test]
     procedure ArrayIntegrity;
     [Test]
@@ -39,12 +37,10 @@ type
   [TestFixture]
   TLKListTests = class(TObject)
   private
-    FList: TLKList<String>;
+    FList: ILKList<String>;
   public
     [Setup]
     procedure Setup;
-    [TearDown]
-    procedure TearDown;
     [Test]
     procedure ListIntegrity;
     [Test]
@@ -62,12 +58,10 @@ type
   [TestFixture]
   TLKObjectListTests = class(TObject)
   private
-    FList: TLKObjectList<TFoo>;
+    FList: ILKObjectList<TFoo>;
   public
     [Setup]
     procedure Setup;
-    [TearDown]
-    procedure TearDown;
     [Test]
     procedure ListIntegrity;
     [Test]
@@ -83,14 +77,22 @@ type
   end;
 
   [TestFixture]
+  TLKLookupListTests = class(TObject)
+
+  end;
+
+  [TestFixture]
+  TLKLookupObjectListTests = class(TObject)
+
+  end;
+
+  [TestFixture]
   TLKCircularListTests = class(TObject)
   private
-    FCircularList: TLKCircularList<String>;
+    FCircularList: ILKCircularList<String>;
   public
     [Setup]
     procedure Setup;
-    [TearDown]
-    procedure TearDown;
     [Test]
     procedure ListIntegrity;
     [Test]
@@ -112,12 +114,10 @@ type
   [TestFixture]
   TLKCircularObjectListTests = class(TObject)
   private
-    FCircularObjectList: TLKCircularObjectList<TFoo>;
+    FCircularObjectList: ILKCircularObjectList<TFoo>;
   public
     [Setup]
     procedure Setup;
-    [TearDown]
-    procedure TearDown;
     [Test]
     procedure ListIntegrity;
     [Test]
@@ -193,11 +193,6 @@ begin
   FArray := TLKArray<String>.Create(10);
 end;
 
-procedure TLKArrayTests.TearDown;
-begin
-  FArray.Free;
-end;
-
 { TLKListTests }
 
 procedure TLKListTests.DeletingItems;
@@ -266,11 +261,6 @@ end;
 procedure TLKListTests.Setup;
 begin
   FList := TLKList<String>.Create;
-end;
-
-procedure TLKListTests.TearDown;
-begin
-  FList.Free;
 end;
 
 { TLKObjectListTests }
@@ -346,11 +336,6 @@ end;
 procedure TLKObjectListTests.Setup;
 begin
   FList := TLKObjectList<TFoo>.Create;
-end;
-
-procedure TLKObjectListTests.TearDown;
-begin
-  FList.Free;
 end;
 
 { TLKCircularListTests}
@@ -469,11 +454,6 @@ begin
   FCircularList := TLKCircularList<String>.Create(10);
 end;
 
-procedure TLKCircularListTests.TearDown;
-begin
-  FCircularList.Free;
-end;
-
 { TLKCircularObjectListTests }
 
 procedure TLKCircularObjectListTests.DeletingItems;
@@ -582,14 +562,11 @@ begin
   FCircularObjectList := TLKCircularObjectList<TFoo>.Create(10);
 end;
 
-procedure TLKCircularObjectListTests.TearDown;
-begin
-  FCircularObjectList.Free;
-end;
-
 initialization
   TDUnitX.RegisterTestFixture(TLKArrayTests, 'TLKArray Tests');
   TDUnitX.RegisterTestFixture(TLKListTests, 'TLKList Tests');
+  TDUnitX.RegisterTestFixture(TLKLookupListTests, 'TLKLookupList Tests');
+  TDUnitX.RegisterTestFixture(TLKLookupObjectListTests, 'TLKLookupObjectList Tests');
   TDUnitX.RegisterTestFixture(TLKCircularListTests, 'TLKCircularList Tests');
   TDUnitX.RegisterTestFixture(TLKCircularObjectListTests, 'TLKCircularObjectList Tests');
 end.
