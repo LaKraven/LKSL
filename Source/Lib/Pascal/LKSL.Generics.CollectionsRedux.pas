@@ -293,7 +293,7 @@ type
     procedure Move(const AFromIndex, AToIndex, ACount: Integer);
     // Properties
     property Capacity: Integer read GetCapacity write SetCapacity;
-    property Items[const AIndex: Integer]: T read GetItem write SetItem;
+    property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
   end;
 
   ///  <summary><c>An Object containing an ILKArray instance.</c></summary>
@@ -482,7 +482,7 @@ type
   private
     FCount: Integer;
     FIndex: Integer;
-    FItems: Array of T;
+    FItems: TLKArray<T>;
     // Getters
     function GetCapacity: Integer;
     function GetCount: Integer;
@@ -499,17 +499,12 @@ type
     ///  <summary><c>Manages the Movement and Finalization of Items within the Array.</c></summary>
     ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
     procedure DeleteActual(const AIndex: Integer);
-    ///  <summary><c>Finalized a specific element in the Array.</c></summary>
-    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
-    procedure Finalize(const AIndex, ACount: Integer);
-    ///  <summary><c>Shifts elements within the Array in a single operation.</c></summary>
-    ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
-    procedure Move(const AFromIndex, AToIndex, ACount: Integer);
     ///  <summary><c>Finalizes an Item at the given Index</c></summary>
     ///  <remarks><c>This method is NOT thread-safe! Call </c>AcquireWriteLock<c> before calling it!</c></remarks>
     procedure Remove(const AIndex: Integer); virtual;
   public
     constructor Create(const ACapacity: Integer); reintroduce;
+    destructor Destroy; override;
     // Management Methods
     function Add(const AItem: T): Integer; virtual;
     procedure AddItems(const AItems: Array of T); virtual;
@@ -1077,9 +1072,9 @@ begin
     Remove(FIndex);
   FItems[FIndex] := AItem;
   Inc(FIndex);
-  if FIndex > High(FItems) then
+  if FIndex > FItems.Capacity - 1 then
     FIndex := 0;
-  if FCount <= High(FItems) then
+  if FCount <= FItems.Capacity - 1 then
     Inc(FCount);
 end;
 
@@ -1108,17 +1103,17 @@ end;
 
 procedure TLKCircularList<T>.ClearActual;
 begin
-  Finalize(0, FCount - 1);
+  FItems.Finalize(0, FCount - 1);
   FCount := 0;
   FIndex := 0;
 end;
 
 constructor TLKCircularList<T>.Create(const ACapacity: Integer);
 begin
+  FItems := TLKArray<T>.Create(ACapacity);
   inherited Create;
   FCount := 0;
   FIndex := 0;
-  SetLength(FItems, ACapacity);
 end;
 
 procedure TLKCircularList<T>.Delete(const AIndex: Integer);
@@ -1133,25 +1128,25 @@ end;
 
 procedure TLKCircularList<T>.DeleteActual(const AIndex: Integer);
 begin
-  Finalize(AIndex, 1); // Finalize the item at the specified Index
-  if AIndex < Length(FItems) then
-    Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all subsequent items left by 1
+  FItems.Finalize(AIndex, 1); // Finalize the item at the specified Index
+  if AIndex < FItems.Capacity then
+    FItems.Move(AIndex + 1, AIndex, FCount - AIndex); // Shift all subsequent items left by 1
   Dec(FCount); // Decrement the Count
   if AIndex <= FIndex then
     Dec(FIndex); // Shift the Index back by 1
 end;
 
-procedure TLKCircularList<T>.Finalize(const AIndex, ACount: Integer);
+destructor TLKCircularList<T>.Destroy;
 begin
-  System.Finalize(FItems[AIndex], ACount);
-  System.FillChar(FItems[AIndex], ACount * SizeOf(T), 0);
+  FItems.Free;
+  inherited;
 end;
 
 function TLKCircularList<T>.GetCapacity: Integer;
 begin
   AcquireReadLock;
   try
-    Result := Length(FItems);
+    Result := FItems.Capacity;
   finally
     ReleaseReadLock;
   end;
@@ -1179,14 +1174,9 @@ begin
   end;
 end;
 
-procedure TLKCircularList<T>.Move(const AFromIndex, AToIndex, ACount: Integer);
-begin
-  System.Move(FItems[AFromIndex], FItems[AToIndex], ACount * SizeOf(T));
-end;
-
 procedure TLKCircularList<T>.Remove(const AIndex: Integer);
 begin
-  Finalize(AIndex, 1);
+  FItems.Finalize(AIndex, 1);
 end;
 
 procedure TLKCircularList<T>.SetItem(const AIndex: Integer; const AItem: T);
