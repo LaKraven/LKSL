@@ -78,6 +78,8 @@ type
     [TestCase('In Range at 9', '9,True')]
     [TestCase('Out Of Range at 10', '10,False')]
     procedure ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
+    [Test]
+    procedure DeletingItems;
   end;
 
   [TestFixture]
@@ -217,6 +219,8 @@ var
 begin
   FList.AddItems(Items);
   FList.Delete(5);
+  Assert.IsTrue(FList.Count = 9, Format('Item Count Mismatch. Expected 9, got %d', [FList.Count]));
+  Assert.IsTrue(FList.Capacity = 9, Format('Item Capacity Mismatch. Expected 9, got %d', [FList.Count]));
 
   for I := 0 to FList.Count - 1 do
     if I < 5 then
@@ -270,6 +274,37 @@ begin
 end;
 
 { TLKObjectListTests }
+
+procedure TLKObjectListTests.DeletingItems;
+const
+  ITEMS: Array[0..9] of String = (
+                                  'Bob',
+                                  'Terry',
+                                  'Andy',
+                                  'Rick',
+                                  'Sarah',
+                                  'Ellen',
+                                  'Hugh',
+                                  'Jack',
+                                  'Marie',
+                                  'Ninette'
+                                 );
+var
+  I: Integer;
+begin
+  for I := Low(ITEMS) to High(ITEMS) do
+    FList.Add(TFoo.Create(ITEMS[I]));
+  FList.Delete(5);
+
+  Assert.IsTrue(FList.Count = 9, Format('Item Count Mismatch. Expected 9, got %d', [FList.Count]));
+  Assert.IsTrue(FList.Capacity = 9, Format('Item Capacity Mismatch. Expected 9, got %d', [FList.Count]));
+
+  for I := 0 to FList.Count - 1 do
+    if I < 5 then
+      Assert.IsTrue(FList.Items[I].Foo = ITEMS[I], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I].Foo]))
+    else
+      Assert.IsTrue(FList.Items[I].Foo = ITEMS[I + 1], Format('Item %d Expected "%s" got "%s"', [I, ITEMS[I], FList.Items[I].Foo]))
+end;
 
 procedure TLKObjectListTests.ItemInRange(const AIndex: Integer; const AExpectInRange: Boolean);
 const
