@@ -555,7 +555,7 @@ type
   private
     FCount: Integer;
     FIndex: Integer;
-    FItems: TLKArray<T>;
+    FItems: ILKArray<T>;
     // Getters
     function GetCapacity: Integer;
     function GetCount: Integer;
@@ -602,7 +602,6 @@ type
     procedure Remove(const AIndex: Integer); override;
   public
     constructor Create(const ACapacity: Integer; const AOwnsObjects: Boolean = True); reintroduce;
-    destructor Destroy; override;
     // Management Methods
     procedure Clear; override;
     procedure Delete(const AIndex: Integer); override;
@@ -1295,7 +1294,7 @@ end;
 
 destructor TLKCircularList<T>.Destroy;
 begin
-  FItems.Free;
+  Clear;
   inherited;
 end;
 
@@ -1340,8 +1339,7 @@ procedure TLKCircularList<T>.SetItem(const AIndex: Integer; const AItem: T);
 begin
   AcquireWriteLock;
   try
-    // TODO -oSJS -cGenerics Redux: Index Validation here!
-    FItems[AIndex] := AItem;
+    FItems[AIndex] := AItem; // Index Validation is now performed by TLKArray<T>.GetItem
   finally
     ReleaseWriteLock;
   end;
@@ -1382,18 +1380,6 @@ begin
   finally
     ReleaseWriteLock;
   end;
-end;
-
-destructor TLKCircularObjectList<T>.Destroy;
-var
-  I: Integer;
-begin
-  if FOwnsObjects then
-  begin
-    for I := 0 to FCount - 1 do
-      FItems[I].{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
-  end;
-  inherited;
 end;
 
 function TLKCircularObjectList<T>.GetOwnsObjects: Boolean;
