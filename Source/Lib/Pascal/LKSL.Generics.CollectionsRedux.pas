@@ -67,8 +67,8 @@ type
     ILKArray<T> = interface;
     ILKArrayContainer<T> = interface;
     ILKListSorter<T> = interface;
-    ILKListExpander<T> = interface;
-    ILKListCompactor<T> = interface;
+    ILKListExpander = interface;
+    ILKListCompactor = interface;
     ILKListBase<T> = interface;
     ILKList<T> = interface;
     ILKObjectList<T: class> = interface;
@@ -83,10 +83,11 @@ type
     TLKArrayContainer<T> = class;
     TLKListSorter<T> = class;
     TLKListSorterDefault<T> = class;
-    TLKListExpander<T> = class;
-    TLKListExpanderDefault<T> = class;
-    TLKListCompactor<T> = class;
-    TLKListCompactorDefault<T> = class;
+    TLKListExpander = class;
+    TLKListExpanderDefault = class;
+    TLKListExpanderGeometric = class;
+    TLKListCompactor = class;
+    TLKListCompactorDefault = class;
     TLKListBase<T> = class;
     TLKList<T> = class;
     TLKObjectList<T: class> = class;
@@ -159,18 +160,31 @@ type
 
   ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
-  ILKListExpander<T> = interface(ILKInterface)
+  ILKListExpander = interface(ILKInterface)
   ['{9B4D9541-96E4-4767-81A7-5565AC24F4A9}']
     // Management Methods
-    function CheckExpand(const AAmount: Integer; const AExistingCount: Integer): Integer;
+    function CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer;
+  end;
+
+  ILKListExpanderGeometric = interface(ILKListExpander)
+  ['{670B52D1-F655-43CB-84F0-243E52D4E54F}']
+    // Getters
+    function GetCapacityMultiplier: Single;
+    function GetCapacityThreshold: Integer;
+    // Setters
+    procedure SetCapacityMultiplier(const AMultiplier: Single);
+    procedure SetCapacityThreshold(const AThreshold: Integer);
+    // Properties
+    property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
+    property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
   end;
 
   ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
-  ILKListCompactor<T> = interface(ILKInterface)
+  ILKListCompactor = interface(ILKInterface)
   ['{B72ECE0C-F629-4002-A84A-2F7FAEC122E0}']
     // Management Methods
-    function CheckCompact(const AAmount: Integer; const AExistingCount: Integer): Integer;
+    function CheckCompact(const ACapacity, ACurrentCount, AVacating: Integer): Integer;
   end;
 
   ///  <summary><c>Base Interface for Generic List Types.</c></summary>
@@ -182,14 +196,14 @@ type
   ['{FD2E0742-9079-4E03-BDA5-A39D5FAC80A0}']
     // Getters
     function GetCapacity: Integer;
-    function GetCompactor: ILKListCompactor<T>;
+    function GetCompactor: ILKListCompactor;
     function GetCount: Integer;
-    function GetExpander: ILKListExpander<T>;
+    function GetExpander: ILKListExpander;
     function GetItem(const AIndex: Integer): T;
     // Setters
     procedure SetCapacity(const ACapacity: Integer);
-    procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
-    procedure SetExpander(const AExpander: ILKListExpander<T>);
+    procedure SetCompactor(const ACompactor: ILKListCompactor);
+    procedure SetExpander(const AExpander: ILKListExpander);
     procedure SetItem(const AIndex: Integer; const AItem: T);
     // Management Methods
     procedure Add(const AItem: T); overload;
@@ -202,9 +216,9 @@ type
     procedure InsertItems(const AItems: TArray<T>; const AIndex: Integer);
     // Properties
     property Capacity: Integer read GetCapacity write SetCapacity;
-    property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
+    property Compactor: ILKListCompactor read GetCompactor write SetCompactor;
     property Count: Integer read GetCount;
-    property Expander: ILKListExpander<T> read GetExpander write SetExpander;
+    property Expander: ILKListExpander read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
   end;
 
@@ -376,36 +390,53 @@ type
 
   ///  <summary><c>An Allocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to grow an Array based on its current Capacity and the number of Items we're looking to Add/Insert.</c></remarks>
-  TLKListExpander<T> = class abstract(TLKArrayContainer<T>, ILKListExpander<T>)
-  protected
+  TLKListExpander = class abstract(TLKInterfacedObject, ILKListExpander)
+  public
     ///  <summary><c>Override this to implement the actual Allocation Algorithm</c></summary>
     ///  <remarks><c>Must return the amount by which the Array has been Expanded.</c></remarks>
-    function CheckExpandActual(const AAmount: Integer; const AExistingCount: Integer): Integer; virtual; abstract;
-  public
-    function CheckExpand(const AAmount: Integer; const AExistingCount: Integer): Integer; 
+    function CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer; virtual; abstract;
   end;
 
   ///  <summary><c>The Default Allocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>By default, the Array will grow by 1 each time it becomes full</c></remarks>
-  TLKListExpanderDefault<T> = class(TLKListExpander<T>)
-  protected
-    function CheckExpandActual(const AAmount: Integer; const AExistingCount: Integer): Integer; override;
+  TLKListExpanderDefault = class(TLKListExpander)
+  public
+    function CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer; override;
+  end;
+
+  ///  <summary><c>A Geometric Allocation Algorithm for Lists.</c></summary>
+  ///  <remarks><c>When the number of Vacant Slots falls below the Threshold, the number of Vacant Slots increases by the value of the current Capacity multiplied by the Mulitplier.</c></remarks>
+  TLKListExpanderGeometric = class(TLKListExpander, ILKListExpanderGeometric)
+  private
+    FMultiplier: Single;
+    FThreshold: Integer;
+    // Getters
+    function GetCapacityMultiplier: Single;
+    function GetCapacityThreshold: Integer;
+    // Setters
+    procedure SetCapacityMultiplier(const AMultiplier: Single);
+    procedure SetCapacityThreshold(const AThreshold: Integer);
+  public
+    function CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer; override;
+  public
+
+    // Properties
+    property CapacityMultiplier: Single read GetCapacityMultiplier write SetCapacityMultiplier;
+    property CapacityThreshold: Integer read GetCapacityThreshold write SetCapacityThreshold;
   end;
 
   ///  <summary><c>A Deallocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>Dictates how to shrink an Array based on its current Capacity and the number of Items we're looking to Delete.</c></remarks>
-  TLKListCompactor<T> = class abstract(TLKArrayContainer<T>, ILKListCompactor<T>)
-  protected
-    function CheckCompactActual(const AAmount: Integer; const AExistingCount: Integer): Integer; virtual; abstract;
+  TLKListCompactor = class abstract(TLKInterfacedObject, ILKListCompactor)
   public
-    function CheckCompact(const AAmount: Integer; const AExistingCount: Integer): Integer;
+    function CheckCompact(const ACapacity, ACurrentCount, AVacating: Integer): Integer; virtual; abstract;
   end;
 
   ///  <summary><c>The Default Deallocation Algorithm for Lists.</c></summary>
   ///  <remarks><c>By default, the Array will shrink by 1 each time an Item is removed.</c></remarks>
-  TLKListCompactorDefault<T> = class(TLKListCompactor<T>)
-  protected
-    function CheckCompactActual(const AAmount: Integer; const AExistingCount: Integer): Integer; override;  
+  TLKListCompactorDefault = class(TLKListCompactor)
+  public
+    function CheckCompact(const ACapacity, ACurrentCount, AVacating: Integer): Integer; override;
   end;
 
   ///  <summary><c>Absolute Base Type for Generic Lists.</c></summary>
@@ -418,18 +449,18 @@ type
   private
     FArray: ILKArray<T>;
     FCount: Integer;
-    FCompactor: ILKListCompactor<T>;
-    FExpander: ILKListExpander<T>;
+    FCompactor: ILKListCompactor;
+    FExpander: ILKListExpander;
     // Getters
     function GetCapacity: Integer;
-    function GetCompactor: ILKListCompactor<T>;
+    function GetCompactor: ILKListCompactor;
     function GetCount: Integer;
-    function GetExpander: ILKListExpander<T>;
+    function GetExpander: ILKListExpander;
     function GetItem(const AIndex: Integer): T; inline;
     // Setters
     procedure SetCapacity(const ACapacity: Integer);
-    procedure SetCompactor(const ACompactor: ILKListCompactor<T>);
-    procedure SetExpander(const AExpander: ILKListExpander<T>);
+    procedure SetCompactor(const ACompactor: ILKListCompactor);
+    procedure SetExpander(const AExpander: ILKListExpander);
     procedure SetItem(const AIndex: Integer; const AItem: T); inline;
   protected
     ///  <summary><c>Override if you need something special to occur before and/or after an Item has been added.</c></summary>
@@ -442,10 +473,10 @@ type
     procedure ClearActual; virtual;
     ///  <summary><c>Override if you want to use a custom Compactor</c></summary>
     ///  <remarks><c>By default, the List will be Compacted by One for each Removed Item (Default = </c>nil<c>).</c></remarks>
-    function CreateDefaultCompactor: ILKListCompactor<T>; virtual;
+    function CreateDefaultCompactor: ILKListCompactor; virtual;
     ///  <summary><c>Override if you want to use a custom Expander</c></summary>
     ///  <remarks><c>(Default = </c>TLKListExpanderDefault</remarks>
-    function CreateDefaultExpander: ILKListExpander<T>; virtual;
+    function CreateDefaultExpander: ILKListExpander; virtual;
     ///  <summary><c>Override if you require some custom behavior when Deleting an Item.</c></summary>
     function DeleteActual(const AIndex: Integer): Boolean; virtual;
   public
@@ -463,8 +494,8 @@ type
     // Properties
     property Capacity: Integer read GetCapacity write SetCapacity;
     property Count: Integer read GetCount;
-    property Compactor: ILKListCompactor<T> read GetCompactor write SetCompactor;
-    property Expander: ILKListExpander<T> read GetExpander write SetExpander;
+    property Compactor: ILKListCompactor read GetCompactor write SetCompactor;
+    property Expander: ILKListExpander read GetExpander write SetExpander;
     property Items[const AIndex: Integer]: T read GetItem write SetItem; default;
   end;
 
@@ -790,50 +821,48 @@ begin
   Result := False; // We aren't going to sort anything
 end;
 
-{ TLKListExpander<T> }
+{ TLKListExpanderDefault }
 
-function TLKListExpander<T>.CheckExpand(const AAmount, AExistingCount: Integer): Integer;
+function TLKListExpanderDefault.CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer;
 begin
-  FArray.AcquireWriteLock;
-  try
-    Result := CheckExpandActual(AAmount, AExistingCount);  
-  finally
-    FArray.ReleaseWriteLock;
-  end;
+  if ACurrentCount + AAdditionalRequired > ACapacity then
+    Result := (ACapacity - ACurrentCount) + AAdditionalRequired
+  else
+    Result := 0;
 end;
 
-{ TLKListExpanderDefault<T> }
+{ TLKListExpanderGeometric }
 
-function TLKListExpanderDefault<T>.CheckExpandActual(const AAmount, AExistingCount: Integer): Integer;
+function TLKListExpanderGeometric.CheckExpand(const ACapacity, ACurrentCount, AAdditionalRequired: Integer): Integer;
 begin
-  Result := (AAmount - (FArray.Capacity - AExistingCount));
-  if Result > 0 then
-    FArray.Capacity := FArray.Capacity + Result;
+
 end;
 
-{ TLKListCompactor<T> }
-
-function TLKListCompactor<T>.CheckCompact(const AAmount, AExistingCount: Integer): Integer;
+function TLKListExpanderGeometric.GetCapacityMultiplier: Single;
 begin
-  FArray.AcquireWriteLock;
-  try
-    Result := CheckCompactActual(AAmount, AExistingCount);
-  finally
-    FArray.ReleaseWriteLock;
-  end;
+
 end;
 
-{ TLKListCompactorDefault<T> }
-
-function TLKListCompactorDefault<T>.CheckCompactActual(const AAmount, AExistingCount: Integer): Integer;
+function TLKListExpanderGeometric.GetCapacityThreshold: Integer;
 begin
-  Result := FArray.Capacity - AExistingCount;
-  if Result <= AAmount then
-  begin
-    FArray.Capacity := FArray.Capacity - AAmount;
-    Result := AAmount;
-  end else
-    FArray.Capacity := FArray.Capacity - Result;
+
+end;
+
+procedure TLKListExpanderGeometric.SetCapacityMultiplier(const AMultiplier: Single);
+begin
+
+end;
+
+procedure TLKListExpanderGeometric.SetCapacityThreshold(const AThreshold: Integer);
+begin
+
+end;
+
+{ TLKListCompactorDefault }
+
+function TLKListCompactorDefault.CheckCompact(const ACapacity, ACurrentCount, AVacating: Integer): Integer;
+begin
+  Result := AVacating;
 end;
 
 { TLKListBase<T> }
@@ -881,13 +910,21 @@ begin
 end;
 
 procedure TLKListBase<T>.CheckCompact(const AAmount: Integer);
+var
+  LShrinkBy: Integer;
 begin
-  FCompactor.CheckCompact(AAmount, FCount);
+  LShrinkBy := FCompactor.CheckCompact(FArray.Capacity, FCount, AAmount);
+  if LShrinkBy > 0 then
+    FArray.Capacity := FArray.Capacity - LShrinkBy;
 end;
 
 procedure TLKListBase<T>.CheckExpand(const AAmount: Integer);
+var
+  LNewCapacity: Integer;
 begin
-  FExpander.CheckExpand(AAmount, FCount);
+  LNewCapacity := FExpander.CheckExpand(FArray.Capacity, FCount, AAmount);
+  if LNewCapacity > 0 then
+    FArray.Capacity := FArray.Capacity + LNewCapacity;
 end;
 
 procedure TLKListBase<T>.Clear;
@@ -917,14 +954,14 @@ begin
   SetExpander(CreateDefaultExpander);
 end;
 
-function TLKListBase<T>.CreateDefaultCompactor: ILKListCompactor<T>;
+function TLKListBase<T>.CreateDefaultCompactor: ILKListCompactor;
 begin
-  Result := TLKListCompactorDefault<T>.Create(FArray);
+  Result := TLKListCompactorDefault.Create;
 end;
 
-function TLKListBase<T>.CreateDefaultExpander: ILKListExpander<T>;
+function TLKListBase<T>.CreateDefaultExpander: ILKListExpander;
 begin
-  Result := TLKListExpanderDefault<T>.Create(FArray); 
+  Result := TLKListExpanderDefault.Create;
 end;
 
 procedure TLKListBase<T>.Delete(const AIndex: Integer);
@@ -975,7 +1012,7 @@ begin
   Result := FArray.Capacity;
 end;
 
-function TLKListBase<T>.GetCompactor: ILKListCompactor<T>;
+function TLKListBase<T>.GetCompactor: ILKListCompactor;
 begin
   AcquireReadLock;
   try
@@ -995,7 +1032,7 @@ begin
   end;
 end;
 
-function TLKListBase<T>.GetExpander: ILKListExpander<T>;
+function TLKListBase<T>.GetExpander: ILKListExpander;
 begin
   AcquireReadLock;
   try
@@ -1032,7 +1069,7 @@ begin
   FArray.Capacity := ACapacity;
 end;
 
-procedure TLKListBase<T>.SetCompactor(const ACompactor: ILKListCompactor<T>);
+procedure TLKListBase<T>.SetCompactor(const ACompactor: ILKListCompactor);
 begin
   if ACompactor = nil then
     raise ELKGenericCollectionsNilCompactor.Create('Cannot assign a Nil Compactor.');
@@ -1044,7 +1081,7 @@ begin
   end;
 end;
 
-procedure TLKListBase<T>.SetExpander(const AExpander: ILKListExpander<T>);
+procedure TLKListBase<T>.SetExpander(const AExpander: ILKListExpander);
 begin
   if AExpander = nil then
     raise ELKGenericCollectionsNilExpander.Create('Cannot assign a Nil Expander.');
