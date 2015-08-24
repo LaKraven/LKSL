@@ -248,20 +248,29 @@ type
     FEventThread: TLKEventThread;
     ///  <summary><c>The maximum Age (time from Dispatch) of a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance before this Listener loses interest in it.</c></summary>
     FExpireAfter: LKFloat;
+    ///  <summary><c>The Reference Time at which the last Event was processed.</c></summary>
+    FLastProcessed: LKFloat;
+    ///  <summary><c>Defines whether this Listener is only interested in Events that are NEWER than the last one processed</c></summary>
+    FNewestOnly: Boolean;
     ///  <summary><c>Dictates whether this Listener should be automatically Registered after Construction.</c></summary>
     FRegistrationMode: TLKEventRegistrationMode;
     ///  <summary><c></c></summary>
     FTypeRestriction: TLKEventTypeRestriction;
 
     function GetExpireAfter: LKFloat;
+    function GetLastProcessed: LKFloat;
+    function GetNewestOnly: Boolean;
     function GetTypeRestriction: TLKEventTypeRestriction;
 
     procedure SetExpireAfter(const AExpireAfter: LKFloat);
+    procedure SetNewestOnly(const ANewestOnly: Boolean);
     procedure SetTypeRestriction(const ATypeRestriction: TLKEventTypeRestriction);
   protected
     ///  <summary><c>Override if you want to make your Event Listener ignore by default any </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instance dispatched further back in time than the given value.</c></summary>
     ///  <remarks><c>Default = 0.00</c></remarks>
     function GetDefaultExpireAfter: LKFloat; virtual;
+    ///  <summary><c>Override if you want to make your Event Listener discard any Event older than the last one processed.</c></summary>
+    function GetDefaultNewestOnly: Boolean; virtual;
     ///  <summary><c>Override if you want to make your Event Listener ignore Descendants of the defined Event Type.</c></summary>
     ///  <remarks><c>Default = </c>etrAllowDescendants</remarks>
     function GetDefaultTypeRestriction: TLKEventTypeRestriction; virtual;
@@ -270,7 +279,7 @@ type
     ///  <returns><c>Default = </c>True</returns>
     function GetEventRelevant(const AEvent: TLKEvent): Boolean; virtual;
     ///  <summary><c>You MUST override "DoEvent" to define what action is to take place.</c></summary>
-    procedure DoEvent(const AEvent: TLKEvent); virtual; abstract;
+    procedure DoEvent(const AEvent: TLKEvent); virtual;
   public
     constructor Create(const AEventThread: TLKEventThread; const ARegistrationMode: TLKEventRegistrationMode = ermAutomatic); reintroduce;
 
@@ -284,7 +293,17 @@ type
     ///  <summary><c>Unregisters the Listener with its parent </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> instance.</c></summary>
     procedure Unregister;
 
+    ///  <summary><c>Dictates how old an Event can be before the Listener is no longer interested in processing it.</c></summary>
+    ///  <remarks>
+    ///    <para>0<c> = Never</c></para>
+    ///    <para><c>Default = </c>0</para>
+    ///  </remarks>
     property ExpireAfter: LKFloat read GetExpireAfter write SetExpireAfter;
+    ///  <summary><c>The Reference Time at which the last Event was Processed.</c></summary>
+    property LastProcessed: LKFloat read GetLastProcessed;
+    ///  <summary><c>Dictates whether this Listener only cares about Events newer than the last one it Processed.</c></summary>
+    property NewestOnly: Boolean read GetNewestOnly write SetNewestOnly;
+    ///  <summary><c>Dictates whether the Listener is interested in DESCENDANTS on the nominated Event Type</c></summary>
     property TypeRestriction: TLKEventTypeRestriction read GetTypeRestriction write SetTypeRestriction;
   end;
 
@@ -378,6 +397,8 @@ type
   private
     FEventQueue: TLKEventList;
     FEventStack: TLKEventList;
+    FMaxEventCount: Int64;
+    FMaxEventSignal: TEvent;
     FPauseAt: LKFloat;
     FPerformance: TLKPerformanceCounter;
     FWorking: Boolean;
@@ -388,13 +409,16 @@ type
     function GetEventRate: LKFloat;
     function GetEventRateAverage: LKFloat;
     function GetEventRateAverageOver: Cardinal;
+    function GetMaxEventCount: Int64;
     function GetWorking: Boolean;
 
-    procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
-    procedure SetWorking(const AWorking: Boolean);
     procedure ProcessQueue(const ADelta, AStartTime: LKFloat);
     procedure ProcessStack(const ADelta, AStartTime: LKFloat);
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
+
+    procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
+    procedure SetMaxEventCount(const AMaxEventCount: Int64);
+    procedure SetWorking(const AWorking: Boolean);
   protected
     { TLKThread overrides }
     function GetInitialThreadState: TLKThreadState; override;
@@ -421,6 +445,10 @@ type
     ///  <summary><c>Should this Thread self-Wake when a new Event is placed into the Stack or Queue?</c></summary>
     ///  <remarks><c>Default =</c> True</remarks>
     function GetWakeOnEvent: Boolean; virtual;
+
+    { Publishables }
+    ///  <summary><c>Make Public or Published only if you want to be able to override the Default Limit.</c></summary>
+    property MaxEventCount: Int64 read GetMaxEventCount write SetMaxEventCount;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -583,6 +611,17 @@ type
 const
   LKSL_EVENTENGINE_VERSION: Double = 4.00;
   LKSL_EVENTENGINE_DEFAULT_TARGETS: TLKEventTargets = [edThreads, edPools, edRecorders, edRemotes, edUknown];
+
+var
+  {$IFDEF CPUX86}
+    ///  <summary><c>Override value if you want a specific Event Count Limit.</c></summary>
+    ///  <remarks><c>32bit Default = </c>536,870,912</remarks>
+    LKSLEventEngineMaxEventCount: Int64 = High(Integer) div 4;
+  {$ELSE}
+    ///  <summary><c>Override value if you want a specific Event Count Limit.</c></summary>
+    ///  <remarks><c>64bit Default = </c>1,073,741,824</remarks>
+    LKSLEventEngineMaxEventCount: Int64 = High(Integer) div 2;
+  {$ENDIF CPUX86}
 
 implementation
 
@@ -887,6 +926,8 @@ constructor TLKEventListener.Create(const AEventThread: TLKEventThread; const AR
 begin
   inherited Create;
   FExpireAfter := GetDefaultExpireAfter;
+  FLastProcessed := 0;
+  FNewestOnly := GetDefaultNewestOnly;
   FTypeRestriction := GetDefaultTypeRestriction;
   FEventThread := AEventThread;
   if FEventThread = nil then
@@ -894,9 +935,19 @@ begin
   FRegistrationMode := ARegistrationMode;
 end;
 
+procedure TLKEventListener.DoEvent(const AEvent: TLKEvent);
+begin
+  FLastProcessed := AEvent.DispatchTime;
+end;
+
 function TLKEventListener.GetDefaultExpireAfter: LKFloat;
 begin
   Result := 0;
+end;
+
+function TLKEventListener.GetDefaultNewestOnly: Boolean;
+begin
+  Result := False;
 end;
 
 function TLKEventListener.GetDefaultTypeRestriction: TLKEventTypeRestriction;
@@ -914,6 +965,26 @@ begin
   AcquireReadLock;
   try
     Result := FExpireAfter;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKEventListener.GetLastProcessed: LKFloat;
+begin
+  AcquireReadLock;
+  try
+    Result := FLastProcessed;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+function TLKEventListener.GetNewestOnly: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FNewestOnly;
   finally
     ReleaseReadLock;
   end;
@@ -939,6 +1010,16 @@ begin
   AcquireWriteLock;
   try
     FExpireAfter := AExpireAfter;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKEventListener.SetNewestOnly(const ANewestOnly: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FNewestOnly := ANewestOnly;
   finally
     ReleaseWriteLock;
   end;
@@ -981,6 +1062,7 @@ end;
 {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 procedure TLKEventListener<T>.DoEvent(const AEvent: TLKEvent);
 begin
+  inherited DoEvent(AEvent);
   if Assigned(FOnEventUnbound) then
     FOnEventUnbound(AEvent)
   else if Assigned(FOnEventOfObject) then
@@ -1170,15 +1252,19 @@ begin
   FPerformance := TLKPerformanceCounter.Create(GetDefaultEventRateAverageOver);
   FEventQueue := TLKEventList.Create(False);
   FEventStack := TLKEventList.Create(False);
+  FMaxEventSignal := TEvent.Create(nil, True, False, '');
+  FMaxEventCount := 0;
 end;
 
 destructor TLKEventContainer.Destroy;
 begin
+  FMaxEventSignal.SetEvent;
   FEventQueue.OwnsObjects := True;
   FEventStack.OwnsObjects := True;
   FEventQueue.Free;
   FEventStack.Free;
   FPerformance.Free;
+  FMaxEventSignal.Free;
   inherited;
 end;
 
@@ -1226,6 +1312,16 @@ end;
 function TLKEventContainer.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
+end;
+
+function TLKEventContainer.GetMaxEventCount: Int64;
+begin
+  Lock;
+  try
+    Result := FMaxEventCount;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKEventContainer.GetPauseOnNoEvent: Boolean;
@@ -1312,9 +1408,20 @@ begin
 end;
 
 procedure TLKEventContainer.QueueEvent(const AEvent: TLKEvent);
+var
+  LEventLimit: Int64;
 begin
+  if Terminated then
+    Exit;
+  LEventLimit := GetMaxEventCount;
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.WaitFor(INFINITE);
   AEvent.Ref; // Add a Reference to the Event
   FEventQueue.Add(AEvent);
+
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.ResetEvent;
+
   if GetWakeOnEvent then
   begin
     Wake; // Wake up this Thread
@@ -1328,6 +1435,16 @@ begin
   FPerformance.AverageOver := AEventRateAverageOver;
 end;
 
+procedure TLKEventContainer.SetMaxEventCount(const AMaxEventCount: Int64);
+begin
+  Lock;
+  try
+    FMaxEventCount := AMaxEventCount;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKEventContainer.SetWorking(const AWorking: Boolean);
 begin
   Lock;
@@ -1339,9 +1456,21 @@ begin
 end;
 
 procedure TLKEventContainer.StackEvent(const AEvent: TLKEvent);
+var
+  LEventLimit: Int64;
 begin
+  if Terminated then
+    Exit;
+  LEventLimit := GetMaxEventCount;
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.WaitFor(INFINITE);
+
   AEvent.Ref; // Add a Reference to the Event
   FEventStack.Add(AEvent);
+
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.ResetEvent;
+
   if GetWakeOnEvent then
   begin
     Wake; // Wake up this Thread
@@ -1530,6 +1659,7 @@ begin
         if (((FListeners[I].GetTypeRestriction = etrAllowDescendants) and (AEvent is FListeners[I].GetEventClass)) or
             ((FListeners[I].GetTypeRestriction = etrDefinedTypeOnly) and (AEvent.ClassType = FListeners[I].GetEventClass))) and
            ((FListeners[I].ExpireAfter = 0) or (GetReferenceTime < (AEvent.DispatchTime + AEvent.ExpiresAfter))) and
+           (((FListeners[I].FNewestOnly) and (AEvent.DispatchTime > FListeners[I].FLastProcessed)) or (not FListeners[I].FNewestOnly)) and
            (FListeners[I].GetEventRelevant(AEvent)) then // We want to make sure that the Event is relevant to the Listener
           FListeners[I].DoEvent(AEvent);
   finally
