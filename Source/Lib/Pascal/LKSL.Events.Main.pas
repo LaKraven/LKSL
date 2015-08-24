@@ -397,6 +397,8 @@ type
   private
     FEventQueue: TLKEventList;
     FEventStack: TLKEventList;
+    FMaxEventCount: Int64;
+    FMaxEventSignal: TEvent;
     FPauseAt: LKFloat;
     FPerformance: TLKPerformanceCounter;
     FWorking: Boolean;
@@ -407,13 +409,16 @@ type
     function GetEventRate: LKFloat;
     function GetEventRateAverage: LKFloat;
     function GetEventRateAverageOver: Cardinal;
+    function GetMaxEventCount: Int64;
     function GetWorking: Boolean;
 
-    procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
-    procedure SetWorking(const AWorking: Boolean);
     procedure ProcessQueue(const ADelta, AStartTime: LKFloat);
     procedure ProcessStack(const ADelta, AStartTime: LKFloat);
     procedure ProcessEvents(const ADelta, AStartTime: LKFloat);
+
+    procedure SetEventRateAverageOver(const AEventRateAverageOver: Cardinal);
+    procedure SetMaxEventCount(const AMaxEventCount: Int64);
+    procedure SetWorking(const AWorking: Boolean);
   protected
     { TLKThread overrides }
     function GetInitialThreadState: TLKThreadState; override;
@@ -440,6 +445,10 @@ type
     ///  <summary><c>Should this Thread self-Wake when a new Event is placed into the Stack or Queue?</c></summary>
     ///  <remarks><c>Default =</c> True</remarks>
     function GetWakeOnEvent: Boolean; virtual;
+
+    { Publishables }
+    ///  <summary><c>Make Public or Published only if you want to be able to override the Default Limit.</c></summary>
+    property MaxEventCount: Int64 read GetMaxEventCount write SetMaxEventCount;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -602,6 +611,17 @@ type
 const
   LKSL_EVENTENGINE_VERSION: Double = 4.00;
   LKSL_EVENTENGINE_DEFAULT_TARGETS: TLKEventTargets = [edThreads, edPools, edRecorders, edRemotes, edUknown];
+
+var
+  {$IFDEF CPUX86}
+    ///  <summary><c>Override value if you want a specific Event Count Limit.</c></summary>
+    ///  <remarks><c>32bit Default = </c>536,870,912</remarks>
+    LKSLEventEngineMaxEventCount: Int64 = High(Integer) div 4;
+  {$ELSE}
+    ///  <summary><c>Override value if you want a specific Event Count Limit.</c></summary>
+    ///  <remarks><c>64bit Default = </c>1,073,741,824</remarks>
+    LKSLEventEngineMaxEventCount: Int64 = High(Integer) div 2;
+  {$ENDIF CPUX86}
 
 implementation
 
@@ -1232,15 +1252,19 @@ begin
   FPerformance := TLKPerformanceCounter.Create(GetDefaultEventRateAverageOver);
   FEventQueue := TLKEventList.Create(False);
   FEventStack := TLKEventList.Create(False);
+  FMaxEventSignal := TEvent.Create(nil, True, False, '');
+  FMaxEventCount := 0;
 end;
 
 destructor TLKEventContainer.Destroy;
 begin
+  FMaxEventSignal.SetEvent;
   FEventQueue.OwnsObjects := True;
   FEventStack.OwnsObjects := True;
   FEventQueue.Free;
   FEventStack.Free;
   FPerformance.Free;
+  FMaxEventSignal.Free;
   inherited;
 end;
 
@@ -1288,6 +1312,16 @@ end;
 function TLKEventContainer.GetInitialThreadState: TLKThreadState;
 begin
   Result := tsPaused;
+end;
+
+function TLKEventContainer.GetMaxEventCount: Int64;
+begin
+  Lock;
+  try
+    Result := FMaxEventCount;
+  finally
+    Unlock;
+  end;
 end;
 
 function TLKEventContainer.GetPauseOnNoEvent: Boolean;
@@ -1374,9 +1408,20 @@ begin
 end;
 
 procedure TLKEventContainer.QueueEvent(const AEvent: TLKEvent);
+var
+  LEventLimit: Int64;
 begin
+  if Terminated then
+    Exit;
+  LEventLimit := GetMaxEventCount;
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.WaitFor(INFINITE);
   AEvent.Ref; // Add a Reference to the Event
   FEventQueue.Add(AEvent);
+
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.ResetEvent;
+
   if GetWakeOnEvent then
   begin
     Wake; // Wake up this Thread
@@ -1390,6 +1435,16 @@ begin
   FPerformance.AverageOver := AEventRateAverageOver;
 end;
 
+procedure TLKEventContainer.SetMaxEventCount(const AMaxEventCount: Int64);
+begin
+  Lock;
+  try
+    FMaxEventCount := AMaxEventCount;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TLKEventContainer.SetWorking(const AWorking: Boolean);
 begin
   Lock;
@@ -1401,9 +1456,21 @@ begin
 end;
 
 procedure TLKEventContainer.StackEvent(const AEvent: TLKEvent);
+var
+  LEventLimit: Int64;
 begin
+  if Terminated then
+    Exit;
+  LEventLimit := GetMaxEventCount;
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.WaitFor(INFINITE);
+
   AEvent.Ref; // Add a Reference to the Event
   FEventStack.Add(AEvent);
+
+  if (LEventLimit > 0) and (FEventQueue.Count + FEventStack.Count > LEventLimit) then
+    FMaxEventSignal.ResetEvent;
+
   if GetWakeOnEvent then
   begin
     Wake; // Wake up this Thread

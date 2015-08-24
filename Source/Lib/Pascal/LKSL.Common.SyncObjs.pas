@@ -119,8 +119,10 @@ implementation
 { TLKReadWriteLock }
 
 procedure TLKReadWriteLock.AcquireRead;
-var
-  LAcquired: Boolean;
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  var
+    LAcquired: Boolean;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 begin
   {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
     FWriteLock.Enter;
@@ -155,8 +157,10 @@ end;
 {$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 
 procedure TLKReadWriteLock.AcquireWrite;
-var
-  LAcquired: Boolean;
+{$IFNDEF LKSL_LOCK_ALLEXCLUSIVE}
+  var
+    LAcquired: Boolean;
+{$ENDIF LKSL_LOCK_ALLEXCLUSIVE}
 begin
   {$IFDEF LKSL_LOCK_ALLEXCLUSIVE}
     FWriteLock.Enter;
