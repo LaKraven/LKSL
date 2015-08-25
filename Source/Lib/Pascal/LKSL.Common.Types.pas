@@ -40,12 +40,6 @@ unit LKSL.Common.Types;
 {$I LKSL.inc}
 
 {$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-
   {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
     {.$IF FPC_VERSION < 3}
       {.$ERROR 'FreePascal (FPC) 3.0 or above is required for the LKSL.'}
@@ -98,6 +92,27 @@ type
   TLKObject = class;
   TLKInterfacedPersistent = class;
   TLKInterfacedObject = class;
+  {$IFNDEF FPC}
+    ILKComparer<T> = interface;
+    ILKHolder<T> = interface;
+    ILKObjectHolder<T: class> = interface;
+    TLKComparer<T> = class;
+    TLKHolder<T> = class;
+    TLKObjectHolder<T: class> = class;
+  {$ENDIF FPC}
+
+  {$IFDEF LKSL_FLOAT_SINGLE}
+    ///  <summary><c>Single-Precision Floating Point Type.</c></summary>
+    LKFloat = Single;
+  {$ELSE}
+    {$IFDEF LKSL_FLOAT_EXTENDED}
+      ///  <summary><c>Extended-Precision Floating Point Type.</c></summary>
+      LKFloat = Extended;
+    {$ELSE}
+      ///  <summary><c>Double-Precision Floating Point Type.</c></summary>
+      LKFloat = Double; // This is our default
+    {$ENDIF LKSL_FLOAT_DOUBLE}
+  {$ENDIF LKSL_FLOAT_SINGLE}
 
   { Exception Types }
   ELKException = class(Exception);
@@ -194,18 +209,88 @@ type
     property InstanceGUID: TGUID read FInstanceGUID;
   end;
 
-  {$IFDEF LKSL_FLOAT_SINGLE}
-    ///  <summary><c>Single-Precision Floating Point Type.</c></summary>
-    LKFloat = Single;
-  {$ELSE}
-    {$IFDEF LKSL_FLOAT_EXTENDED}
-      ///  <summary><c>Extended-Precision Floating Point Type.</c></summary>
-      LKFloat = Extended;
-    {$ELSE}
-      ///  <summary><c>Double-Precision Floating Point Type.</c></summary>
-      LKFloat = Double; // This is our default
-    {$ENDIF LKSL_FLOAT_DOUBLE}
-  {$ENDIF LKSL_FLOAT_SINGLE}
+  ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
+  ILKComparer<T> = interface(ILKInterface)
+  ['{3E6657DE-65CB-4106-9647-27F3E5BC88D6}']
+    function AEqualToB(const A, B: T): Boolean;
+    function AGreaterThanB(const A, B: T): Boolean;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean;
+    function ALessThanB(const A, B: T): Boolean;
+    function ALessThanOrEqualB(const A, B: T): Boolean;
+  end;
+
+  ///  <summary><c>A simple Reference Counted container.</c></summary>
+  ILKHolder<T> = interface(ILKInterface)
+  ['{280B501C-E16B-445F-9538-AFBB50301B13}']
+    // Getters
+    function GetItem: T;
+    // Setters
+    procedure SetItem(const AItem: T);
+    // Properties
+    property Item: T read GetItem write SetItem;
+  end;
+
+  ///  <summary><c>A Reference Counted Object container.</c></summary>
+  ///  <remarks><c>Can take ownership of an Object and automatically destroy it when no references remain.</c></remarks>
+  ILKObjectHolder<T: class> = interface(ILKHolder<T>)
+  ['{57E82372-C304-449E-BA42-4679B5F15368}']
+    // Getters
+    function GetOwnsObject: Boolean;
+    // Setters
+    procedure SetOwnsObject(const AOwnsObject: Boolean);
+    // Properties
+    property OwnsObject: Boolean read GetOwnsObject write SetOwnsObject;
+  end;
+
+  ///  <summary><c>Compares two values of the defined Generic Type.</c></summary>
+  TLKComparer<T> = class abstract(TLKInterfacedObject, ILKComparer<T>)
+  public
+    function AEqualToB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanB(const A, B: T): Boolean; virtual; abstract;
+    function AGreaterThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanB(const A, B: T): Boolean; virtual; abstract;
+    function ALessThanOrEqualB(const A, B: T): Boolean; virtual; abstract;
+  end;
+
+  ILKFloatComparer = ILKComparer<LKFloat>;
+
+  TLKFloatComparer = class(TLKComparer<LKFloat>, ILKFloatComparer)
+    function AEqualToB(const A, B: LKFloat): Boolean; override;
+    function AGreaterThanB(const A, B: LKFloat): Boolean; override;
+    function AGreaterThanOrEqualB(const A, B: LKFloat): Boolean; override;
+    function ALessThanB(const A, B: LKFloat): Boolean; override;
+    function ALessThanOrEqualB(const A, B: LKFloat): Boolean; override;
+  end;
+
+  ///  <summary><c>A simple Reference Counted container.</c></summary>
+  TLKHolder<T> = class(TLKInterfacedObject, ILKHolder<T>)
+  protected
+    FItem: T;
+    // Getters
+    function GetItem: T;
+    // Setters
+    procedure SetItem(const AItem: T);
+  public
+    constructor Create(const AItem: T); reintroduce;
+    // Properties
+    property Item: T read GetItem write SetItem;
+  end;
+
+  ///  <summary><c>A Reference Counted Object container.</c></summary>
+  ///  <remarks><c>Can take ownership of an Object and automatically destroy it when no references remain.</c></remarks>
+  TLKObjectHolder<T: class> = class(TLKHolder<T>, ILKObjectHolder<T>)
+  private
+    FOwnsObject: Boolean;
+    // Getters
+    function GetOwnsObject: Boolean;
+    // Setters
+    procedure SetOwnsObject(const AOwnsObject: Boolean);
+  public
+    constructor Create(const AItem: T; const AOwnsObject: Boolean = True); reintroduce;
+    destructor Destroy; override;
+    // Properties
+    property OwnsObject: Boolean read GetOwnsObject write SetOwnsObject;
+  end;
 
 implementation
 
@@ -387,6 +472,96 @@ end;
 function TLKInterfacedObject.TryAcquireWriteLock: Boolean;
 begin
   Result := FLock.TryAcquireWrite;
+end;
+
+{ TLKFloatComparer }
+
+function TLKFloatComparer.AEqualToB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A = B);
+end;
+
+function TLKFloatComparer.AGreaterThanB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A > B);
+end;
+
+function TLKFloatComparer.AGreaterThanOrEqualB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A >= B);
+end;
+
+function TLKFloatComparer.ALessThanB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A < B);
+end;
+
+function TLKFloatComparer.ALessThanOrEqualB(const A, B: LKFloat): Boolean;
+begin
+  Result := (A <= B);
+end;
+
+{ TLKHolder<T> }
+
+constructor TLKHolder<T>.Create(const AItem: T);
+begin
+  inherited Create;
+  FItem := AItem;
+end;
+
+function TLKHolder<T>.GetItem: T;
+begin
+  AcquireReadLock;
+  try
+    Result := FItem;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKHolder<T>.SetItem(const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    FItem := AItem;
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+{ TLKObjectHolder<T> }
+
+constructor TLKObjectHolder<T>.Create(const AItem: T; const AOwnsObject: Boolean = True);
+begin
+  inherited Create(AItem);
+  FOwnsObject := AOwnsObject;
+end;
+
+destructor TLKObjectHolder<T>.Destroy;
+begin
+  if FOwnsObject then
+    FItem.{$IFDEF SUPPORTS_DISPOSEOF}DisposeOf{$ELSE}Free{$ENDIF SUPPORTS_DISPOSEOF};
+  inherited;
+end;
+
+function TLKObjectHolder<T>.GetOwnsObject: Boolean;
+begin
+  AcquireReadLock;
+  try
+    Result := FOwnsObject;
+  finally
+    ReleaseReadLock;
+  end;
+end;
+
+procedure TLKObjectHolder<T>.SetOwnsObject(const AOwnsObject: Boolean);
+begin
+  AcquireWriteLock;
+  try
+    FOwnsObject := AOwnsObject;
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 end.

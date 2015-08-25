@@ -74,3 +74,13 @@
     {$DEFINE LKSL_FLOAT_DOUBLE} // Default to DOUBLE precision
   {$ENDIF LKSL_FLOAT_EXTENDED}
 {$ENDIF LKSL_FLOAT_SINGLE}
+
+// Delphi/FPC Mode Setting
+
+{$IFDEF FPC}
+  {$IFDEF LKSL_MODE_FPC}
+    {$mode objfpc}{$H+}
+  {$ELSE}
+    {$mode delphi}
+  {$ENDIF LKSL_MODE_FPC}
+{$ENDIF FPC}

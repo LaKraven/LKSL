@@ -39,14 +39,6 @@ unit LKSL.Common.Stopwatch;
 
 {$I LKSL.inc}
 
-{$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-{$ENDIF FPC}
-
 interface
 
   uses

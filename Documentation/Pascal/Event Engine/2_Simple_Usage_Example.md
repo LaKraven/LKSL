@@ -57,16 +57,29 @@ end;
 ```
 
 ##### Important Note: Lifetime Control
-The above example does not account for the optional parameter on `TLKEvent`'s Constructor, which is defined as:
+When your `TLKEvent` descendant is created, it creates an Interfaced `ILKEventHolder` object for itself. This is because the Event Engine needs to operate on Events as raw Class Instances, but it is desirable to be able to "fire and forget" Events in most (*virtually all*) implementations.
+
+Once you dispatch an Event through a Queue or Stack, the Event Engine will pass around the `ILKEventHolder` instance, providing effective *reference counting* for that Event.
+
+Once the reference count for the Event Holder reaches zero (0), the Event and its Holder will both be automatically destroyed.
+
+If, for some reason, you need to persist the Event you're about to dispatch, you need to hold a reference to the `Holder` property of said Event. This will prevent the Event from being destroyed once it has been processed through the Event Engine.
+
+To do this, you would use code similar to the following:
+
 ```pascal
-constructor Create(const ALifetimeControl: TLKEventLifetimeControl = elcAutomatic);
+var
+  MyEvent: TMyEvent;
+  MyEventHolder: ILKEventHolder;
+begin
+  MyEvent := TMyEvent.Create('Bar');
+  MyEventHolder := MyEvent.Holder;
+  // Dispatch the Event
+  // Do SOMETHING ELSE with the Event via MyEventHolder
+end; // On return, the Event Holder reference will be automatically nulled, and the Reference Count decremented accordingly.
 ```
 
-The parameter `ALifetimeControl` determines whether or not the responsibility of Freeing an instance of your *Event Type* should be passed along to the Event Engine itself once the *Event Instance* has been dispatched.
-
-By default, it is presumed that you will want the Event Engine to take responsibility for this, thus the default value is `elcAutomatic`. If you would rather your implementation take control over the lifetime of your `Event Instances`, you will need to provide the constructor of `TLKEvent` with the value `elcManual` for parameter `ALifetimeControl`.
-
-> The *Lifetime Control* setting for an *Event Instance* cannot be changed after construction.
+> Note that it is recommended that you do *not* attempt to hold a reference to an Event after it is dispatched. The facility is provided only for *extreme corner cases*. Chances are that if you're needing to hold the reference after dispatch, you need to re-evaluate your approach.
 
 ### Defining an Event Listener
 Now that we have a defined *Event Type* (`TMyEvent`), we need to define its corresponding *Event Listener Type*, which we shall call `TMyEventListener`:

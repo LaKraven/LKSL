@@ -47,14 +47,6 @@ interface
 
 {$I LKSL.inc}
 
-{$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-{$ENDIF FPC}
-
 uses
   {$IFDEF LKSL_USE_EXPLICIT_UNIT_NAMES}
     System.Classes, System.SysUtils, System.Diagnostics, System.Math, System.SyncObjs,
@@ -170,6 +162,8 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
 
+    procedure BeforeDestruction; override;
+
     ///  <summary><c>Forces the "Next Tick Time" to be bumped to RIGHT NOW. This will trigger the next Tick immediately regardless of any Rate Limit setting.</c></summary>
     procedure Bump;
 
@@ -241,6 +235,17 @@ end;
 
 { TLKThread }
 
+procedure TLKThread.BeforeDestruction;
+begin
+  inherited;
+  FWakeUp.SetEvent;
+  if not Terminated then
+  begin
+    Terminate;
+    WaitFor;
+  end;
+end;
+
 procedure TLKThread.Bump;
 begin
   Lock;
@@ -274,12 +279,6 @@ end;
 
 destructor TLKThread.Destroy;
 begin
-  FWakeUp.SetEvent;
-  if not Terminated then
-  begin
-    Terminate;
-    WaitFor;
-  end;
   FWakeUp.Free;
   FLock.Free;
   FPerformance.Free;

@@ -41,14 +41,6 @@ interface
 
 {$I LKSL.inc}
 
-{$IFDEF FPC}
-  {$IFDEF LKSL_MODE_FPC}
-    {$mode objfpc}{$H+}
-  {$ELSE}
-    {$mode delphi}
-  {$ENDIF LKSL_MODE_FPC}
-{$ENDIF FPC}
-
 {
   About this unit:
     - This unit provides useful enhancements for Generics types used in the LKSL.
@@ -87,8 +79,6 @@ type
     ILKSortedObjectList<T: class> = interface;
     ILKTreeNode<T> = interface;
     ILKTreeObjectNode<T: class> = interface;
-    ILKCenteredList<T> = interface;
-    ILKCenteredObjectList<T: class> = interface;
     { Class Forward Declaration }
     TLKComparer<T> = class;
     TLKArray<T> = class;
@@ -265,16 +255,6 @@ type
 
   end;
 
-  ILKCenteredList<T> = interface(ILKInterface)
-  ['{48E9FC78-B09E-430B-AAAE-6560E0656EBB}']
-
-  end;
-
-  ILKCenteredObjectList<T: class> = interface(ILKCenteredList<T>)
-  ['{41398B45-6B00-41D6-A001-31E5B696A1BE}']
-
-  end;
-
   {
     TLKComparer<T>
       - Used to dictate how to determine the order of Items in a List/Array when Sorting it.
@@ -413,6 +393,7 @@ type
     // Setters - Capacity
     procedure SetCapacityMultiplier(const AMultiplier: Single);
     procedure SetCapacityThreshold(const AThreshold: Integer);
+    procedure SetItemByIndex(const AIndex: Integer; const AItem: T);
 
     procedure InitializeArray;
   protected
@@ -489,7 +470,7 @@ type
     ///  <summary><c>Returns </c>True<c> if the List contains no Items.</c></summary>
     property IsEmpty: Boolean read GetIsEmpty;
     ///  <summary><c>Retrieves the Item at the given Index</c></summary>
-    property Items[const AIndex: Integer]: T read GetItemByIndex; default;
+    property Items[const AIndex: Integer]: T read GetItemByIndex write SetItemByIndex; default;
   end;
 
   {
@@ -1378,6 +1359,19 @@ begin
   try
     FCapacityThreshold := AThreshold;
     CheckCapacity; // Adjust the Array Capacity if necessary
+  finally
+    ReleaseWriteLock;
+  end;
+end;
+
+procedure TLKListBase<T>.SetItemByIndex(const AIndex: Integer; const AItem: T);
+begin
+  AcquireWriteLock;
+  try
+    if (AIndex > -1) and (AIndex <= FCount) then
+      FArray[AIndex] := AItem
+    else
+      raise ELKGenericCollectionsRangeException.CreateFmt('Index %d Out of Range.', [AIndex]);
   finally
     ReleaseWriteLock;
   end;
