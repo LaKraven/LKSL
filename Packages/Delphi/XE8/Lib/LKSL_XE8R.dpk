@@ -27,6 +27,7 @@ package LKSL_XE8R;
 {$ENDIF IMPLICITBUILDING}
 {$RUNONLY}
 {$IMPLICITBUILD ON}
+{$DESCRIPTION 'LKSL Runtime Library'}
 
 requires
   rtl;
