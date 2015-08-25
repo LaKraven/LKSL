@@ -83,9 +83,9 @@ begin
   LCaret.Write(AEvent[0], Length(AEvent));
   LStreamable := Streamables.CreateStreamableFromStream(LCaret);
   if LStreamable is TLKEventStreamable then
-    case TLKEventStreamable(LStreamable).Event.DispatchMethod of
-      edmQueue: TLKEventStreamable(LStreamable).Event.Queue;
-      edmStack: TLKEventStreamable(LStreamable).Event.Stack;
+    case TLKEventStreamable(LStreamable).BaseEvent.DispatchMethod of
+      edmQueue: TLKEventStreamable(LStreamable).BaseEvent.Queue;
+      edmStack: TLKEventStreamable(LStreamable).BaseEvent.Stack;
       else
         LStreamable.Free;
     end;

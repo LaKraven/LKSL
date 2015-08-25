@@ -353,14 +353,14 @@ type
     ///  <summary><c>You MUST overload this and provide instructions on how to Write your </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant instance into a Stream.</c></summary>
     procedure WriteEventToStream(const ACaret: ILKStreamCaret); virtual; abstract;
 
-    ///  <summary><c>If you aren't using Generics, you can define "property Event;" in the Public section.</c></summary>
-    property Event: TLKEvent read GetEvent;
   public
     class function GetEventType: TLKEventClass; virtual; abstract;
     class function GetTypeVersion: Double; override;
     constructor Create; overload; override;
     constructor Create(const AEvent: TLKEvent); reintroduce; overload;
     destructor Destroy; override;
+
+    property BaseEvent: TLKEvent read GetEvent;
   end;
 
   ///  <summary><c>Generic Abstract Base Class for all Event Streamable Descriptors</c></summary>
