@@ -76,9 +76,14 @@ var
   EventDLLModule: TLKEventDLLModule;
   EventBytesCallback: TLKEventBytesCallback = nil;
 
-procedure LKSLSetEventEngineCallback(const AEventBytesCallback: TLKEventBytesCallback);
+procedure LKSLSetEventEngineCallback(const AEventBytesCallback: TLKEventBytesCallback); cdecl;
 begin
   EventBytesCallback := AEventBytesCallback;
+end;
+
+function LKSLGetEventEngineID: TGUID; cdecl;
+begin
+  Result := LKSLGetEventEngineInstanceGUID;
 end;
 
 { TLKEventDLLModule }
@@ -96,19 +101,23 @@ var
 begin
   if Assigned(EventBytesCallback) then
   begin
-    LStream := TLKMemoryStream.Create;
-    LCaret := LStream.NewCaret;
-    AEventStream.SaveToStream(LCaret);
-    LCaret.Position := 0;
-    SetLength(LBytes, LStream.Size);
-    LCaret.Read(LBytes, LStream.Size);
-    EventBytesCallback(LBytes, ADelta, AStartTime);
+    if (AEventStream.BaseEvent.OriginGUID = LKSLGetEventEngineID) then
+    begin
+      LStream := TLKMemoryStream.Create;
+      LCaret := LStream.NewCaret;
+      AEventStream.SaveToStream(LCaret);
+      LCaret.Position := 0;
+      SetLength(LBytes, LStream.Size);
+      LCaret.Read(LBytes[0], LStream.Size);
+      EventBytesCallback(LBytes, ADelta, AStartTime);
+    end;
   end;
 end;
 
 exports
   LKSLPushEvent name LKSL_EVENT_PUSH_NAME,
-  LKSLSetEventEngineCallback name LKSL_EVENT_SETCALLBACK_NAME;
+  LKSLSetEventEngineCallback name LKSL_EVENT_SETCALLBACK_NAME,
+  LKSLGetEventEngineID name LKSL_EVENT_GET_INSTANCE_ID;
 
 initialization
   EventDLLModule := TLKEventDLLModule.Create;

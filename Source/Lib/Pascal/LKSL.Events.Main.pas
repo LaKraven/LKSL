@@ -162,6 +162,8 @@ type
     FHolder: TLKEventHolder;
     ///  <summary><c>Where this Event came from.</c></summary>
     FOrigin: TLKEventOrigin;
+    ///  <summary><c>The Origin Event Engine's Unique GUID</c></summary>
+    FOriginGUID: TGUID;
     ///  <summary><c>The Reference Time at which the Event was First Processed.</c></summary>
     FProcessedTime: LKFloat;
     ///  <summary><c>Current State of this Event.</c></summary>
@@ -222,6 +224,7 @@ type
     property HasExpired: Boolean read GetHasExpired;
     property Holder: TLKEventHolder read FHolder; // SET ON CONSTRUCTION ONLY
     property Origin: TLKEventOrigin read FOrigin; // SET ON CONSTRUCTION ONLY
+    property OriginGUID: TGUID read FOriginGUID;
     property ProcessedTime: LKFloat read GetProcessedTime;
     property State: TLKEventState read GetState;
   end;
@@ -614,6 +617,8 @@ var
     LKSLEventEngineMaxEventCount: Int64 = High(Integer) div 2;
   {$ENDIF CPUX86}
 
+function LKSLGetEventEngineInstanceGUID: TGUID;
+
 implementation
 
 uses
@@ -656,12 +661,12 @@ type
   ///  <summary><c>Heart and soul of the Event Engine.</c></summary>
   TLKEventEngine = class(TLKPersistent)
   private
-    FPreProcessors: TLKEventPreProcessorList;
-    FScheduler: TLKEventScheduler;
     FEventThreads: TLKEventThreadList;
     FPools: TLKEventPoolList;
     FPoolsPending: TLKEventPoolList;
     FPoolsLeaving: TLKEventPoolList;
+    FPreProcessors: TLKEventPreProcessorList;
+    FScheduler: TLKEventScheduler;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -687,6 +692,11 @@ type
 
 var
   EventEngine: TLKEventEngine = nil;
+
+function LKSLGetEventEngineInstanceGUID: TGUID;
+begin
+  Result := EventEngine.InstanceGUID;
+end;
 
 { TLKEvent }
 
@@ -716,6 +726,7 @@ begin
   FProcessedTime := 0; // We haven't processed it yet (it hasn't even been dispatched)...
   FState := esNotDispatched; // We haven't dispatched it yet...
   FHolder := TLKEventHolder.Create(Self);
+  FOriginGUID := EventEngine.InstanceGUID;
 end;
 
 destructor TLKEvent.Destroy;
@@ -1106,6 +1117,7 @@ begin
       StreamInsertLKFloat(ACaret, LEvent.FDispatchTime);
       StreamInsertLKFloat(ACaret, LEvent.FExpiresAfter);
       StreamInsertTLKEventOrigin(ACaret, LEvent.FOrigin);
+      StreamInsertGUID(ACaret, LEvent.FOriginGUID);
       StreamInsertLKFloat(ACaret, LEvent.FProcessedTime);
       StreamInsertTLKEventState(ACaret, LEvent.FState);
 
@@ -1138,6 +1150,7 @@ begin
       LEvent.FDispatchTime := StreamReadLKFloat(ACaret);
       LEvent.FExpiresAfter := StreamReadLKFloat(ACaret);
       LEvent.FOrigin := StreamReadTLKEventOrigin(ACaret);
+      LEvent.FOriginGUID := StreamReadGUID(ACaret);
       LEvent.FProcessedTime := StreamReadLKFloat(ACaret);
       LEvent.FState := StreamReadTLKEventState(ACaret);
       ReadEventFromStream(ACaret);
@@ -1178,6 +1191,7 @@ begin
       StreamWriteLKFloat(ACaret, LEvent.FDispatchTime);
       StreamWriteLKFloat(ACaret, LEvent.FExpiresAfter);
       StreamWriteTLKEventOrigin(ACaret, LEvent.FOrigin);
+      StreamWriteGUID(ACaret, LEvent.FOriginGUID);
       StreamWriteLKFloat(ACaret, LEvent.FProcessedTime);
       StreamWriteTLKEventState(ACaret, LEvent.FState);
       WriteEventToStream(ACaret);

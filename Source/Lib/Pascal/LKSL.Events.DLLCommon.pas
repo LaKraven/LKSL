@@ -63,24 +63,27 @@ uses
   {$I LKSL_RTTI.inc}
 
 type
-  TLKEventBytesCallback = procedure(const AEvent: TBytes; const ADelta, AStartTime: LKFloat);
+  TLKEventBytesCallback = procedure(const AEvent: TBytes; const ADelta, AStartTime: LKFloat); cdecl;
 
 const
   LKSL_EVENT_PUSH_NAME = 'LKSL_EventPush';
   LKSL_EVENT_SETCALLBACK_NAME = 'LKSL_EventSetCallback';
+  LKSL_EVENT_GET_INSTANCE_ID = 'LKSL_EventEngineID';
 
-procedure LKSLPushEvent(const AEvent: TBytes; const ADelta, AStartTime: LKFloat);
+procedure LKSLPushEvent(const AEvent: TBytes; const ADelta, AStartTime: LKFloat); cdecl;
 
 implementation
 
-procedure LKSLPushEvent(const AEvent: TBytes; const ADelta, AStartTime: LKFloat);
+procedure LKSLPushEvent(const AEvent: TBytes; const ADelta, AStartTime: LKFloat); cdecl;
 var
   LCaret: ILKStreamCaret;
   LStream: ILKStream;
   LStreamable: TLKStreamable;
 begin
   LStream := TLKMemoryStream.Create;
+  LCaret := LStream.NewCaret;
   LCaret.Write(AEvent[0], Length(AEvent));
+  LCaret.Position := 0;
   LStreamable := Streamables.CreateStreamableFromStream(LCaret);
   if LStreamable is TLKEventStreamable then
     case TLKEventStreamable(LStreamable).BaseEvent.DispatchMethod of

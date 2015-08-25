@@ -78,8 +78,9 @@ type
   private
     FHandle: HMODULE;
     FPath: String;
-    FPushEvent: procedure(const AEvent: TBytes; const ADelta, AStartTime: LKFloat);
-    FSetCallback: procedure(const ACallback: TLKEventBytesCallback);
+    FGetInstanceID: function: TGUID; cdecl;
+    FPushEvent: procedure(const AEvent: TBytes; const ADelta, AStartTime: LKFloat); cdecl;
+    FSetCallback: procedure(const ACallback: TLKEventBytesCallback); cdecl;
   public
     constructor Create(const APath: String); reintroduce;
     destructor Destroy; override;
@@ -138,8 +139,9 @@ begin
     {$IF Defined(MSWINDOWS)}
       @FPushEvent := GetProcAddress(FHandle, LKSL_EVENT_PUSH_NAME);
       @FSetCallback := GetProcAddress(FHandle, LKSL_EVENT_SETCALLBACK_NAME);
+      @FGetInstanceID := GetProcAddress(FHandle, LKSL_EVENT_GET_INSTANCE_ID);
 
-      if (@FPushEvent = nil) or (@FSetCallback = nil) then
+      if (@FPushEvent = nil) or (@FSetCallback = nil) or (@FGetInstanceID = nil) then
         raise ELKEventDLLNotValid.CreateFmt('Module "%s" is invalid or not compatible.', [APath])
       else
         FSetCallback(LKSLPushEvent);
@@ -201,13 +203,16 @@ var
 begin
   for I := 0 to FEventDLLs.Count - 1 do
   begin
-    LStream := TLKMemoryStream.Create;
-    LCaret := LStream.NewCaret;
-    AEventStream.SaveToStream(LCaret);
-    LCaret.Position := 0;
-    SetLength(LBytes, LStream.Size);
-    LCaret.Read(LBytes, LStream.Size);
-    FEventDLLs[I].FPushEvent(LBytes, ADelta, AStartTime);
+    if FEventDLLs[I].FGetInstanceID <> AEventStream.BaseEvent.OriginGUID then
+    begin
+      LStream := TLKMemoryStream.Create;
+      LCaret := LStream.NewCaret;
+      AEventStream.SaveToStream(LCaret);
+      LCaret.Position := 0;
+      SetLength(LBytes, LStream.Size);
+      LCaret.Read(LBytes[0], LStream.Size);
+      FEventDLLs[I].FPushEvent(LBytes, ADelta, AStartTime);
+    end;
   end;
 end;
 
