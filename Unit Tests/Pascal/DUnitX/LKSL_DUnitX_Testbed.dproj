@@ -174,7 +174,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\LKSL_DUnitX_Testbed.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\Bin\Win32\Debug\LKSL_DUnitX_Testbed.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>LKSL_DUnitX_Testbed.exe</RemoteName>
                         <Overwrite>true</Overwrite>

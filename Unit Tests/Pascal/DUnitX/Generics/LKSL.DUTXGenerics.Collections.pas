@@ -4,15 +4,26 @@ interface
 
 uses
   DUnitX.TestFramework, System.SysUtils,
+  LKSL.Common.Types,
   LKSL.Generics.CollectionsRedux;
 
 type
+  ILKTSInteger = ILKThreadSafeType<Integer>;
+  TLKTSInteger = class(TLKThreadSafeType<Integer>);
+
   TFoo = class(TObject)
   private
     FFoo: String;
   public
     constructor Create(const AFoo: String);
     property Foo: String read FFoo;
+  end;
+
+  [TestFixture]
+  TLKThreadSafeTypeTests = class(TObject)
+  public
+    [Test]
+    procedure TestInteger;
   end;
 
   [TestFixture]
@@ -141,6 +152,16 @@ implementation
 constructor TFoo.Create(const AFoo: String);
 begin
   FFoo := AFoo;
+end;
+
+{ TLKThreadSafeTypeTests }
+
+procedure TLKThreadSafeTypeTests.TestInteger;
+var
+  LValue: ILKTSInteger;
+begin
+  LValue := TLKTSInteger.Create(1337);
+  Assert.IsTrue(LValue.Value = 1337);
 end;
 
 { TLKArrayTests }
