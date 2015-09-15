@@ -584,6 +584,7 @@ begin
 end;
 
 initialization
+  TDUnitX.RegisterTestFixture(TLKThreadSafeTypeTests, 'TLKThreadSafeType Tests');
   TDUnitX.RegisterTestFixture(TLKArrayTests, 'TLKArray Tests');
   TDUnitX.RegisterTestFixture(TLKListTests, 'TLKList Tests');
   TDUnitX.RegisterTestFixture(TLKLookupListTests, 'TLKLookupList Tests');
