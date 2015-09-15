@@ -116,6 +116,12 @@ type
     {$ENDIF LKSL_FLOAT_DOUBLE}
   {$ENDIF LKSL_FLOAT_SINGLE}
 
+  TLKGenericCallbackUnbound<T> = procedure(const Value: T);
+  TLKGenericCallbackOfObject<T> = procedure(const Value: T) of Object;
+  {$IFNDEF FPC}
+    TLKGenericCallbackAnonymous<T> = reference to procedure(const Value: T);
+  {$ENDIF FPC}
+
   { Exception Types }
   ELKException = class(Exception);
 
@@ -297,12 +303,49 @@ type
   ///  <summary><c>A Thread-Safe Container for Basic Data Types</c></summary>
   ILKThreadSafeType<T> = interface
   ['{AEC2ED7C-4324-4795-B3C8-B2CD9BFB658B}']
-    { TODO -oSJS -cGenerics : Define Thread Safe Type for Basic Types }
+    function GetValue: T;
+    procedure SetValue(const AValue: T);
+
+    procedure WithRead(const ACallback: TLKGenericCallbackUnbound<T>); overload;
+    procedure WithRead(const ACallback: TLKGenericCallbackOfObject<T>); overload;
+    {$IFNDEF FPC}
+      procedure WithRead(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
+    {$ENDIF FPC}
+
+    procedure WithWrite(const ACallback: TLKGenericCallbackUnbound<T>); overload;
+    procedure WithWrite(const ACallback: TLKGenericCallbackOfObject<T>); overload;
+    {$IFNDEF FPC}
+      procedure WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
+    {$ENDIF FPC}
+
+    property Value: T read GetValue write SetValue;
   end;
 
   ///  <summary><c>A Thread-Safe Container for Basic Data Types</c></summary>
   TLKThreadSafeType<T> = class(TLKInterfacedObject, ILKThreadSafeType<T>)
-    { TODO -oSJS -cGenerics : Implement Thread Safe Type for Basic Types }
+  private
+    FLock: TLKReadWriteLock;
+    FValue: T;
+    function GetValue: T;
+    procedure SetValue(const AValue: T);
+  public
+    constructor Create; reintroduce; overload;
+    constructor Create(const AValue: T); reintroduce; overload;
+    destructor Destroy; override;
+
+    procedure WithRead(const ACallback: TLKGenericCallbackUnbound<T>); overload;
+    procedure WithRead(const ACallback: TLKGenericCallbackOfObject<T>); overload;
+    {$IFNDEF FPC}
+      procedure WithRead(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
+    {$ENDIF FPC}
+
+    procedure WithWrite(const ACallback: TLKGenericCallbackUnbound<T>); overload;
+    procedure WithWrite(const ACallback: TLKGenericCallbackOfObject<T>); overload;
+    {$IFNDEF FPC}
+      procedure WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
+    {$ENDIF FPC}
+
+    property Value: T read GetValue write SetValue;
   end;
 
 implementation
@@ -576,5 +619,109 @@ begin
     ReleaseWriteLock;
   end;
 end;
+
+{ TLKThreadSafeType<T> }
+
+constructor TLKThreadSafeType<T>.Create;
+begin
+  inherited Create;
+  FLock := TLKReadWriteLock.Create;
+end;
+
+constructor TLKThreadSafeType<T>.Create(const AValue: T);
+begin
+  Create;
+  FValue := AValue;
+end;
+
+destructor TLKThreadSafeType<T>.Destroy;
+begin
+  FLock.Free;
+  inherited;
+end;
+
+function TLKThreadSafeType<T>.GetValue: T;
+begin
+  FLock.AcquireRead;
+  try
+    Result := FValue;
+  finally
+    FLock.ReleaseRead;
+  end;
+end;
+
+procedure TLKThreadSafeType<T>.SetValue(const AValue: T);
+begin
+  FLock.AcquireWrite;
+  try
+    FValue := AValue;
+  finally
+    FLock.ReleaseWrite;
+  end;
+end;
+
+procedure TLKThreadSafeType<T>.WithRead(const ACallback: TLKGenericCallbackUnbound<T>);
+begin
+  FLock.AcquireRead;
+  try
+    ACallback(FValue);
+  finally
+    FLock.ReleaseRead;
+  end;
+end;
+
+procedure TLKThreadSafeType<T>.WithRead(const ACallback: TLKGenericCallbackOfObject<T>);
+begin
+  FLock.AcquireRead;
+  try
+    ACallback(FValue);
+  finally
+    FLock.ReleaseRead;
+  end;
+end;
+
+{$IFNDEF FPC}
+  procedure TLKThreadSafeType<T>.WithRead(const ACallback: TLKGenericCallbackAnonymous<T>);
+  begin
+    FLock.AcquireRead;
+    try
+      ACallback(FValue);
+    finally
+      FLock.ReleaseRead;
+    end;
+  end;
+{$ENDIF FPC}
+
+procedure TLKThreadSafeType<T>.WithWrite(const ACallback: TLKGenericCallbackUnbound<T>);
+begin
+  FLock.AcquireWrite;
+  try
+    ACallback(FValue);
+  finally
+    FLock.ReleaseWrite;
+  end;
+end;
+
+procedure TLKThreadSafeType<T>.WithWrite(const ACallback: TLKGenericCallbackOfObject<T>);
+begin
+  FLock.AcquireWrite;
+  try
+    ACallback(FValue);
+  finally
+    FLock.ReleaseWrite;
+  end;
+end;
+
+{$IFNDEF FPC}
+  procedure TLKThreadSafeType<T>.WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>);
+  begin
+    FLock.AcquireWrite;
+    try
+      ACallback(FValue);
+    finally
+      FLock.ReleaseWrite;
+    end;
+  end;
+{$ENDIF FPC}
 
 end.
