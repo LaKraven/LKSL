@@ -19,6 +19,8 @@ type
 
     function GetAveragePerformance: LKFloat;
   protected
+    function GetPauseOnNoEvent: Boolean; override;
+    procedure Tick(const ADelta, AStartTime: LKFloat); override;
     procedure InitializeListeners; override;
     procedure FinalizeListeners; override;
   end;
@@ -26,8 +28,8 @@ type
   TTestEventPool = class(TLKEventPool<TTestEventThread>);
 
 var
-  TestEventPool: TTestEventPool;
-//  TestEventThread: TTestEventThread;
+//  TestEventPool: TTestEventPool;
+  TestEventThread: TTestEventThread;
 
 implementation
 
@@ -74,6 +76,11 @@ begin
     Result := 0;
 end;
 
+function TTestEventThread.GetPauseOnNoEvent: Boolean;
+begin
+  Result := False; // Force this Thread to Tick constantly!
+end;
+
 procedure TTestEventThread.InitializeListeners;
 begin
   inherited;
@@ -81,11 +88,16 @@ begin
   FListener := TTestEventListener.Create(Self, DoEvent);
 end;
 
+procedure TTestEventThread.Tick(const ADelta, AStartTime: LKFloat);
+begin
+  TTestEvent.Create('Thread-Dispatched Event').Queue;
+end;
+
 initialization
-  TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
-//  TestEventThread := TTestEventThread.Create;
+//  TestEventPool := TTestEventPool.Create(TThread.ProcessorCount);
+  TestEventThread := TTestEventThread.Create;
 finalization
-  TestEventPool.Free;
-//  TestEventThread.Free;
+//  TestEventPool.Free;
+  TestEventThread.Free;
 
 end.

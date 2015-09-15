@@ -99,6 +99,8 @@ type
     TLKComparer<T> = class;
     TLKHolder<T> = class;
     TLKObjectHolder<T: class> = class;
+    ILKThreadSafeType<T> = interface;
+    TLKThreadSafeType<T> = class;
   {$ENDIF FPC}
 
   {$IFDEF LKSL_FLOAT_SINGLE}
@@ -290,6 +292,17 @@ type
     destructor Destroy; override;
     // Properties
     property OwnsObject: Boolean read GetOwnsObject write SetOwnsObject;
+  end;
+
+  ///  <summary><c>A Thread-Safe Container for Basic Data Types</c></summary>
+  ILKThreadSafeType<T> = interface
+  ['{AEC2ED7C-4324-4795-B3C8-B2CD9BFB658B}']
+    { TODO -oSJS -cGenerics : Define Thread Safe Type for Basic Types }
+  end;
+
+  ///  <summary><c>A Thread-Safe Container for Basic Data Types</c></summary>
+  TLKThreadSafeType<T> = class(TLKInterfacedObject, ILKThreadSafeType<T>)
+    { TODO -oSJS -cGenerics : Implement Thread Safe Type for Basic Types }
   end;
 
 implementation
