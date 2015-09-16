@@ -117,6 +117,8 @@ type
   ELKEventEngineException = class(ELKException);
     ELKEventConsoleException = class(ELKEventEngineException);
       ELKEventConsoleCommandNameInvalid = class(ELKEventConsoleException);
+      ELKEventConsoleCommandNameInUse = class(ELKEventConsoleException);
+      ELKEventConsoleCommandNotRegistered = class(ELKEventConsoleException);
     ELKEventPreProcessorException = class(ELKEventEngineException);
       ELKEventPreProcessorMapperException = class(ELKEventPreProcessorException);
         ELKEventPreProcessorMapperGUIDExists = class(ELKEventPreProcessorMapperException);
@@ -131,7 +133,7 @@ type
   TLKEventList = class(TLKList<ILKEventHolder>);
   TLKEventSandboxEditorClassList = class(TLKList<TLKEventSandboxEditorClass>);
   TLKEventSandboxerClassList = class(TLKList<TLKEventSandboxerClass>);
-  TLKEventConsoleHandlerClassList = class(TLKList<TLKEventConsoleHandlerClass>);
+  TLKEventConsoleHandlerClassMap = class(TLKDictionary<String, TLKEventConsoleHandlerClass>);
   TLKEventListenerList = class(TLKList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
   TLKEventPreProcessorList = class(TLKList<TLKEventPreProcessor>);
@@ -721,7 +723,7 @@ type
 
   TLKEventConsole = class(TLKPersistent)
   private
-    FHandlers: TLKEventConsoleHandlerClassList;
+    FHandlers: TLKEventConsoleHandlerClassMap;
     function ValidateCommandName(const AName: String): Boolean;
   public
     constructor Create; override;
@@ -2142,7 +2144,7 @@ end;
 constructor TLKEventConsole.Create;
 begin
   inherited Create;
-  FHandlers := TLKEventConsoleHandlerClassList.Create;
+  FHandlers := TLKEventConsoleHandlerClassMap.Create;
 end;
 
 destructor TLKEventConsole.Destroy;
@@ -2169,21 +2171,32 @@ end;
 
 procedure TLKEventConsole.RegisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass);
 begin
-  if ValidateCommandName(AHandlerClass.GetCommandName) then
-  begin
-    if (not FHandlers.Contains(AHandlerClass)) then
-      FHandlers.Add(AHandlerClass);
-  end else
-    raise ELKEventConsoleCommandNameInvalid.CreateFmt('Command Name "%s" for Console Handler "%s" is invalid and cannot be registered.', [AHandlerClass.GetCommandName, AHandlerClass.ClassName]);
+  AcquireWriteLock;
+  try
+    if ValidateCommandName(AHandlerClass.GetCommandName) then
+    begin
+      if (not FHandlers.ContainsKey(AHandlerClass.GetCommandName)) then
+        FHandlers.Add(AHandlerClass.GetCommandName, AHandlerClass)
+      else
+        raise ELKEventConsoleCommandNameInUse.CreateFmt('Command Name "%s" is already registered!', [AHandlerClass.GetCommandName]);
+    end else
+      raise ELKEventConsoleCommandNameInvalid.CreateFmt('Command Name "%s" for Console Handler "%s" is invalid and cannot be registered.', [AHandlerClass.GetCommandName, AHandlerClass.ClassName]);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 procedure TLKEventConsole.UnregisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass);
-var
-  LIndex: Integer;
 begin
-  LIndex := FHandlers.IndexOf(AHandlerClass);
-  if LIndex > -1 then
-    FHandlers.Delete(LIndex);
+  AcquireWriteLock;
+  try
+    if FHandlers.ContainsKey(AHandlerClass.GetCommandName) then
+      FHandlers.Remove(AHandlerClass.GetCommandName)
+    else
+      raise ELKEventConsoleCommandNotRegistered.CreateFmt('Command Name "%s" is not Registered, therefore cannot be Unregistered!', [AHandlerClass.GetCommandName]);
+  finally
+    ReleaseWriteLock;
+  end;
 end;
 
 function TLKEventConsole.ValidateCommandName(const AName: String): Boolean;
