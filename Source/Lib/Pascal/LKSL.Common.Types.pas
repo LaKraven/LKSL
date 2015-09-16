@@ -118,9 +118,9 @@ type
 
   TLKGenericCallbackUnbound<T> = procedure(const Value: T);
   TLKGenericCallbackOfObject<T> = procedure(const Value: T) of Object;
-  {$IFNDEF FPC}
+  {$IFNDEF SUPPORTS_REFERENCETOMETHOD}
     TLKGenericCallbackAnonymous<T> = reference to procedure(const Value: T);
-  {$ENDIF FPC}
+  {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
   { Exception Types }
   ELKException = class(Exception);
@@ -308,15 +308,15 @@ type
 
     procedure WithRead(const ACallback: TLKGenericCallbackUnbound<T>); overload;
     procedure WithRead(const ACallback: TLKGenericCallbackOfObject<T>); overload;
-    {$IFNDEF FPC}
+    {$IFNDEF SUPPORTS_REFERENCETOMETHOD}
       procedure WithRead(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
-    {$ENDIF FPC}
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
     procedure WithWrite(const ACallback: TLKGenericCallbackUnbound<T>); overload;
     procedure WithWrite(const ACallback: TLKGenericCallbackOfObject<T>); overload;
-    {$IFNDEF FPC}
+    {$IFNDEF SUPPORTS_REFERENCETOMETHOD}
       procedure WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
-    {$ENDIF FPC}
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
     property Value: T read GetValue write SetValue;
   end;
@@ -335,15 +335,15 @@ type
 
     procedure WithRead(const ACallback: TLKGenericCallbackUnbound<T>); overload;
     procedure WithRead(const ACallback: TLKGenericCallbackOfObject<T>); overload;
-    {$IFNDEF FPC}
+    {$IFNDEF SUPPORTS_REFERENCETOMETHOD}
       procedure WithRead(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
-    {$ENDIF FPC}
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
     procedure WithWrite(const ACallback: TLKGenericCallbackUnbound<T>); overload;
     procedure WithWrite(const ACallback: TLKGenericCallbackOfObject<T>); overload;
-    {$IFNDEF FPC}
+    {$IFNDEF SUPPORTS_REFERENCETOMETHOD}
       procedure WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>); overload;
-    {$ENDIF FPC}
+    {$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
     property Value: T read GetValue write SetValue;
   end;
@@ -680,7 +680,7 @@ begin
   end;
 end;
 
-{$IFNDEF FPC}
+{$IFNDEF SUPPORTS_REFERENCETOMETHOD}
   procedure TLKThreadSafeType<T>.WithRead(const ACallback: TLKGenericCallbackAnonymous<T>);
   begin
     FLock.AcquireRead;
@@ -690,7 +690,7 @@ end;
       FLock.ReleaseRead;
     end;
   end;
-{$ENDIF FPC}
+{$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
 procedure TLKThreadSafeType<T>.WithWrite(const ACallback: TLKGenericCallbackUnbound<T>);
 begin
@@ -712,7 +712,7 @@ begin
   end;
 end;
 
-{$IFNDEF FPC}
+{$IFNDEF SUPPORTS_REFERENCETOMETHOD}
   procedure TLKThreadSafeType<T>.WithWrite(const ACallback: TLKGenericCallbackAnonymous<T>);
   begin
     FLock.AcquireWrite;
@@ -722,6 +722,6 @@ end;
       FLock.ReleaseWrite;
     end;
   end;
-{$ENDIF FPC}
+{$ENDIF SUPPORTS_REFERENCETOMETHOD}
 
 end.
