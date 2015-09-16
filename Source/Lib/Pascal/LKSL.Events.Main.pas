@@ -70,6 +70,7 @@ type
   TLKEventStreamable = class;
   TLKEventSandboxEditor = class;
   TLKEventSandboxer = class;
+  TLKEventConsoleHandler = class;
   TLKEventContainer = class;
   TLKEventPreProcessor = class;
   TLKEventStreamProcessor = class;
@@ -85,6 +86,7 @@ type
   TLKEventClass = class of TLKEvent;
   TLKEventSandboxEditorClass = class of TLKEventSandboxEditor;
   TLKEventSandboxerClass = class of TLKEventSandboxer;
+  TLKEventConsoleHandlerClass = class of TLKEventConsoleHandler;
   TLKEventStreamableClass = class of TLKEventStreamable;
   TLKEventPreProcessorClass = class of TLKEventPreProcessor;
   TLKEventThreadClass = class of TLKEventThread;
@@ -112,6 +114,8 @@ type
 
   { Exceptions }
   ELKEventEngineException = class(ELKException);
+    ELKEventConsoleException = class(ELKEventEngineException);
+      ELKEventConsoleCommandNameInvalid = class(ELKEventConsoleException);
     ELKEventPreProcessorException = class(ELKEventEngineException);
       ELKEventPreProcessorMapperException = class(ELKEventPreProcessorException);
         ELKEventPreProcessorMapperGUIDExists = class(ELKEventPreProcessorMapperException);
@@ -126,6 +130,7 @@ type
   TLKEventList = class(TLKList<ILKEventHolder>);
   TLKEventSandboxEditorClassList = class(TLKList<TLKEventSandboxEditorClass>);
   TLKEventSandboxerClassList = class(TLKList<TLKEventSandboxerClass>);
+  TLKEventConsoleHandlerClassList = class(TLKList<TLKEventConsoleHandlerClass>);
   TLKEventListenerList = class(TLKList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
   TLKEventPreProcessorList = class(TLKList<TLKEventPreProcessor>);
@@ -443,6 +448,56 @@ type
     property Event: T read GetEvent;
   end;
 
+  ///  <summary><c>Abstract Base Type for all Event Console Handlers</c></summary>
+  ///  <comments>
+  ///    <c></c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c></c></para>
+  ///  </remarks>
+  TLKEventConsoleHandler = class abstract(TLKPersistent)
+  private
+    FEvent: ILKEventHolder;
+  protected
+    function GetEvent: TLKEvent; virtual;
+    function GetEventHolder: ILKEventHolder;
+
+    property EventHolder: ILKEventHolder read GetEventHolder;
+  public
+    ///  <summary><c>Registers the Sandboxer with the central Event Sandbox Manager.</c></summary>
+    class procedure Register;
+    ///  <summary><c>Unregisters the Sandboxer from the central Event Sandbox Manager.</c></summary>
+    class procedure Unregister;
+    ///  <summary><c>Override this to return an appropriate name used in the Console to dynamically construct and dispatch your Event.</c></summary>
+    ///  <remarks>
+    ///    <para><c>Names can contain letters, numbers, dots.</c></para>
+    ///    <para><c>Names are validated at the point of registration, exceptions raised if not valid.</c></para>
+    ///    <para><c>By default this will return the Class Name of the Event Type.</c></para>
+    ///  </remarks>
+    ///  <returns><c>The official "Command Name" for the Event.</c></returns>
+    class function GetCommandName: String; virtual;
+    ///  <returns><c>A Class Reference for the associated </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant Type.</c></returns>
+    class function GetEventType: TLKEventClass; virtual; abstract;
+    constructor Create; reintroduce;
+
+    property BaseEvent: TLKEvent read GetEvent;
+  end;
+
+  ///  <summary><c>Abstract Base Type for all Event Console Handlers</c></summary>
+  ///  <comments>
+  ///    <c></c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Generic Parameter "T" associates this Streamable Handler Type with a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></para>
+  ///  </remarks>
+  TLKEventConsoleHandler<T: TLKEvent, constructor> = class abstract(TLKEventConsoleHandler)
+  protected
+    function GetEvent: T; reintroduce;
+  public
+    class function GetEventType: TLKEventClass; override; final;
+    property Event: T read GetEvent;
+  end;
+
   ///  <summary><c>Abstract Base Type for all Thread Types containing an Event Queue and Stack</c></summary>
   ///  <remarks>
   ///    <para><c>This includes </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> and </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> Types.</c></para>
@@ -691,6 +746,7 @@ type
   TLKEventScheduler = class;
   TLKEventEngine = class;
   TLKEventSandbox = class;
+  TLKEventConsole = class;
 
   ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
   TLKEventScheduleList = class(TLKSortedList<ILKEventHolder>)
@@ -768,9 +824,23 @@ type
     destructor Destroy; override;
   end;
 
+
+  TLKEventConsole = class(TLKPersistent)
+  private
+    FHandlers: TLKEventConsoleHandlerClassList;
+    function ValidateCommandName(const AName: String): Boolean;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure RegisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
+    procedure UnregisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
+  end;
+
 var
   EventEngine: TLKEventEngine = nil;
   EventSandbox: TLKEventSandbox = nil;
+  EventConsole: TLKEventConsole = nil;
 
 function LKSLGetEventEngineInstanceGUID: TGUID;
 begin
@@ -1293,12 +1363,12 @@ end;
 
 class procedure TLKEventSandboxEditor.Register;
 begin
-
+  EventSandbox.RegisterSandboxEditor(Self);
 end;
 
 class procedure TLKEventSandboxEditor.Unregister;
 begin
-
+  EventSandbox.UnregisterSandboxEditor(Self);
 end;
 
 class function TLKEventStreamable<T>.GetEventType: TLKEventClass;
@@ -1341,12 +1411,12 @@ end;
 
 class procedure TLKEventSandboxer.Register;
 begin
-
+  EventSandbox.RegisterSandboxer(Self);
 end;
 
 class procedure TLKEventSandboxer.Unregister;
 begin
-
+  EventSandbox.UnregisterSandboxer(Self);
 end;
 
 { TLKEventSandboxer<T> }
@@ -1357,6 +1427,51 @@ begin
 end;
 
 class function TLKEventSandboxer<T>.GetEventType: TLKEventClass;
+begin
+  Result := T;
+end;
+
+{ TLKEventConsoleHandler }
+
+constructor TLKEventConsoleHandler.Create;
+begin
+  inherited Create;
+  FEvent := GetEventType.Create.FHolder;
+end;
+
+class function TLKEventConsoleHandler.GetCommandName: String;
+begin
+  Result := GetEventType.ClassName;
+end;
+
+function TLKEventConsoleHandler.GetEvent: TLKEvent;
+begin
+  Result := FEvent.Item;
+end;
+
+function TLKEventConsoleHandler.GetEventHolder: ILKEventHolder;
+begin
+  Result := FEvent;
+end;
+
+class procedure TLKEventConsoleHandler.Register;
+begin
+  EventConsole.RegisterConsoleHandlerClass(Self);
+end;
+
+class procedure TLKEventConsoleHandler.Unregister;
+begin
+  EventConsole.UnregisterConsoleHandlerClass(Self);
+end;
+
+{ TLKEventConsoleHandler<T> }
+
+function TLKEventConsoleHandler<T>.GetEvent: T;
+begin
+  Result := T(FEvent.Item);
+end;
+
+class function TLKEventConsoleHandler<T>.GetEventType: TLKEventClass;
 begin
   Result := T;
 end;
@@ -2392,12 +2507,54 @@ begin
     FSandboxers.Delete(LIndex);
 end;
 
+{ TLKEventConsole }
+
+constructor TLKEventConsole.Create;
+begin
+  inherited Create;
+  FHandlers := TLKEventConsoleHandlerClassList.Create;
+end;
+
+destructor TLKEventConsole.Destroy;
+begin
+  FHandlers.Free;
+  inherited;
+end;
+
+procedure TLKEventConsole.RegisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
+begin
+  if ValidateCommandName(AHandlerClass.GetCommandName) then
+  begin
+    if (not FHandlers.Contains(AHandlerClass)) then
+      FHandlers.Add(AHandlerClass);
+  end else
+    raise ELKEventConsoleCommandNameInvalid.CreateFmt('Command Name "%s" for Console Handler "%s" is invalid and cannot be registered.', [AHandlerClass.GetCommandName, AHandlerClass.ClassName]);
+end;
+
+procedure TLKEventConsole.UnregisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
+var
+  LIndex: Integer;
+begin
+  LIndex := FHandlers.IndexOf(AHandlerClass);
+  if LIndex > -1 then
+    FHandlers.Delete(LIndex);
+end;
+
+function TLKEventConsole.ValidateCommandName(const AName: String): Boolean;
+begin
+  Result := True;
+end;
+
 initialization
   if EventEngine = nil then
     EventEngine := TLKEventEngine.Create; // Create this FIRST
   if EventSandbox = nil then
     EventSandbox := TLKEventSandbox.Create;
+  if EventConsole = nil then
+    EventConsole := TLKEventConsole.Create;
 finalization
+  if EventConsole <> nil then
+    EventConsole.Free;
   if EventSandbox <> nil then
     EventSandbox.Free;
   if EventEngine <> nil then
