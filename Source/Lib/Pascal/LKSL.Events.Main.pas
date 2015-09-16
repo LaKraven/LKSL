@@ -76,6 +76,7 @@ type
   TLKEventStreamProcessor = class;
   TLKEventThread = class;
   TLKEventPool = class;
+  TLKEventConsole = class;
 
   ///  <summary><c>Specialized Object Holder Interface for </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances.</c></summary>
   ILKEventHolder = ILKObjectHolder<TLKEvent>;
@@ -718,11 +719,26 @@ type
     function GetEventThreadType: TLKEventThreadClass; override; final;
   end;
 
+  TLKEventConsole = class(TLKPersistent)
+  private
+    FHandlers: TLKEventConsoleHandlerClassList;
+    function ValidateCommandName(const AName: String): Boolean;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+
+    procedure RegisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass); overload;
+    procedure RegisterConsoleHandler(const AHandlerClasses: Array of TLKEventConsoleHandlerClass); overload;
+    procedure UnregisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass); overload;
+    procedure UnregisterConsoleHandler(const AHandlerClasses: Array of TLKEventConsoleHandlerClass); overload;
+  end;
+
 const
   LKSL_EVENTENGINE_VERSION: Double = 4.00;
   LKSL_EVENTENGINE_DEFAULT_TARGETS: TLKEventTargets = [edThreads, edPools, edRecorders, edRemotes, edUknown];
 
 var
+  EventConsole: TLKEventConsole = nil;
   {$IFDEF CPUX86}
     ///  <summary><c>Override value if you want a specific Event Count Limit.</c></summary>
     ///  <remarks><c>32bit Default = </c>536,870,912</remarks>
@@ -746,7 +762,6 @@ type
   TLKEventScheduler = class;
   TLKEventEngine = class;
   TLKEventSandbox = class;
-  TLKEventConsole = class;
 
   ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
   TLKEventScheduleList = class(TLKSortedList<ILKEventHolder>)
@@ -824,23 +839,9 @@ type
     destructor Destroy; override;
   end;
 
-
-  TLKEventConsole = class(TLKPersistent)
-  private
-    FHandlers: TLKEventConsoleHandlerClassList;
-    function ValidateCommandName(const AName: String): Boolean;
-  public
-    constructor Create; override;
-    destructor Destroy; override;
-
-    procedure RegisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
-    procedure UnregisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
-  end;
-
 var
   EventEngine: TLKEventEngine = nil;
   EventSandbox: TLKEventSandbox = nil;
-  EventConsole: TLKEventConsole = nil;
 
 function LKSLGetEventEngineInstanceGUID: TGUID;
 begin
@@ -1456,12 +1457,12 @@ end;
 
 class procedure TLKEventConsoleHandler.Register;
 begin
-  EventConsole.RegisterConsoleHandlerClass(Self);
+  EventConsole.RegisterConsoleHandler(Self);
 end;
 
 class procedure TLKEventConsoleHandler.Unregister;
 begin
-  EventConsole.UnregisterConsoleHandlerClass(Self);
+  EventConsole.UnregisterConsoleHandler(Self);
 end;
 
 { TLKEventConsoleHandler<T> }
@@ -2136,6 +2137,60 @@ begin
   Result := T;
 end;
 
+{ TLKEventConsole }
+
+constructor TLKEventConsole.Create;
+begin
+  inherited Create;
+  FHandlers := TLKEventConsoleHandlerClassList.Create;
+end;
+
+destructor TLKEventConsole.Destroy;
+begin
+  FHandlers.Free;
+  inherited;
+end;
+
+procedure TLKEventConsole.RegisterConsoleHandler(const AHandlerClasses: array of TLKEventConsoleHandlerClass);
+var
+  LHandlerClass: TLKEventConsoleHandlerClass;
+begin
+  for LHandlerClass in AHandlerClasses do
+    RegisterConsoleHandler(LHandlerClass);
+end;
+
+procedure TLKEventConsole.UnregisterConsoleHandler(const AHandlerClasses: array of TLKEventConsoleHandlerClass);
+var
+  LHandlerClass: TLKEventConsoleHandlerClass;
+begin
+  for LHandlerClass in AHandlerClasses do
+    UnregisterConsoleHandler(LHandlerClass);
+end;
+
+procedure TLKEventConsole.RegisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass);
+begin
+  if ValidateCommandName(AHandlerClass.GetCommandName) then
+  begin
+    if (not FHandlers.Contains(AHandlerClass)) then
+      FHandlers.Add(AHandlerClass);
+  end else
+    raise ELKEventConsoleCommandNameInvalid.CreateFmt('Command Name "%s" for Console Handler "%s" is invalid and cannot be registered.', [AHandlerClass.GetCommandName, AHandlerClass.ClassName]);
+end;
+
+procedure TLKEventConsole.UnregisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass);
+var
+  LIndex: Integer;
+begin
+  LIndex := FHandlers.IndexOf(AHandlerClass);
+  if LIndex > -1 then
+    FHandlers.Delete(LIndex);
+end;
+
+function TLKEventConsole.ValidateCommandName(const AName: String): Boolean;
+begin
+  Result := True;
+end;
+
 { TLKEventScheduleList }
 
 function TLKEventScheduleList.AEqualToB(const A, B: ILKEventHolder): Boolean;
@@ -2505,44 +2560,6 @@ begin
   LIndex := FSandboxers.IndexOf(ASandboxerClass);
   if LIndex > -1 then
     FSandboxers.Delete(LIndex);
-end;
-
-{ TLKEventConsole }
-
-constructor TLKEventConsole.Create;
-begin
-  inherited Create;
-  FHandlers := TLKEventConsoleHandlerClassList.Create;
-end;
-
-destructor TLKEventConsole.Destroy;
-begin
-  FHandlers.Free;
-  inherited;
-end;
-
-procedure TLKEventConsole.RegisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
-begin
-  if ValidateCommandName(AHandlerClass.GetCommandName) then
-  begin
-    if (not FHandlers.Contains(AHandlerClass)) then
-      FHandlers.Add(AHandlerClass);
-  end else
-    raise ELKEventConsoleCommandNameInvalid.CreateFmt('Command Name "%s" for Console Handler "%s" is invalid and cannot be registered.', [AHandlerClass.GetCommandName, AHandlerClass.ClassName]);
-end;
-
-procedure TLKEventConsole.UnregisterConsoleHandlerClass(const AHandlerClass: TLKEventConsoleHandlerClass);
-var
-  LIndex: Integer;
-begin
-  LIndex := FHandlers.IndexOf(AHandlerClass);
-  if LIndex > -1 then
-    FHandlers.Delete(LIndex);
-end;
-
-function TLKEventConsole.ValidateCommandName(const AName: String): Boolean;
-begin
-  Result := True;
 end;
 
 initialization
