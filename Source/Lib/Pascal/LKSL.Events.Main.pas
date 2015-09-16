@@ -68,6 +68,8 @@ type
   TLKEvent = class;
   TLKEventListener = class;
   TLKEventStreamable = class;
+  TLKEventSandboxEditor = class;
+  TLKEventSandboxer = class;
   TLKEventContainer = class;
   TLKEventPreProcessor = class;
   TLKEventStreamProcessor = class;
@@ -81,6 +83,8 @@ type
 
   { Class References }
   TLKEventClass = class of TLKEvent;
+  TLKEventSandboxEditorClass = class of TLKEventSandboxEditor;
+  TLKEventSandboxerClass = class of TLKEventSandboxer;
   TLKEventStreamableClass = class of TLKEventStreamable;
   TLKEventPreProcessorClass = class of TLKEventPreProcessor;
   TLKEventThreadClass = class of TLKEventThread;
@@ -120,6 +124,8 @@ type
 
   { Generics Collections }
   TLKEventList = class(TLKList<ILKEventHolder>);
+  TLKEventSandboxEditorClassList = class(TLKList<TLKEventSandboxEditorClass>);
+  TLKEventSandboxerClassList = class(TLKList<TLKEventSandboxerClass>);
   TLKEventListenerList = class(TLKList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
   TLKEventPreProcessorList = class(TLKList<TLKEventPreProcessor>);
@@ -382,6 +388,61 @@ type
     property Event: T read GetEvent;
   end;
 
+  ///  <summary><c>Abstract Base Type for all Event Value Editors</c></summary>
+  ///  <comments>
+  ///    <c>Connects an Editor to Values of the corresponding Type on Event Types</c>
+  ///  </comments>
+  TLKEventSandboxEditor = class abstract(TLKPersistent)
+  { TODO -oSJS -cEvent Engine - Sandboxer : Define the Event Sandbox Editor Base Type }
+  public
+    ///  <summary><c>Registers the Sandbox Editor with the central Event Sandbox Manager.</c></summary>
+    class procedure Register;
+    ///  <summary><c>Unregisters the Sandbox Editor from the central Event Sandbox Manager.</c></summary>
+    class procedure Unregister;
+  end;
+
+  ///  <summary><c>Abstract Base Type for all Event Sandboxers</c></summary>
+  ///  <comments>
+  ///    <c>Describes what Editor Types are required to populate the values of a Dynamically Constructed Event of the associated Type.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Override </c><see DisplayName="GetEventType" cref="LKSL.Events.Main|TLKEventSandboxer.GetEventType"/><c> to provide the Class Reference for the associated Event Type.</c></para>
+  ///  </remarks>
+  TLKEventSandboxer = class abstract(TLKPersistent)
+  private
+    FEvent: ILKEventHolder;
+  protected
+    function GetEvent: TLKEvent; virtual;
+    function GetEventHolder: ILKEventHolder;
+
+    property EventHolder: ILKEventHolder read GetEventHolder;
+  public
+    ///  <summary><c>Registers the Sandboxer with the central Event Sandbox Manager.</c></summary>
+    class procedure Register;
+    ///  <summary><c>Unregisters the Sandboxer from the central Event Sandbox Manager.</c></summary>
+    class procedure Unregister;
+    ///  <returns><c>A Class Reference for the associated </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> descendant Type.</c></returns>
+    class function GetEventType: TLKEventClass; virtual; abstract;
+    constructor Create; reintroduce;
+
+    property BaseEvent: TLKEvent read GetEvent;
+  end;
+
+  ///  <summary><c>Abstract Base Type for all Event Sandboxers</c></summary>
+  ///  <comments>
+  ///    <c>Describes what Editor Types are required to populate the values of a Dynamically Constructed Event of the associated Type.</c>
+  ///  </comments>
+  ///  <remarks>
+  ///    <para><c>Generic Parameter "T" associates this Streamable Handler Type with a </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></para>
+  ///  </remarks>
+  TLKEventSandboxer<T: TLKEvent, constructor> = class abstract(TLKEventSandboxer)
+  protected
+    function GetEvent: T; reintroduce;
+  public
+    class function GetEventType: TLKEventClass; override; final;
+    property Event: T read GetEvent;
+  end;
+
   ///  <summary><c>Abstract Base Type for all Thread Types containing an Event Queue and Stack</c></summary>
   ///  <remarks>
   ///    <para><c>This includes </c><see DisplayName="TLKEventPreProcessor" cref="LKSL.Events.Main|TLKEventPreProcessor"/><c> and </c><see DisplayName="TLKEventThread" cref="LKSL.Events.Main|TLKEventThread"/><c> Types.</c></para>
@@ -629,6 +690,7 @@ type
   TLKEventScheduleList = class;
   TLKEventScheduler = class;
   TLKEventEngine = class;
+  TLKEventSandbox = class;
 
   ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
   TLKEventScheduleList = class(TLKSortedList<ILKEventHolder>)
@@ -690,8 +752,25 @@ type
     procedure StackEvent(const AEvent: ILKEventHolder);
   end;
 
+  ///  <summary><c>Manages the Event Sandboxers and Event Sandbox Editors.</c></summary>
+  TLKEventSandbox = class(TLKPersistent)
+  private
+    FEditors: TLKEventSandboxEditorClassList;
+    FSandboxers: TLKEventSandboxerClassList;
+  public
+    procedure RegisterSandboxEditor(const ASandboxEditorClass: TLKEventSandboxEditorClass);
+    procedure UnregisterSandboxEditor(const ASandboxEditorClass: TLKEventSandboxEditorClass);
+
+    procedure RegisterSandboxer(const ASandboxerClass: TLKEventSandboxerClass);
+    procedure UnregisterSandboxer(const ASandboxerClass: TLKEventSandboxerClass);
+
+    constructor Create; reintroduce;
+    destructor Destroy; override;
+  end;
+
 var
   EventEngine: TLKEventEngine = nil;
+  EventSandbox: TLKEventSandbox = nil;
 
 function LKSLGetEventEngineInstanceGUID: TGUID;
 begin
@@ -1210,6 +1289,18 @@ begin
   Result := T(FEvent.Item);
 end;
 
+{ TLKEventSandboxEditor }
+
+class procedure TLKEventSandboxEditor.Register;
+begin
+
+end;
+
+class procedure TLKEventSandboxEditor.Unregister;
+begin
+
+end;
+
 class function TLKEventStreamable<T>.GetEventType: TLKEventClass;
 begin
   Result := T;
@@ -1228,6 +1319,46 @@ end;
 procedure TLKEventStreamable<T>.WriteEventToStream(const ACaret: ILKStreamCaret);
 begin
   WriteEventToStream(GetEvent, ACaret);
+end;
+
+{ TLKEventSandboxer }
+
+constructor TLKEventSandboxer.Create;
+begin
+  inherited Create;
+  FEvent := GetEventType.Create.FHolder;
+end;
+
+function TLKEventSandboxer.GetEvent: TLKEvent;
+begin
+  Result := FEvent.Item;
+end;
+
+function TLKEventSandboxer.GetEventHolder: ILKEventHolder;
+begin
+  Result := FEvent;
+end;
+
+class procedure TLKEventSandboxer.Register;
+begin
+
+end;
+
+class procedure TLKEventSandboxer.Unregister;
+begin
+
+end;
+
+{ TLKEventSandboxer<T> }
+
+function TLKEventSandboxer<T>.GetEvent: T;
+begin
+  Result := T(FEvent.Item);
+end;
+
+class function TLKEventSandboxer<T>.GetEventType: TLKEventClass;
+begin
+  Result := T;
 end;
 
 { TLKEventContainer }
@@ -2215,11 +2346,60 @@ begin
   end;
 end;
 
+{ TLKEventSandbox }
+
+constructor TLKEventSandbox.Create;
+begin
+  inherited Create;
+  FEditors := TLKEventSandboxEditorClassList.Create;
+  FSandboxers := TLKEventSandboxerClassList.Create;
+end;
+
+destructor TLKEventSandbox.Destroy;
+begin
+  FSandboxers.Free;
+  FEditors.Free;
+  inherited;
+end;
+
+procedure TLKEventSandbox.RegisterSandboxEditor(const ASandboxEditorClass: TLKEventSandboxEditorClass);
+begin
+  if (not FEditors.Contains(ASandboxEditorClass)) then
+    FEditors.Add(ASandboxEditorClass);
+end;
+
+procedure TLKEventSandbox.RegisterSandboxer(const ASandboxerClass: TLKEventSandboxerClass);
+begin
+  if (not FSandboxers.Contains(ASandboxerClass)) then
+    FSandboxers.Add(ASandboxerClass);
+end;
+
+procedure TLKEventSandbox.UnregisterSandboxEditor(const ASandboxEditorClass: TLKEventSandboxEditorClass);
+var
+  LIndex: Integer;
+begin
+  LIndex := FEditors.IndexOf(ASandboxEditorClass);
+  if LIndex > -1 then
+    FEditors.Delete(LIndex);
+end;
+
+procedure TLKEventSandbox.UnregisterSandboxer(const ASandboxerClass: TLKEventSandboxerClass);
+var
+  LIndex: Integer;
+begin
+  LIndex := FSandboxers.IndexOf(ASandboxerClass);
+  if LIndex > -1 then
+    FSandboxers.Delete(LIndex);
+end;
+
 initialization
   if EventEngine = nil then
     EventEngine := TLKEventEngine.Create; // Create this FIRST
+  if EventSandbox = nil then
+    EventSandbox := TLKEventSandbox.Create;
 finalization
+  if EventSandbox <> nil then
+    EventSandbox.Free;
   if EventEngine <> nil then
     EventEngine.Free; // Free this LAST
-
 end.
