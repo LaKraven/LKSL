@@ -112,6 +112,8 @@ type
   TLKEventRegistrationMode = (ermAutomatic, ermManual);
   ///  <summary><c>Used to define whether a </c><see DisplayName="TLKEventListener" cref="LKSL.Events.Main|TLKEventListener"/><c> should accept Descendants of the defined </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> Type.</c></summary>
   TLKEventTypeRestriction = (etrAllowDescendants, etrDefinedTypeOnly);
+  ///  <summary><c></c></summary>
+  TLKEventConsoleResponse = (ecrUnknown, ecrSuccess, ecrCommandNotRecognized, ecrCommandNotExist, ecrInvalidValues);
 
   { Exceptions }
   ELKEventEngineException = class(ELKException);
@@ -728,6 +730,8 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
+
+    function Execute(const ACommand: String; out AResponse: String): TLKEventConsoleResponse;
 
     procedure RegisterConsoleHandler(const AHandlerClass: TLKEventConsoleHandlerClass); overload;
     procedure RegisterConsoleHandler(const AHandlerClasses: Array of TLKEventConsoleHandlerClass); overload;
@@ -2151,6 +2155,12 @@ destructor TLKEventConsole.Destroy;
 begin
   FHandlers.Free;
   inherited;
+end;
+
+function TLKEventConsole.Execute(const ACommand: String; out AResponse: String): TLKEventConsoleResponse;
+begin
+  Result := ecrUnknown; // We don't know yet what the appropriate Response should be.
+  AResponse := '';
 end;
 
 procedure TLKEventConsole.RegisterConsoleHandler(const AHandlerClasses: array of TLKEventConsoleHandlerClass);

@@ -11,6 +11,8 @@ type
 
   end;
 
+  TECEventListenerTest = class(TLKEventListener<TECEventTest>);
+
   TECEventConsoleHandlerTest = class(TLKEventConsoleHandler<TECEventTest>)
 
   end;
