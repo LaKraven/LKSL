@@ -133,11 +133,9 @@ type
 
   { Generics Collections }
   TLKEventList = class(TLKList<ILKEventHolder>);
-  TLKEventSandboxEditorClassList = class(TLKList<TLKEventSandboxEditorClass>);
-  TLKEventSandboxerClassList = class(TLKList<TLKEventSandboxerClass>);
-  TLKEventConsoleHandlerClassMap = class(TLKDictionary<String, TLKEventConsoleHandlerClass>);
   TLKEventListenerList = class(TLKList<TLKEventListener>);
   TLKEventStreamableClassList = class(TLKList<TLKEventStreamableClass>);
+  TLKEventConsoleHandlerClassMap = class(TLKDictionary<String, TLKEventConsoleHandlerClass>);
   TLKEventPreProcessorList = class(TLKList<TLKEventPreProcessor>);
   TLKEventThreadList = class(TLKList<TLKEventThread>);
   TLKEventPoolList = class(TLKList<TLKEventPool>);
@@ -768,6 +766,9 @@ type
   TLKEventScheduler = class;
   TLKEventEngine = class;
   TLKEventSandbox = class;
+
+  TLKEventSandboxEditorClassList = class(TLKList<TLKEventSandboxEditorClass>);
+  TLKEventSandboxerClassList = class(TLKList<TLKEventSandboxerClass>);
 
   ///  <summary><c>A list of </c><see DisplayName="TLKEvent" cref="LKSL.Events.Main|TLKEvent"/><c> instances arranged by the time at which they will be Dispatched.</c></summary>
   TLKEventScheduleList = class(TLKSortedList<ILKEventHolder>)
