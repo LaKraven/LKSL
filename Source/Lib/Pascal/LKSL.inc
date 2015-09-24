@@ -43,7 +43,7 @@
   {$ENDIF LKSL_FPC_MODE}
 {$ELSE}
   // MINIMUM SUPPORTED VERSION
-  {$IFNDEF DELPHI2010}
+  {$IFNDEF DELPHI2010_UP}
     {$MESSAGE FATAL 'Your version of Delphi is older than Delphi 2010, and not supported by the LaKraven Studios Standard Library [LKSL] (www.lakraven.com)'}
   {$ELSE}
     {$DEFINE LKSL}

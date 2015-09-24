@@ -48,10 +48,10 @@ unit LKSL.Common.Types;
   {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
 {$ELSE}
   {$IFNDEF LKSL_SUPPRESS_VERSION_WARNING}
-    {$IFNDEF DELPHIXE2}
+    {$IFNDEF DELPHIXE2_UP}
       {$MESSAGE WARN 'Delphi 2010 and XE are not regularly tested with the LKSL. Please report any issues on https://github.com/LaKraven/LKSL'}
       {$DEFINE LKSL_WARNING_VERSION}
-    {$ENDIF DELPHIXE2}
+    {$ENDIF DELPHIXE2_UP}
   {$ENDIF LKSL_SUPPRESS_VERSION_WARNING}
 {$ENDIF FPC}
 
