@@ -101,7 +101,7 @@
     {$DEFINE DELPHISEATTLE_UP}
   {$IFEND}
   {$IF COMPILERVERSION > 30}
-    {$DEFINE DELPHI11_UP}
+    {$DEFINE DELPHI10.1_UP}
     {$MESSAGE WARN 'Versions newer than Delphi 10 Seattle have not yet been tested. This message will be removed once the version you are using has been officially tested.'}
   {$IFEND}
 // Support Definitions
@@ -172,7 +172,7 @@
     {$DEFINE SUPPORTS_BEACONS}
   {$ENDIF DELPHI10_UP}
   
-  {$IFDEF DELPHI11_UP}
+  {$IFDEF DELPHI10.1_UP}
     {$DEFINE SUPPORTS_MOBILE_UTF8STRING}
     {$DEFINE EXTENDED_16_BYTES}
     {$DEFINE SUPPORTS_VARIABLES_VOLATILE}
@@ -180,5 +180,5 @@
     {$DEFINE SUPPORTS_WINDOWS_DIRECTX_12}
     {$DEFINE SUPPORTS_ANDROID_6}
     {$DEFINE SUPPORTS_ENHANCED_BEACONS}
-  {$ENDIF DELPHI11_UP}
+  {$ENDIF DELPHI10.1_UP}
 {$ENDIF FPC}
