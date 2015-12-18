@@ -18,7 +18,7 @@ That's really it! No room for ambiguity or confusion. You can use the source as 
 
 ## Disclaimer:
   - Your use of this source constitutes your understanding and acceptance of this disclaimer.
-  - Simon J Stuart and its employees (including but not limited to directors, programmers and clerical staff) cannot be held liable for your use of this source code. This includes any losses and/or damages resulting from your use of this source code, be they physical, financial, or psychological.
+  - Simon J Stuart (and contributors to this library of work) cannot be held liable for your use of this source code. This includes any losses and/or damages resulting from your use of this source code, be they physical, financial, or psychological.
   - There is no warranty or guarantee (implicit or otherwise) provided with this source code. It is provided on an "AS-IS" basis.
 
 ## Donations:
