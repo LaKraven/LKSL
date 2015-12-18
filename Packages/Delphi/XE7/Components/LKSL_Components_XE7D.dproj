@@ -49,7 +49,7 @@
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Component Package;FileVersion=1.0.0.0;InternalName=LKSL Component Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_Components_XE7D.bpl;ProductName=LKSL Component Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Simon J Stuart;FileDescription=LKSL Component Package;FileVersion=1.0.0.0;InternalName=LKSL Component Package;LegalCopyright=Copyright (c) 2014-2015, Simon J Stuart, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_Components_XE7D.bpl;ProductName=LKSL Component Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <GenPackage>true</GenPackage>
         <SanitizedProjectName>LKSL_Components_XE7D</SanitizedProjectName>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
