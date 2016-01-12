@@ -1,6 +1,6 @@
 <!--- This document is written in a "Markdown" language, and is best viewed on https://github.com/LaKraven/LKSL. -->
 # LaKraven Studios Standard Library [LKSL]
-## Copyright (c) 2014-2015, Simon J Stuart, All Rights Reserved
+## Copyright (c) 2014-2016, Simon J Stuart, All Rights Reserved
 
 Original Source Location: [GitHub](https://github.com/LaKraven/LKSL)
 
