@@ -599,7 +599,6 @@ constructor TLKStream.Create;
 begin
   inherited;
   FCarets := TLKStreamCaretList.Create;
-  Size := 0;
 end;
 
 destructor TLKStream.Destroy;
