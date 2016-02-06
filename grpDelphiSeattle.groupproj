@@ -1,0 +1,60 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{7A56C05A-A38D-42A4-9435-E06E4F537A35}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleR.dproj">
+            <Dependencies>Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj</Dependencies>
+        </Projects>
+        <Projects Include="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleD.dproj">
+            <Dependencies>Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleR.dproj;Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="LKSL_SeattleR">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj"/>
+    </Target>
+    <Target Name="LKSL_SeattleR:Clean">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_SeattleR:Make">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Lib\LKSL_SeattleR.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleR" DependsOnTargets="LKSL_SeattleR">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleR.dproj"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleR:Clean" DependsOnTargets="LKSL_SeattleR:Clean">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleR.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleR:Make" DependsOnTargets="LKSL_SeattleR:Make">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleR.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleD" DependsOnTargets="LKSL_Components_SeattleR;LKSL_SeattleR">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleD.dproj"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleD:Clean" DependsOnTargets="LKSL_Components_SeattleR:Clean;LKSL_SeattleR:Clean">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LKSL_Components_SeattleD:Make" DependsOnTargets="LKSL_Components_SeattleR:Make;LKSL_SeattleR:Make">
+        <MSBuild Projects="Packages\Delphi\10 Seattle\Components\LKSL_Components_SeattleD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="LKSL_SeattleR;LKSL_Components_SeattleR;LKSL_Components_SeattleD"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="LKSL_SeattleR:Clean;LKSL_Components_SeattleR:Clean;LKSL_Components_SeattleD:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="LKSL_SeattleR:Make;LKSL_Components_SeattleR:Make;LKSL_Components_SeattleD:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

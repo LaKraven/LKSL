@@ -53,7 +53,7 @@
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <SanitizedProjectName>LKSL_XE3R</SanitizedProjectName>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-        <VerInfo_Keys>CompanyName=LaKraven Studios Ltd;FileDescription=LKSL Runtime Package;FileVersion=1.0.0.0;InternalName=LKSL Runtime Package;LegalCopyright=Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_XE3R.bpl;ProductName=LKSL Runtime Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Simon J Stuart;FileDescription=LKSL Runtime Package;FileVersion=1.0.0.0;InternalName=LKSL Runtime Package;LegalCopyright=Copyright (c) 2014-2015, Simon J Stuart, All Rights Reserved;LegalTrademarks=;OriginalFilename=LKSL_XE3R.bpl;ProductName=LKSL Runtime Package;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <DCC_DcuOutput>..\..\..\..\DCU\XE3\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>

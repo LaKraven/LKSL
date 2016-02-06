@@ -1,6 +1,6 @@
 {
   LaKraven Studios Standard Library [LKSL]
-  Copyright (c) 2014, LaKraven Studios Ltd, All Rights Reserved
+  Copyright (c) 2014, Simon J Stuart, All Rights Reserved
 
   Original Source Location: https://github.com/LaKraven/LKSL
 
@@ -21,7 +21,7 @@
   Disclaimer:
     - Your use of this source constitutes your understanding and acceptance of this
       disclaimer.
-    - LaKraven Studios Ltd and its employees (including but not limited to directors,
+    - Simon J Stuart and its employees (including but not limited to directors,
       programmers and clerical staff) cannot be held liable for your use of this source
       code. This includes any losses and/or damages resulting from your use of this source
       code, be they physical, financial, or psychological.
@@ -76,6 +76,13 @@
     {$DEFINE DELPHISEATTLE}
   {$ENDIF VER300}
   
+  {$IFDEF VER310}
+    {$DEFINE DELPHI10.1}
+    {$DEFINE DELPHI10.1LONDON}
+    {$DEFINE LONDON}
+    {$DEFINE DELPHILONDON}
+  {$ENDIF VER300}  
+  
 // This-and-Up Defines
   {$IF COMPILERVERSION > 13}{$DEFINE DELPHI6_UP}{$IFEND}
   {$IF COMPILERVERSION > 14}{$DEFINE DELPHI7_UP}{$IFEND}
@@ -101,7 +108,9 @@
     {$DEFINE DELPHISEATTLE_UP}
   {$IFEND}
   {$IF COMPILERVERSION > 30}
-    {$DEFINE DELPHI11_UP}
+    {$DEFINE DELPHI10.1LONDON_UP}
+    {$DEFINE DELPHI10.1_UP}
+    {$DEFINE DELPHILONDON_UP}
     {$MESSAGE WARN 'Versions newer than Delphi 10 Seattle have not yet been tested. This message will be removed once the version you are using has been officially tested.'}
   {$IFEND}
 // Support Definitions
@@ -169,5 +178,16 @@
   
   {$IFDEF DELPHI10_UP}
     {$DEFINE SUPPORTS_DPI}
+    {$DEFINE SUPPORTS_BEACONS}
   {$ENDIF DELPHI10_UP}
+  
+  {$IFDEF DELPHI10.1_UP}
+    {$DEFINE SUPPORTS_MOBILE_UTF8STRING}
+    {$DEFINE EXTENDED_16_BYTES}
+    {$DEFINE SUPPORTS_VARIABLES_VOLATILE}
+    {$DEFINE SUPPORTS_WINDOWS_10_NOTIFICATIONS}
+    {$DEFINE SUPPORTS_WINDOWS_DIRECTX_12}
+    {$DEFINE SUPPORTS_ANDROID_6}
+    {$DEFINE SUPPORTS_ENHANCED_BEACONS}
+  {$ENDIF DELPHI10.1_UP}
 {$ENDIF FPC}

@@ -1,6 +1,6 @@
 {
   LaKraven Studios Standard Library [LKSL]
-  Copyright (c) 2014-2015, LaKraven Studios Ltd, All Rights Reserved
+  Copyright (c) 2014-2016, Simon J Stuart, All Rights Reserved
 
   Original Source Location: https://github.com/LaKraven/LKSL
 
@@ -21,7 +21,7 @@
   Disclaimer:
     - Your use of this source constitutes your understanding and acceptance of this
       disclaimer.
-    - LaKraven Studios Ltd and its employees (including but not limited to directors,
+    - Simon J Stuart and its employees (including but not limited to directors,
       programmers and clerical staff) cannot be held liable for your use of this source
       code. This includes any losses and/or damages resulting from your use of this source
       code, be they physical, financial, or psychological.
