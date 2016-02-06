@@ -53,7 +53,7 @@ uses
   {$ELSE}
     Classes, SysUtils, Math, SyncObjs, {$IFDEF FPC}LKSL.Common.Stopwatch, {$ELSE}Diagnostics,{$ENDIF FPC}
   {$ENDIF LKSL_USE_EXPLICIT_UNIT_NAMES}
-  LKSL.Common.Types, LKSL.Common.SyncObjs, LKSL.Common.Performance;
+  LKSL.Common.Types, LKSL.Common.Performance;
 
   {$I LKSL_RTTI.inc}
 
@@ -78,7 +78,7 @@ type
   TLKThread = class abstract(TThread)
   private
     FInstanceGUID: TGUID;
-    FLock: TLKCriticalSection;
+    FLock: TCriticalSection;
     FNextTickTime: LKFloat;
     FPerformance: TLKPerformanceCounter;
     FThreadState: TLKThreadState;
@@ -269,7 +269,7 @@ begin
   CreateGUID(FInstanceGUID);
   FPerformance := TLKPerformanceCounter.Create(GetDefaultTickRateAverageOver);
   FThrottleInterval := GetDefaultThrottleInterval;
-  FLock := TLKCriticalSection.Create;
+  FLock := TCriticalSection.Create;
   FreeOnTerminate := False;
   FThreadState := GetInitialThreadState;
   FTickRateLimit := GetDefaultTickRateLimit;

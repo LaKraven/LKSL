@@ -15,8 +15,6 @@ uses
   LKSL.Threads.Main in '..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas',
   LKSL.Common.Performance in '..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas',
   LKSL.Common.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas',
-  LKSL.Common.SyncObjs in '..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas',
-  LKSL.Common.Types in '..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas',
   LKSL.Comparers.System in '..\..\..\Source\Lib\Pascal\LKSL.Comparers.System.pas',
   LKSL.Events.Main in '..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas',
   LKSL.Events.Streams in '..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas',
@@ -28,7 +26,8 @@ uses
   LKSL.Streamables.Main in '..\..\..\Source\Lib\Pascal\LKSL.Streamables.Main.pas',
   LKSL.Streams.Main in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas',
   LKSL.Streams.System in '..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas',
-  LKSL.Streams.Types in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas';
+  LKSL.Streams.Types in '..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas',
+  LKSL.Common.Types in '..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas';
 
 var
   runner : ITestRunner;

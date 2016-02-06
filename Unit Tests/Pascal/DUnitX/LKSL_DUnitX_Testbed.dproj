@@ -4,7 +4,7 @@
         <ProjectVersion>18.1</ProjectVersion>
         <MainSource>LKSL_DUnitX_Testbed.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">TestInsight</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Console</AppType>
@@ -219,8 +219,6 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Threads.Main.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Streams.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas"/>
-        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Comparers.System.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Main.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Events.Streams.pas"/>
@@ -233,6 +231,7 @@
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.System.pas"/>
         <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Streams.Types.pas"/>
+        <DCCReference Include="..\..\..\Source\Lib\Pascal\LKSL.Common.Types.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -291,16 +290,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployClass Name="DependencyModule">
-                    <Platform Name="Win32">
-                        <Operation>0</Operation>
-                        <Extensions>.dll;.bpl</Extensions>
-                    </Platform>
-                    <Platform Name="OSX32">
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                </DeployClass>
+                <DeployClass Name="ProjectiOSDeviceResourceRules"/>
                 <DeployClass Name="ProjectOSXResource">
                     <Platform Name="OSX32">
                         <RemoteDir>Contents\Resources</RemoteDir>
@@ -614,7 +604,16 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="ProjectiOSDeviceResourceRules"/>
+                <DeployClass Name="DependencyModule">
+                    <Platform Name="Win32">
+                        <Operation>0</Operation>
+                        <Extensions>.dll;.bpl</Extensions>
+                    </Platform>
+                    <Platform Name="OSX32">
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                </DeployClass>
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>

@@ -73,7 +73,6 @@
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.Performance.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.Defaults.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Streams.Main.pas"/>
-        <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Common.SyncObjs.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Generics.CollectionsRedux.pas"/>
         <DCCReference Include="..\..\..\..\..\Source\Lib\Pascal\LKSL.Comparers.System.pas"/>
         <BuildConfiguration Include="Release">
