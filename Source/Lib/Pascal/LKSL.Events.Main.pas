@@ -183,6 +183,7 @@ type
     ///  <summary><c>Current State of this Event.</c></summary>
     FState: TLKEventState;
 
+    function GetDelta: LKFloat;
     function GetDispatchAfter: LKFloat;
     function GetDispatchTargets: TLKEventTargets;
     function GetDispatchTime: LKFloat;
@@ -230,6 +231,7 @@ type
     procedure ScheduleStack(const AScheduleFor: LKFloat);
 
     property CreatedTime: LKFloat read FCreatedTime; // SET ON CONSTRUCTION ONLY
+    property Delta: LKFloat read GetDelta;
     property DispatchAfter: LKFloat read GetDispatchAfter write SetDispatchAfter;
     property DispatchMethod: TLKEventDispatchMethod read FDispatchMethod; // ATOMIC OPERATION
     property DispatchTargets: TLKEventTargets read GetDispatchTargets write SetDispatchTargets;
@@ -904,6 +906,16 @@ end;
 function TLKEvent.GetDefaultExpiresAfter: LKFloat;
 begin
   Result := 0;
+end;
+
+function TLKEvent.GetDelta: LKFloat;
+begin
+  AcquireReadLock;
+  try
+    Result := GetReferenceTime - FDispatchTime;
+  finally
+    ReleaseReadLock;
+  end;
 end;
 
 function TLKEvent.GetDispatchTime: LKFloat;
