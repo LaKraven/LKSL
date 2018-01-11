@@ -2,6 +2,13 @@
 LaKraven Studios Standard Library [LKSL]
 ====
 
+## DEPRECATED!
+Please note that the LKSL project has now been deprecated, and superceded by [ADAPT](https://github.com/LaKraven/ADAPT).
+
+The LSKL project remains on GitHub mostly for posterity, and the [ADAPT](https://github.com/LaKraven/ADAPT) library (which has been fully redesigned, refined, improved and expanded upon) will receive all future support.
+
+If you haven't already taken a look at [ADAPT](https://github.com/LaKraven/ADAPT), please do so.
+
 ## Installation
 On *Windows*, don't forget to run **INSTALL.BAT** to register the necessary Environment Variables.
 
